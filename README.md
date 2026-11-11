@@ -50,7 +50,7 @@ Empresas clientes se cadastram sozinhas em `http://localhost:3000/cadastro`. Os 
 | Caminho | Conteúdo |
 |---|---|
 | `src/core/` | Regras de negócio puras: dinheiro em centavos, CPF/CNPJ, permissões, status dos casos, negociação, pagamentos, validação de carteira, relatórios, salvaguardas de cobrança. |
-| `src/app/` | As 96 ações do backend (autorização, gravação e auditoria). Referência em `docs/API.md`. |
+| `src/app/` | As 97 ações do backend (autorização, gravação e auditoria). Referência em `docs/API.md`. |
 | `src/server/` | Servidor HTTP, banco SQLite com transações, contas e sessões, convites e arquivos privados. |
 | `src/schema/entities.mjs` | Definição das 31 entidades de negócio. |
 | `web/` | Frontend React: painéis da empresa e da Central de Operações HS. |
