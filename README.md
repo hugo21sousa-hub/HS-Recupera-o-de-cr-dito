@@ -50,11 +50,11 @@ Empresas clientes se cadastram sozinhas em `http://localhost:3000/cadastro`. Os 
 | Caminho | Conteúdo |
 |---|---|
 | `src/core/` | Regras de negócio puras: dinheiro em centavos, CPF/CNPJ, permissões, status dos casos, negociação, pagamentos, validação de carteira, relatórios, salvaguardas de cobrança. |
-| `src/app/` | As 93 ações do backend (autorização, gravação e auditoria). Referência em `docs/API.md`. |
+| `src/app/` | As 96 ações do backend (autorização, gravação e auditoria). Referência em `docs/API.md`. |
 | `src/server/` | Servidor HTTP, banco SQLite com transações, contas e sessões, convites e arquivos privados. |
 | `src/schema/entities.mjs` | Definição das 31 entidades de negócio. |
 | `web/` | Frontend React: painéis da empresa e da Central de Operações HS. |
-| `test/` | 33 testes automatizados (segurança, operação, financeiro, relatórios e servidor). |
+| `test/` | 41 testes automatizados (segurança, operação, financeiro, relatórios, servidor, 2FA, e-mail, WhatsApp, Asaas e retenção). |
 | `docs/` | `IMPLANTACAO.md` (colocar no ar), `SEGURANCA_LGPD.md` e `API.md`. |
 
 ## Comandos
@@ -67,6 +67,7 @@ Empresas clientes se cadastram sozinhas em `http://localhost:3000/cadastro`. Os 
 | `npm run build` | Recompila o frontend depois de alterar `web/` |
 | `npm run dev` + `npm run dev:web` | Modo desenvolvimento (servidor na 3000, telas com recarga automática na 5173) |
 | `npm run criar-superadmin -- email "Nome"` | Cria superadmin ou gera novo link de acesso para ele |
+| `npm run retencao` | Executa a rotina de retenção LGPD manualmente |
 | `npm run docs` | Regenera `docs/API.md` |
 
 ## Princípios do sistema
@@ -74,4 +75,6 @@ Empresas clientes se cadastram sozinhas em `http://localhost:3000/cadastro`. Os 
 - Toda operação passa pelo backend, que valida perfil, empresa e escopo. Esconder botões não é o mecanismo de segurança.
 - Dinheiro em centavos inteiros; percentuais em pontos-base. Cada requisição roda numa transação: ou grava tudo, ou nada.
 - "Recuperado" conta só pagamentos confirmados pelo credor. Propostas, acordos e pagamentos informados aparecem separados.
-- Sem integrações fictícias: WhatsApp em modo manual (link `wa.me` + registro), convites por link copiado, assinatura registrada manualmente. Tudo aparece como "indisponível" até ser configurado de verdade.
+- Verificação em duas etapas (aplicativo autenticador) obrigatória para a equipe HS.
+- Integrações reais que ligam por configuração: **e-mail SMTP**, **WhatsApp Business (API oficial da Meta)** e **Asaas** (pagamento da assinatura). Sem configuração, o sistema funciona em modo manual e mostra cada recurso como "indisponível". Veja `docs/IMPLANTACAO.md`.
+- Retenção LGPD automática (diária), com prazo configurável por empresa.

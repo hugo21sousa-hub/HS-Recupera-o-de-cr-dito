@@ -101,9 +101,11 @@ export async function notificar(ctx, empresa_id, { perfis, tipo, titulo, mensage
   const usuarios = await find(ctx, 'UsuarioPlataforma', empresa_id ? { empresa_id, status: 'ATIVO' } : { status: 'ATIVO' });
   const alvo = usuarios.filter((u) => !perfis || perfis.includes(u.perfil));
   for (const u of alvo) {
-    await ctx.db.Notificacao.create({
+    const n = await ctx.db.Notificacao.create({
       empresa_id, usuario_id: u.id, tipo, titulo, mensagem, link: link || null, lida: false, data_criacao: ctx.now().toISOString(),
     });
+    // E-mails saem só depois que a transação for confirmada (ver servidor)
+    if (ctx.aposConfirmar && ctx.email?.disponivel) ctx.aposConfirmar.push(() => ctx.email.notificacao(u.email, n));
   }
   return alvo.length;
 }

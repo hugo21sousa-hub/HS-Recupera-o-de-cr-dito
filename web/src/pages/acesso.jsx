@@ -50,15 +50,52 @@ function FormSimples({ campos, botao, onSubmit, rodape }) {
 export function Entrar() {
   const s = useSessao();
   const nav = useNavigate();
+  const [desafio, setDesafio] = useState(null);
+  const entrar = async () => { await s.recarregar(); nav('/'); };
   return (
     <TelaAcesso>
       <div className="stack">
         <Marca escura />
-        <h1 style={{ marginTop: 12 }}>Entrar</h1>
-        <FormSimples botao="Entrar"
-          campos={[{ nome: 'email', rotulo: 'E-mail', tipo: 'email', obrigatorio: true, autoComplete: 'username' }, { nome: 'senha', rotulo: 'Senha', tipo: 'senha', obrigatorio: true, autoComplete: 'current-password' }]}
-          onSubmit={async (d) => { await auth.login(d.email, d.senha); await s.recarregar(); nav('/'); }}
-          rodape={<p className="small muted">Empresa nova? <Link to="/cadastro">Crie sua conta</Link>. Esqueceu a senha? Peça um novo link de acesso ao administrador da sua empresa.</p>} />
+        {!desafio ? (
+          <>
+            <h1 style={{ marginTop: 12 }}>Entrar</h1>
+            <FormSimples botao="Entrar"
+              campos={[{ nome: 'email', rotulo: 'E-mail', tipo: 'email', obrigatorio: true, autoComplete: 'username' }, { nome: 'senha', rotulo: 'Senha', tipo: 'senha', obrigatorio: true, autoComplete: 'current-password' }]}
+              onSubmit={async (d) => { const r = await auth.login(d.email, d.senha); if (r?.precisa_2fa) setDesafio(r.desafio); else await entrar(); }}
+              rodape={<p className="small muted"><Link to="/esqueci">Esqueci minha senha</Link> · Empresa nova? <Link to="/cadastro">Crie sua conta</Link></p>} />
+          </>
+        ) : (
+          <>
+            <h1 style={{ marginTop: 12 }}>Verificação em duas etapas</h1>
+            <p className="muted">Digite o código de 6 dígitos do seu aplicativo autenticador. Sem o celular? Use um dos códigos de recuperação.</p>
+            <FormSimples botao="Verificar"
+              campos={[{ nome: 'codigo', rotulo: 'Código', obrigatorio: true, autoComplete: 'one-time-code', placeholder: '123456' }]}
+              onSubmit={async (d) => { await auth.verificar2fa(desafio, d.codigo); await entrar(); }}
+              rodape={<button type="button" className="btn link small" onClick={() => setDesafio(null)}>Voltar</button>} />
+          </>
+        )}
+      </div>
+    </TelaAcesso>
+  );
+}
+
+export function Esqueci() {
+  const [r, setR] = useState(null);
+  return (
+    <TelaAcesso>
+      <div className="stack">
+        <Marca escura />
+        <h1 style={{ marginTop: 12 }}>Esqueci minha senha</h1>
+        {!r ? (
+          <FormSimples botao="Enviar link"
+            campos={[{ nome: 'email', rotulo: 'E-mail cadastrado', tipo: 'email', obrigatorio: true, autoComplete: 'username' }]}
+            onSubmit={async (d) => setR(await auth.esqueci(d.email))}
+            rodape={<p className="small muted"><Link to="/entrar">Voltar para o login</Link></p>} />
+        ) : r.email_disponivel ? (
+          <div className="aviso ok">Se o e-mail estiver cadastrado, você receberá um link para criar uma nova senha em instantes. Confira também a caixa de spam.</div>
+        ) : (
+          <div className="aviso info">O envio de e-mails não está configurado. Peça ao administrador da sua empresa (ou à HS) um novo link de acesso.</div>
+        )}
       </div>
     </TelaAcesso>
   );

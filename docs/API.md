@@ -16,6 +16,7 @@ Perfis: SUPERADMIN, GESTOR_OPERACOES, OPERADOR (HS) · ADMIN_EMP, FINANCEIRO_EMP
 | `alterarUsuario` | verificação interna | — |
 | `anexarDocumento` | `documento.enviar` | ADMIN_EMP |
 | `anonimizarDevedor` | `lgpd.atender` | ADMIN_EMP |
+| `assinarPlano` | `assinatura.gerenciar_propria` | ADMIN_EMP |
 | `atribuirCaso` | `caso.distribuir` | SUPERADMIN, GESTOR_OPERACOES |
 | `atualizarEmpresa` | verificação interna | — |
 | `cancelarDivida` | `divida.editar` | ADMIN_EMP |
@@ -34,6 +35,7 @@ Perfis: SUPERADMIN, GESTOR_OPERACOES, OPERADOR (HS) · ADMIN_EMP, FINANCEIRO_EMP
 | `encaminharParaHS` | `carteira.encaminhar_hs` | ADMIN_EMP |
 | `encerrarAcordo` | verificação interna | — |
 | `encerrarContrato` | verificação interna | — |
+| `enviarWhatsApp` | `interacao.registrar` | SUPERADMIN, GESTOR_OPERACOES, OPERADOR, ADMIN_EMP |
 | `escolherServico` | `empresa.editar` | ADMIN_EMP |
 | `exportarCSV` | `relatorio.exportar` | ADMIN_EMP, FINANCEIRO_EMP |
 | `exportarDadosTitular` | `lgpd.atender` | ADMIN_EMP |
@@ -57,6 +59,7 @@ Perfis: SUPERADMIN, GESTOR_OPERACOES, OPERADOR (HS) · ADMIN_EMP, FINANCEIRO_EMP
 | `listarEmpresas` | `empresa.gerenciar_todas` | SUPERADMIN |
 | `listarEmpresasAtendidas` | `caso.ler_todos_hs` | SUPERADMIN, GESTOR_OPERACOES |
 | `listarInteracoes` | verificação interna | — |
+| `listarMensagensSemCaso` | `caso.distribuir` | SUPERADMIN, GESTOR_OPERACOES |
 | `listarModelosMensagem` | verificação interna | — |
 | `listarNegociacoes` | verificação interna | — |
 | `listarNotificacoes` | verificação interna | — |
@@ -100,6 +103,7 @@ Perfis: SUPERADMIN, GESTOR_OPERACOES, OPERADOR (HS) · ADMIN_EMP, FINANCEIRO_EMP
 | `urlComprovante` | verificação interna | — |
 | `urlDocumento` | `documento.ler` | SUPERADMIN, GESTOR_OPERACOES, OPERADOR, ADMIN_EMP, FINANCEIRO_EMP, VISUALIZADOR_EMP |
 | `validarCaso` | `carteira.validar` | SUPERADMIN, GESTOR_OPERACOES |
+| `vincularMensagem` | `caso.distribuir` | SUPERADMIN, GESTOR_OPERACOES |
 
 ## Matriz de permissões
 

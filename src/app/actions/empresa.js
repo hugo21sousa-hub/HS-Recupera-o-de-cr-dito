@@ -163,7 +163,7 @@ export const actions = {
         alcada_desconto_bps: perfil === 'OPERADOR_HS' ? Number(input.alcada_desconto_bps) || 0 : null,
       });
       const convite = ctx.invite ? await ctx.invite(em) : null;
-      return { ...u, convite_link: convite?.link || null, convite_expira_em: convite?.expira_em || null };
+      return { ...u, convite_link: convite?.link || null, convite_expira_em: convite?.expira_em || null, convite_enviado_por_email: !!convite?.enviado_por_email };
     },
   },
 
@@ -182,7 +182,7 @@ export const actions = {
       exigir(ctx.invite, 'Convites indisponíveis');
       const convite = await ctx.invite(alvo.email);
       await auditar(ctx, { acao: 'GERAR_LINK_ACESSO', entidade: 'UsuarioPlataforma', registro_id: alvo.id, empresa_id: alvo.empresa_id });
-      return { link: convite.link, expira_em: convite.expira_em, email: alvo.email };
+      return { link: convite.link, expira_em: convite.expira_em, email: alvo.email, enviado_por_email: !!convite.enviado_por_email };
     },
   },
 

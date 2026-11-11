@@ -1,6 +1,6 @@
 // Arquivos privados em disco. O cliente recebe apenas um file_uri opaco; o download usa link assinado e temporário.
 import { randomBytes, createHmac, timingSafeEqual } from 'node:crypto';
-import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, existsSync, readFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 
 export const TIPOS_PERMITIDOS = { 'application/pdf': 'pdf', 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'text/csv': 'csv', 'text/plain': 'txt' };
@@ -37,6 +37,14 @@ export function criarArquivos({ db, dir, segredo, agora = () => new Date() }) {
       if (!a || a.enviado_por !== email || a.vinculado) return false;
       await db.Arquivo.update(a.id, { vinculado: true });
       return true;
+    },
+
+    async remover(file_uri) {
+      if (!/^arq_[0-9a-f]{40}$/.test(String(file_uri))) return;
+      const p = join(dir, file_uri);
+      if (existsSync(p)) unlinkSync(p);
+      const meta = (await db.Arquivo.filter({ file_uri }))[0];
+      if (meta) await db.Arquivo.delete(meta.id);
     },
 
     async signedUrl(file_uri, segundos = 300) {

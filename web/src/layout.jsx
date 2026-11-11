@@ -46,6 +46,7 @@ export const MENU_HS = [
     { to: '/hs/tarefas', r: 'Tarefas', p: 'tarefa.gerenciar' },
     { to: '/hs/relatorios', r: 'Relatórios', p: 'prestacao.gerar' },
     { to: '/hs/operadores', r: 'Operadores', p: 'caso.distribuir' },
+    { to: '/hs/whatsapp', r: 'WhatsApp sem caso', p: 'caso.distribuir' },
   ] },
   { secao: 'Administração HS', itens: [
     { to: '/hs/equipe', r: 'Equipe interna', p: 'usuario.gerenciar_interno' },

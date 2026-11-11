@@ -57,9 +57,10 @@ export function cnpj(seed) {
 export function app() {
   const db = fakeDB();
   const signed = [];
+  const estado = { agora: AGORA, extras: {} };
   async function as(email, action, payload = {}) {
     const perfis = await db.UsuarioPlataforma.filter({ email });
-    const ctx = { db, user: perfis[0] || null, authEmail: email, authName: email, now: () => AGORA, files: { signedUrl: async (uri) => { signed.push(uri); return `https://signed/${uri}`; } }, invite: async () => {} };
+    const ctx = { db, user: perfis[0] || null, authEmail: email, authName: email, now: () => estado.agora, files: { signedUrl: async (uri) => { signed.push(uri); return `https://signed/${uri}`; } }, invite: async () => {}, ...estado.extras };
     return handle(ctx, action, payload);
   }
   async function ok(email, action, payload) {
@@ -73,7 +74,7 @@ export function app() {
     if (status) assert.equal(r.status, status, `${action}: esperado ${status}, veio ${r.status} ${JSON.stringify(r.body)}`);
     return r.body;
   }
-  return { db, as, ok, falha, signed };
+  return { db, as, ok, falha, signed, estado };
 }
 
 /** Cenário completo: HS (superadmin, gestor, 2 operadores) + empresas A e B com usuários, contrato e dívidas. */

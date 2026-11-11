@@ -4,15 +4,16 @@ import { useSessao } from '../sessao.jsx';
 import { Tabela, Badge, Cabecalho, FormModal, Modal, useApi, useToast, useConfirm, Carregando, ErroCarga, Vazio, Dl, Abas, useExecutar, Campos, useFormulario, Spinner } from '../ui.jsx';
 import { brl, data, dataHora, rotulo, mascaraDoc } from '../format.js';
 import { CAMPOS_EMPRESA } from './acesso.jsx';
+import { Seguranca2FA } from './seguranca.jsx';
 
-export function LinkAcesso({ link, email, onClose }) {
+export function LinkAcesso({ link, email, onClose, enviado }) {
   const toast = useToast();
   return (
     <Modal titulo="Link de acesso" onClose={onClose} rodape={<button className="btn prim" onClick={onClose}>Concluir</button>}>
       <div className="stack">
         <p>Envie este link para <strong>{email}</strong> (por e-mail, WhatsApp ou outro canal seguro). Com ele, a pessoa define a própria senha. O link vale por 7 dias e só pode ser usado uma vez.</p>
         <div className="row" style={{ flexWrap: 'nowrap' }}><input readOnly value={link} onFocus={(e) => e.target.select()} /><button className="btn" onClick={() => navigator.clipboard.writeText(link).then(() => toast.ok('Link copiado'))}>Copiar</button></div>
-        <div className="aviso info">O envio automático de e-mails ainda não está configurado, por isso o link aparece aqui.</div>
+        {enviado ? <div className="aviso ok">O link também foi enviado para o e-mail da pessoa.</div> : <div className="aviso info">O envio automático de e-mails não está configurado, por isso o link aparece aqui.</div>}
       </div>
     </Modal>
   );
@@ -40,7 +41,7 @@ export function Usuarios({ internos = false }) {
     const ok = await confirmar({ titulo: status === 'ATIVO' ? 'Reativar usuário' : 'Bloquear usuário', perigo: status !== 'ATIVO', mensagem: status === 'ATIVO' ? `${u.nome} voltará a ter acesso.` : `${u.nome} perde o acesso imediatamente.` });
     if (ok) { await executar('alterarUsuario', { usuario_id: u.id, status }, 'Usuário atualizado'); setR(r + 1); }
   };
-  const gerarLink = async (u) => { const x = await executar('gerarLinkAcesso', { usuario_id: u.id }); setLink(x); };
+  const gerarLink = async (u) => { const x = await executar('gerarLinkAcesso', { usuario_id: u.id }); setLink({ ...x, enviado: x.enviado_por_email }); };
   return (
     <div className="stack">
       <Cabecalho titulo={internos ? 'Equipe interna HS' : 'Usuários'} sub={internos ? 'Superadmins, gestores de operações e operadores.' : 'Pessoas da sua empresa com acesso à plataforma.'}>
@@ -58,10 +59,10 @@ export function Usuarios({ internos = false }) {
         </div> },
       ]} />
       {novo && <FormModal titulo="Convidar usuário" campos={campos} onClose={() => setNovo(false)} botao="Convidar"
-        onSubmit={async (v) => { const u = await hs('convidarUsuario', v); setR(r + 1); if (u.convite_link) setLink({ link: u.convite_link, email: u.email }); }} />}
+        onSubmit={async (v) => { const u = await hs('convidarUsuario', v); setR(r + 1); if (u.convite_link) setLink({ link: u.convite_link, email: u.email, enviado: u.convite_enviado_por_email }); }} />}
       {editar && <FormModal titulo={`Editar ${editar.nome}`} inicial={editar} onClose={() => setEditar(null)} campos={campos.filter((c) => c.nome !== 'email').map((c) => (c.mostrarSe ? { ...c, mostrarSe: () => editar.perfil === 'OPERADOR_HS' } : c))}
         onSubmit={async (v) => { await hs('alterarUsuario', { usuario_id: editar.id, ...v, perfil: v.perfil !== editar.perfil ? v.perfil : undefined }); setR(r + 1); }} />}
-      {link && <LinkAcesso link={link.link} email={link.email} onClose={() => setLink(null)} />}
+      {link && <LinkAcesso link={link.link} email={link.email} enviado={link.enviado} onClose={() => setLink(null)} />}
     </div>
   );
 }
@@ -98,7 +99,17 @@ export function Contratos() {
 }
 
 export function Assinatura() {
+  const s = useSessao();
+  const confirmar = useConfirm();
+  const { executar, enviando } = useExecutar();
   const { data: d, carregando, erro, recarregar } = useApi('minhaAssinatura', {});
+  const assinar = async (p) => {
+    const ok = await confirmar({ titulo: `Assinar ${p.nome}`, botao: 'Gerar fatura', mensagem: `A cobrança de ${brl(p.preco_mensal_centavos)}/mês será feita pelo Asaas (Pix, boleto ou cartão). O plano é ativado assim que o pagamento for confirmado.` });
+    if (!ok) return;
+    const r = await executar('assinarPlano', { plano_id: p.id }, 'Fatura gerada');
+    recarregar();
+    if (r.fatura_url) window.open(r.fatura_url, '_blank', 'noopener');
+  };
   const planos = useApi('listarPlanos', {});
   if (erro) return <ErroCarga erro={erro} onRetry={recarregar} />;
   if (carregando && !d) return <Carregando />;
@@ -116,10 +127,13 @@ export function Assinatura() {
             <div style={{ fontSize: 24, fontWeight: 700 }}>{brl(p.preco_mensal_centavos)}<span className="small muted">/mês</span></div>
             <div className="small">{p.limite_devedores ? `Até ${p.limite_devedores} devedores` : 'Devedores ilimitados'} · {p.limite_usuarios ? `${p.limite_usuarios} usuários` : 'usuários ilimitados'}</div>
             <ul className="small" style={{ margin: 0, paddingLeft: 18 }}>{(p.funcionalidades || []).map((f) => <li key={f}>{rotulo(f)}</li>)}</ul>
+            {d.gateway === 'ASAAS' && s.pode('assinatura.gerenciar_propria') && d.plano?.id !== p.id && <button className="btn prim" disabled={enviando} onClick={() => assinar(p)}>{d.atual ? 'Mudar para este plano' : 'Assinar'}</button>}
           </div>
         ))}
       </div>
-      <div className="aviso info">O pagamento online da assinatura ainda não está disponível. Para mudar de plano, fale com a HS.</div>
+      {d.pendente && <div className="aviso alerta row between"><span>Fatura do plano <strong>{d.plano_pendente?.nome}</strong> aguardando pagamento.</span>{d.pendente.fatura_url && <a className="btn sm prim" href={d.pendente.fatura_url} target="_blank" rel="noreferrer">Pagar fatura</a>}</div>}
+      {d.atual?.status === 'INADIMPLENTE' && <div className="aviso critico row between"><span>Há uma fatura da assinatura em atraso.</span>{d.atual.fatura_url && <a className="btn sm" href={d.atual.fatura_url} target="_blank" rel="noreferrer">Pagar agora</a>}</div>}
+      {d.gateway !== 'ASAAS' && <div className="aviso info">O pagamento online da assinatura não está configurado. Para contratar ou mudar de plano, fale com a HS.</div>}
     </div>
   );
 }
@@ -230,7 +244,7 @@ export function Modelos({ global = false }) {
       {carregando && !lista ? <Carregando /> : meus.length ? (
         <div className="grid g2">{meus.map((m) => (
           <div key={m.id} className="card stack">
-            <div className="row between"><strong>{m.nome}</strong><div className="row"><Badge status="info">{rotulo(m.canal)}</Badge>{!m.empresa_id && !global && <Badge status="info">HS</Badge>}</div></div>
+            <div className="row between"><strong>{m.nome}</strong><div className="row">{m.aprovado_meta && <Badge status="ATIVA">Aprovado na Meta</Badge>}<Badge status="info">{rotulo(m.canal)}</Badge>{!m.empresa_id && !global && <Badge status="info">HS</Badge>}</div></div>
             <div className="small" style={{ whiteSpace: 'pre-wrap' }}>{m.conteudo}</div>
             {pode && (global ? !m.empresa_id : !!m.empresa_id) && <div><button className="btn sm" onClick={() => setEditar(m)}>Editar</button></div>}
           </div>
@@ -240,6 +254,10 @@ export function Modelos({ global = false }) {
         { nome: 'nome', rotulo: 'Nome', obrigatorio: true }, { nome: 'canal', rotulo: 'Canal', tipo: 'select', opcoes: ['WHATSAPP', 'EMAIL', 'SMS'], padrao: 'WHATSAPP', semVazio: true },
         { nome: 'conteudo', rotulo: 'Texto', tipo: 'textarea', obrigatorio: true, padrao: 'Olá, {{nome}}! Aqui é da equipe de relacionamento da {{credor}}. Identificamos um valor em aberto de {{valor}}, vencido em {{vencimento}}. Podemos conversar sobre uma condição para regularizar?' },
         { nome: 'status', rotulo: 'Status', tipo: 'select', opcoes: ['ATIVO', 'INATIVO'], padrao: 'ATIVO', semVazio: true },
+        ...(global ? [
+          { nome: 'nome_template_meta', rotulo: 'Nome do modelo aprovado na Meta (opcional)', ajuda: 'Preencha só se este texto foi aprovado como modelo no WhatsApp Business. As variáveis viram os parâmetros {{1}}, {{2}}… na ordem em que aparecem.' },
+          { nome: 'idioma_template', rotulo: 'Idioma do modelo', padrao: 'pt_BR' },
+        ] : []),
       ]} onSubmit={async (v) => { await hs('salvarModeloMensagem', { ...v, id: editar.id }); recarregar(); }} />}
     </div>
   );
@@ -249,10 +267,10 @@ export function Integracoes() {
   const { data: d, carregando } = useApi('statusIntegracoes', {});
   if (carregando && !d) return <Carregando />;
   const itens = [
-    ['WhatsApp Business Platform', d.whatsapp_business_api, 'Envio de modelos aprovados e recebimento de respostas. Hoje o envio é manual pelo link do WhatsApp.'],
-    ['E-mail transacional', d.email_transacional, 'Convites, notificações e lembretes por e-mail. Hoje os links de acesso são copiados pelo administrador.'],
-    ['Gateway de pagamento da assinatura', d.gateway_assinatura, 'Cobrança recorrente da assinatura. Não recebe valores de devedores.'],
-    ['Assistente de IA', d.assistente_ia, 'Resumo de histórico e sugestões de mensagem.'],
+    ['WhatsApp Business Platform', d.whatsapp_business_api, 'Envio pela API oficial da Meta (modelos aprovados e respostas em até 24 h) e recebimento automático das respostas nos casos HS. Quando inativo, o envio é manual pelo link do WhatsApp.'],
+    ['E-mail transacional', d.email_transacional, 'Convites, redefinição de senha e notificações por e-mail. Quando inativo, os links de acesso são copiados pelo administrador.'],
+    ['Pagamento da assinatura (Asaas)', d.gateway_assinatura, 'Cobrança mensal da assinatura por Pix, boleto ou cartão. Nunca recebe valores de devedores.'],
+    ['Assistente de IA', d.assistente_ia, 'Resumo de histórico e sugestões de mensagem (etapa futura).'],
   ];
   return <div className="grid g2">{itens.map(([n, st, desc]) => <div key={n} className="card stack"><div className="row between"><strong>{n}</strong><Badge status={String(st).startsWith('ATIVA') ? 'ATIVA' : 'INATIVO'}>{String(st).startsWith('ATIVA') ? 'Ativa' : 'Indisponível'}</Badge></div><span className="small muted">{desc}</span></div>)}</div>;
 }
@@ -294,6 +312,7 @@ export function MinhaConta() {
     <div className="stack" style={{ maxWidth: 640 }}>
       <Cabecalho titulo="Minha conta" />
       <div className="card"><Dl itens={[['Nome', s.usuario?.nome], ['E-mail', s.usuario?.email], ['Perfil', rotulo(s.usuario?.perfil)]]} /></div>
+      <Seguranca2FA />
       <form className="card stack" onSubmit={salvar}><h2>Alterar senha</h2><Campos campos={campos.map((c) => ({ ...c, full: true }))} valores={f.valores} setValores={f.setValores} erros={f.erros} /><div className="row" style={{ justifyContent: 'flex-end' }}><button className="btn prim">Alterar senha</button></div></form>
     </div>
   );

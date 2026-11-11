@@ -14,6 +14,42 @@ export const PLANOS_PADRAO = [
   { nome: 'HS EMPRESARIAL', preco_mensal_centavos: 12990, limite_devedores: 5000, limite_usuarios: 15, funcionalidades: ['devedores', 'dividas', 'pagamentos', 'dashboard_basico', 'carteiras', 'importacao', 'negociacao', 'relatorios', 'exportacao', 'api_futura'], status: 'ATIVO', ordem: 3 },
 ];
 
+/** Webhook do Asaas (ctx de sistema). Idempotente por id do evento. */
+export async function processarWebhookAsaas(ctx, ev) {
+  const idEvento = ev?.id || `${ev?.event}:${ev?.payment?.id}:${ev?.payment?.status}`;
+  if ((await find(ctx, 'EventoWebhook', { origem: 'ASAAS', externo_id: idEvento })).length) return { duplicado: true };
+  await ctx.db.EventoWebhook.create({ origem: 'ASAAS', externo_id: idEvento, recebido_em: ctx.now().toISOString() });
+  const subId = ev?.payment?.subscription || ev?.subscription?.id;
+  if (!subId) return { ignorado: true };
+  const a = (await find(ctx, 'Assinatura', { gateway_assinatura_id: subId }))[0];
+  if (!a) return { ignorado: true };
+  const agora = ctx.now().toISOString();
+  let patch = null;
+  switch (ev.event) {
+    case 'PAYMENT_CREATED': patch = { fatura_url: ev.payment?.invoiceUrl || a.fatura_url }; break;
+    case 'PAYMENT_CONFIRMED': case 'PAYMENT_RECEIVED': {
+      const venc = new Date((ev.payment?.dueDate || agora.slice(0, 10)) + 'T00:00:00Z');
+      venc.setUTCMonth(venc.getUTCMonth() + 1);
+      patch = { status: 'ATIVA', ultimo_pagamento_em: agora, data_vencimento: venc.toISOString().slice(0, 10), fatura_url: null };
+      for (const outra of (await find(ctx, 'Assinatura', { empresa_id: a.empresa_id })).filter((x) => x.id !== a.id && x.status === 'ATIVA')) {
+        await ctx.db.Assinatura.update(outra.id, { status: 'SUBSTITUIDA' });
+        if (outra.gateway_assinatura_id && ctx.asaas?.disponivel) await ctx.asaas.cancelarAssinatura(outra.gateway_assinatura_id).catch(() => {});
+      }
+      break;
+    }
+    case 'PAYMENT_OVERDUE': patch = { status: 'INADIMPLENTE', fatura_url: ev.payment?.invoiceUrl || a.fatura_url }; break;
+    case 'PAYMENT_REFUNDED': case 'PAYMENT_CHARGEBACK_REQUESTED': patch = { status: 'INADIMPLENTE' }; break;
+    case 'SUBSCRIPTION_DELETED': case 'SUBSCRIPTION_INACTIVATED': patch = { status: 'CANCELADA' }; break;
+    default: break;
+  }
+  await ctx.db.EventoAssinatura.create({ empresa_id: a.empresa_id, assinatura_id: a.id, tipo: ev.event, payload: JSON.stringify({ pagamento: ev.payment?.id, valor: ev.payment?.value, status: ev.payment?.status }), origem: 'GATEWAY', data_hora: agora });
+  if (patch) {
+    await alterar(ctx, 'Assinatura', a, patch, `GATEWAY_${ev.event}`);
+    if (patch.status === 'ATIVA' || patch.status === 'INADIMPLENTE') await notificar(ctx, a.empresa_id, { perfis: ['ADMIN_EMPRESA'], tipo: 'ASSINATURA', titulo: patch.status === 'ATIVA' ? 'Pagamento da assinatura confirmado' : 'Assinatura com pagamento pendente', mensagem: patch.status === 'ATIVA' ? 'Seu plano está ativo.' : 'Regularize a fatura para manter o plano.', link: '/assinatura' });
+  }
+  return { ok: true, status: patch?.status };
+}
+
 export const actions = {
   listarPlanos: {
     perm: null,
@@ -72,9 +108,39 @@ export const actions = {
     perm: 'assinatura.ler',
     async run(ctx, input = {}) {
       const empresa_id = await empresaAlvo(ctx, input);
-      const ass = (await find(ctx, 'Assinatura', { empresa_id })).sort((a, b) => (a.data_inicio < b.data_inicio ? 1 : -1));
-      const atual = ass.find((a) => a.status === 'ATIVA') || null;
-      return { atual, plano: atual ? await getById(ctx, 'Plano', atual.plano_id) : null, historico: ass, gateway: 'NAO_CONFIGURADO' };
+      const ass = (await find(ctx, 'Assinatura', { empresa_id })).sort((a, b) => ((a.data_inicio || '') < (b.data_inicio || '') ? 1 : -1));
+      const atual = ass.find((a) => a.status === 'ATIVA') || ass.find((a) => a.status === 'INADIMPLENTE') || null;
+      const pendente = ass.find((a) => a.status === 'AGUARDANDO_PAGAMENTO') || null;
+      return { atual, plano: atual ? await getById(ctx, 'Plano', atual.plano_id) : null, pendente, plano_pendente: pendente ? await getById(ctx, 'Plano', pendente.plano_id) : null, historico: ass, gateway: ctx.asaas?.disponivel ? 'ASAAS' : 'NAO_CONFIGURADO' };
+    },
+  },
+
+  /** Contratação/troca de plano com pagamento online (Asaas: Pix, boleto ou cartão). */
+  assinarPlano: {
+    perm: 'assinatura.gerenciar_propria',
+    async run(ctx, { plano_id }) {
+      if (!ctx.asaas?.disponivel) throw new ValidationError('Pagamento online da assinatura indisponível. Fale com a HS.');
+      const empresa = await getById(ctx, 'Empresa', ctx.user.empresa_id);
+      const plano = await getById(ctx, 'Plano', plano_id);
+      exigir(plano && plano.status === 'ATIVO', 'Plano indisponível');
+      const minhas = await find(ctx, 'Assinatura', { empresa_id: empresa.id });
+      exigir(!minhas.some((a) => a.status === 'ATIVA' && a.plano_id === plano.id), 'Este já é o seu plano');
+      for (const p of minhas.filter((a) => a.status === 'AGUARDANDO_PAGAMENTO')) {
+        if (p.gateway_assinatura_id) await ctx.asaas.cancelarAssinatura(p.gateway_assinatura_id).catch(() => {});
+        await alterar(ctx, 'Assinatura', p, { status: 'CANCELADA' }, 'CANCELAR_ASSINATURA_PENDENTE');
+      }
+      let cliente = empresa.asaas_cliente_id;
+      if (!cliente) {
+        cliente = (await ctx.asaas.criarCliente({ nome: empresa.razao_social, cpfCnpj: empresa.cnpj, email: empresa.email, telefone: empresa.telefone, referencia: empresa.id })).id;
+        await ctx.db.Empresa.update(empresa.id, { asaas_cliente_id: cliente });
+      }
+      const hoje = ctx.now().toISOString().slice(0, 10);
+      const sub = await ctx.asaas.criarAssinatura({ cliente, valorCentavos: plano.preco_mensal_centavos, vencimento: hoje, descricao: `Assinatura ${plano.nome} — HS Recuperação de Crédito`, referencia: empresa.id });
+      const cobr = await ctx.asaas.cobrancasDaAssinatura(sub.id).catch(() => ({ data: [] }));
+      const fatura = cobr.data?.[0]?.invoiceUrl || null;
+      const a = await criar(ctx, 'Assinatura', { empresa_id: empresa.id, plano_id: plano.id, data_inicio: hoje, data_vencimento: hoje, status: 'AGUARDANDO_PAGAMENTO', valor_contratado_centavos: plano.preco_mensal_centavos, gateway: 'ASAAS', gateway_assinatura_id: sub.id, fatura_url: fatura });
+      await ctx.db.EventoAssinatura.create({ empresa_id: empresa.id, assinatura_id: a.id, tipo: 'SOLICITADA', payload: JSON.stringify({ plano: plano.nome, gateway_id: sub.id }), origem: 'GATEWAY', data_hora: ctx.now().toISOString() });
+      return { assinatura_id: a.id, fatura_url: fatura };
     },
   },
 
@@ -158,6 +224,8 @@ export const actions = {
       if (isHS(ctx.user)) requirePerm(ctx.user, 'config.sistema');
       else { requirePerm(ctx.user, 'empresa.editar'); empresa_id = ctx.user.empresa_id; }
       const dados = { empresa_id, nome: input.nome, canal: input.canal || 'WHATSAPP', conteudo: input.conteudo, status: input.status || 'ATIVO', aprovado_meta: false };
+      // Só a HS cadastra modelos aprovados na Meta (o número do WhatsApp Business é da HS)
+      if (isHS(ctx.user) && input.nome_template_meta) Object.assign(dados, { aprovado_meta: true, nome_template_meta: String(input.nome_template_meta).trim(), idioma_template: input.idioma_template || 'pt_BR' });
       if (input.id) {
         const m = await getById(ctx, 'ModeloMensagem', input.id);
         if (!m || m.empresa_id !== empresa_id) throw new AccessError('Modelo não encontrado', 404);
@@ -182,12 +250,11 @@ export const actions = {
   statusIntegracoes: {
     perm: null,
     async run(ctx) {
-      const cfg = (await find(ctx, 'ConfiguracaoComunicacao', {}))[0] || {};
       return {
-        whatsapp_business_api: cfg.whatsapp_api_status === 'ATIVA' ? 'ATIVA' : 'INDISPONIVEL — envio manual via link wa.me',
-        email_transacional: cfg.email_status === 'ATIVA' ? 'ATIVA' : 'INDISPONIVEL',
-        gateway_assinatura: 'NAO_CONFIGURADO',
-        assistente_ia: cfg.ia_status === 'ATIVA' ? 'ATIVA' : 'INDISPONIVEL',
+        whatsapp_business_api: ctx.whatsapp?.disponivel ? 'ATIVA' : 'INDISPONIVEL',
+        email_transacional: ctx.email?.disponivel ? 'ATIVA' : 'INDISPONIVEL',
+        gateway_assinatura: ctx.asaas?.disponivel ? 'ATIVA' : 'INDISPONIVEL',
+        assistente_ia: 'INDISPONIVEL',
       };
     },
   },

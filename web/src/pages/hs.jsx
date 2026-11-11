@@ -290,3 +290,28 @@ export function Auditoria() {
   );
 }
 
+
+export function TriagemWhatsApp() {
+  const [r, setR] = useState(0);
+  const [vincular, setVincular] = useState(null);
+  const { executar } = useExecutar();
+  const casos = useApi('listarCasos', { pageSize: 200 });
+  const ativos = (casos.data?.itens || []).filter((c) => !['RECUPERADO_INTEGRALMENTE', 'SEM_SUCESSO'].includes(c.status_operacional));
+  return (
+    <div className="stack">
+      <Cabecalho titulo="WhatsApp sem caso" sub="Mensagens recebidas pelo WhatsApp Business que não puderam ser associadas automaticamente a um caso." />
+      <Tabela acao="listarMensagensSemCaso" busca={false} recarregar={r} colunas={[
+        { titulo: 'Recebida em', render: (m) => dataHora(m.recebido_em) }, { titulo: 'Número', render: (m) => `+${m.de}` },
+        { titulo: 'Mensagem', render: (m) => <span style={{ whiteSpace: 'pre-wrap' }}>{m.texto}</span> },
+        { titulo: '', render: (m) => <div className="row" style={{ justifyContent: 'flex-end' }}>
+          <button className="btn sm prim" onClick={() => setVincular(m)}>Vincular a um caso</button>
+          <button className="btn sm" onClick={async () => { await executar('vincularMensagem', { log_id: m.id, descartar: true }, 'Mensagem descartada'); setR(r + 1); }}>Descartar</button>
+        </div> },
+      ]} vazio={<Vazio titulo="Nenhuma mensagem pendente">Quando a integração do WhatsApp Business estiver ativa, respostas sem caso identificado aparecem aqui.</Vazio>} />
+      {vincular && <FormModal titulo="Vincular mensagem" onClose={() => setVincular(null)} botao="Vincular" campos={[
+        { nome: 'caso_id', rotulo: 'Caso', tipo: 'select', obrigatorio: true, full: true, opcoes: ativos.map((c) => ({ valor: c.id, rotulo: `${c.devedor_nome} · ${c.credor} · ${rotulo(c.status_operacional)}` })) },
+      ]} aviso={<div className="aviso info">Confira se o número +{vincular.de} pertence ao devedor do caso antes de vincular.</div>}
+        onSubmit={async (v) => { await hs('vincularMensagem', { log_id: vincular.id, caso_id: v.caso_id }); setR(r + 1); }} />}
+    </div>
+  );
+}

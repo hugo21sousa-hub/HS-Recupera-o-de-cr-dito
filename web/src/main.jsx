@@ -5,13 +5,15 @@ import './styles.css';
 import { SessaoProvider, useSessao } from './sessao.jsx';
 import { ToastProvider, ConfirmProvider, Carregando, Vazio } from './ui.jsx';
 import { Layout } from './layout.jsx';
-import { Entrar, Cadastro, Convite, Onboarding, Documento } from './pages/acesso.jsx';
+import { Entrar, Cadastro, Convite, Onboarding, Documento, Esqueci } from './pages/acesso.jsx';
+import { Exigir2FA } from './pages/seguranca.jsx';
 import { PainelEmpresa, PainelHS } from './pages/painel.jsx';
 import { Devedores, DevedorDetalhe, Dividas, DividaDetalhe, Parcelas, Importar } from './pages/cadastros.jsx';
 import { MinhasCobrancas, CobrancasHS, Carteiras, CarteiraDetalhe, Encaminhar, Autorizacoes } from './pages/cobranca.jsx';
 import { CasoDetalhe } from './pages/caso.jsx';
 import { Negociacoes, Acordos, Pagamentos, Relatorios } from './pages/financeiro.jsx';
 import { Usuarios, Contratos, Assinatura, Configuracoes, MinhaConta, Modelos } from './pages/gestao.jsx';
+import { TriagemWhatsApp } from './pages/hs.jsx';
 import { Empresas, EmpresasAtendidas, CarteirasRecebidas, Validacao, Distribuicao, MeusCasos, TodosCasos, Interacoes, Tarefas, Operadores, ContratosHS, Planos, Auditoria } from './pages/hs.jsx';
 
 function Protegida({ p, children }) {
@@ -24,13 +26,14 @@ function Raiz() {
   const s = useSessao();
   const loc = useLocation();
   if (s.carregando) return <div style={{ padding: 40 }}><Carregando /></div>;
-  const publicas = ['/entrar', '/cadastro', '/termos', '/privacidade'];
+  const publicas = ['/entrar', '/cadastro', '/esqueci', '/termos', '/privacidade'];
   const ehConvite = loc.pathname.startsWith('/convite/');
   if (!s.logado) {
     return (
       <Routes>
         <Route path="/entrar" element={<Entrar />} />
         <Route path="/cadastro" element={<Cadastro />} />
+        <Route path="/esqueci" element={<Esqueci />} />
         <Route path="/convite/:token" element={<Convite />} />
         <Route path="/termos" element={<Documento tipo="termos" />} />
         <Route path="/privacidade" element={<Documento tipo="privacidade" />} />
@@ -40,6 +43,7 @@ function Raiz() {
   }
   if (ehConvite) return <Routes><Route path="/convite/:token" element={<Convite />} /></Routes>;
   if (loc.pathname === '/termos' || loc.pathname === '/privacidade') return <Documento tipo={loc.pathname.slice(1)} />;
+  if (s.perfil?.seguranca?.exige_2fa && !s.perfil?.seguranca?.dois_fatores_ativo) return <Exigir2FA />;
   if (s.perfil?.precisa_onboarding && !s.ehHS) return <Routes><Route path="*" element={<Onboarding />} /></Routes>;
   if (s.usuario?.status && s.usuario.status !== 'ATIVO') return <Vazio titulo="Acesso bloqueado">Fale com o administrador da sua empresa.</Vazio>;
   const inicio = s.ehHS ? (s.pode('relatorio.hs') ? '/hs' : '/hs/meus') : s.pode('relatorio.empresa') ? '/painel' : '/dividas';
@@ -94,6 +98,7 @@ function Raiz() {
           <Route path="/hs/contratos" element={P('contrato.gerenciar', <ContratosHS />)} />
           <Route path="/hs/planos" element={P('plano.gerenciar', <Planos />)} />
           <Route path="/hs/modelos" element={P('config.sistema', <Modelos global />)} />
+          <Route path="/hs/whatsapp" element={P('caso.distribuir', <TriagemWhatsApp />)} />
           <Route path="/hs/auditoria" element={P('auditoria.ler', <Auditoria />)} />
         </>}
         <Route path="*" element={<Vazio titulo="Página não encontrada" />} />

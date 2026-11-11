@@ -5,6 +5,7 @@
 | Camada | Como funciona |
 |---|---|
 | Senhas | Hash **scrypt** com sal individual. Mínimo de 8 caracteres, com letras e números. 5 erros seguidos bloqueiam a conta por 15 minutos, e há limite de tentativas por IP. |
+| Verificação em duas etapas | TOTP (RFC 6238), compatível com Google Authenticator, Microsoft Authenticator e Authy. **Obrigatória para a equipe HS**, que fica sem acesso a dados até ativar; opcional para empresas. Segredo cifrado em repouso (AES-256-GCM), proteção contra reuso de código e 8 códigos de recuperação de uso único. Um novo link de acesso gerado pelo administrador redefine a senha e o 2FA. |
 | Sessão | Token aleatório em cookie `HttpOnly`, `SameSite=Strict` (e `Secure` em produção), com validade de 12 horas. No banco fica só o hash do token. Trocar a senha encerra as outras sessões. |
 | CSRF | Além do `SameSite=Strict`, toda requisição de escrita exige o cabeçalho `X-HS: 1`. |
 | Convites | Link de uso único, válido por 7 dias, guardado em hash. Um e-mail convidado não pode ser "tomado" por cadastro público. O mesmo mecanismo serve para redefinir senha. |
@@ -15,6 +16,7 @@
 | Arquivos | Ficam em disco com nome aleatório e fora da pasta pública. Aceitos: PDF/PNG/JPG/WEBP/CSV/TXT, até 10 MB, com o conteúdo conferido pelo tipo real. Só quem enviou o arquivo pode vinculá-lo, uma vez. O download usa link assinado (HMAC) de 5 minutos, gerado depois da checagem de acesso, com `sandbox` e `nosniff`. |
 | Transações | Cada requisição roda isolada numa transação SQLite. Se a ação falha, nada do que ela gravou permanece. Isso também impede confirmação dupla simultânea de pagamento. |
 | Auditoria | `HistoricoAuditoria` registra toda criação ou alteração (com dados antes e depois), além de exportações, acessos a documentos e acessos administrativos. |
+| E-mails | Só são enviados depois que a operação é gravada com sucesso. "Esqueci minha senha" responde igual exista ou não a conta, sem revelar e-mails cadastrados. |
 | Cabeçalhos | CSP restritiva (`script-src 'self'`), `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, e HSTS em produção. |
 | Exportações | O CSV respeita o escopo de quem exporta, é auditado e neutraliza fórmulas (`=`, `+`, `-`, `@`). |
 
@@ -36,12 +38,12 @@
   - exportação dos dados do titular (acesso e portabilidade);
   - correção cadastral;
   - anonimização, bloqueada enquanto houver dívida em aberto ou cobrança ativa.
-- Retenção configurável por empresa (padrão de 60 meses após a quitação). **Pendente:** a rotina automática que apaga ou anonimiza os dados vencidos.
+- Retenção configurável por empresa (padrão de 60 meses após a quitação). Uma rotina diária anonimiza os titulares vencidos e apaga os anexos, preservando o histórico financeiro sem identificação.
 - Minimização: o operador HS só vê o necessário para o caso atribuído.
 
 ## Limitações conhecidas
 
-1. **E-mail:** ainda não há envio de e-mail. Convites e redefinições de senha geram um link que o administrador copia e envia.
+1. **Integrações:** e-mail (SMTP), WhatsApp Business e Asaas estão implementados e testados contra servidores simulados que reproduzem as APIs. Ainda não foram exercitados contra as contas reais, então faça a primeira validação no ambiente de testes (sandbox) de cada provedor.
 2. **Verificação de e-mail no cadastro público:** não existe. A mitigação é que toda empresa nova passa pela validação da HS antes de usar a cobrança gerenciada.
-3. **2FA:** recomendado para os perfis HS antes da comercialização; ainda não implementado.
+3. **Webhooks:** o WhatsApp é validado pela assinatura HMAC (App Secret) e o Asaas por um token compartilhado. Use HTTPS sempre.
 4. **SQLite** (`node:sqlite`, embutido no Node 22) atende bem um único servidor. Para alta disponibilidade, migrar para PostgreSQL.

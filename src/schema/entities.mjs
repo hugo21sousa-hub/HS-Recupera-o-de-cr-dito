@@ -24,7 +24,7 @@ export const ENTITIES = {
       contato_nome: s('Contato'), contato_telefone: s('Telefone do contato'), contato_email: s('E-mail do contato'),
       status: e(['CADASTRO_INCOMPLETO', 'AGUARDANDO_VALIDACAO', 'ATIVA', 'SUSPENSA', 'CANCELADA'], 'Status', 'CADASTRO_INCOMPLETO'),
       motivo_status: s('Motivo da última mudança de status'), modalidade_servico: e(['PLATAFORMA', 'HS_GERENCIADA', 'AMBOS'], 'Serviço escolhido no onboarding'),
-      data_cadastro: ts('Data de cadastro'), aceite_termos_em: ts('Aceite dos termos'), aceite_privacidade_em: ts('Aceite da política de privacidade'), versao_termos: s('Versão aceita'),
+      data_cadastro: ts('Data de cadastro'), aceite_termos_em: ts('Aceite dos termos'), asaas_cliente_id: s('Cliente no gateway de assinatura'), aceite_privacidade_em: ts('Aceite da política de privacidade'), versao_termos: s('Versão aceita'),
     },
     required: ['razao_social', 'cnpj', 'email', 'status'],
   },
@@ -44,7 +44,7 @@ export const ENTITIES = {
   },
   Assinatura: {
     description: 'Assinatura da plataforma (faturamento separado das dívidas)',
-    properties: { ...EMP, plano_id: ref('Plano'), data_inicio: dt('Início'), data_vencimento: dt('Vencimento'), status: e(['ATIVA', 'INADIMPLENTE', 'CANCELADA', 'SUBSTITUIDA', 'TRIAL'], 'Status', 'ATIVA'), valor_contratado_centavos: c('Valor contratado'), gateway: s('Gateway (futuro)'), gateway_assinatura_id: s('ID no gateway (futuro)') },
+    properties: { ...EMP, plano_id: ref('Plano'), data_inicio: dt('Início'), data_vencimento: dt('Vencimento'), status: e(['AGUARDANDO_PAGAMENTO', 'ATIVA', 'INADIMPLENTE', 'CANCELADA', 'SUBSTITUIDA', 'TRIAL'], 'Status', 'ATIVA'), valor_contratado_centavos: c('Valor contratado'), gateway: s('Gateway (ASAAS ou vazio = manual)'), gateway_assinatura_id: s('ID da assinatura no gateway'), fatura_url: s('Link da fatura em aberto'), ultimo_pagamento_em: ts('Último pagamento confirmado pelo gateway') },
     required: ['empresa_id', 'plano_id', 'status'],
   },
   EventoAssinatura: {
@@ -145,6 +145,7 @@ export const ENTITIES = {
       tipo_interacao: e(['TENTATIVA_CONTATO', 'MENSAGEM_ENVIADA', 'LIGACAO', 'RESPOSTA_DEVEDOR', 'SEM_RESPOSTA', 'RETORNO_AGENDADO', 'NOTA_INTERNA'], 'Tipo'),
       mensagem: s('Mensagem'), resposta: s('Resposta do devedor'), resultado: e(['SEM_RESPOSTA', 'RESPONDEU', 'NUMERO_INVALIDO', 'PROMESSA_PAGAMENTO', 'RECUSA', 'CONTESTOU', 'SOLICITOU_INTERRUPCAO', 'OUTRO'], 'Resultado'),
       proxima_acao: s('Próxima ação'), observacoes: s('Observações'), envio_automatico: b('Enviado por integração oficial'),
+      mensagem_externa_id: s('ID da mensagem no WhatsApp'), telefone_destino: s('Telefone de destino (envio pela API)'), status_entrega: s('sent/delivered/read/failed'), recebida_por_integracao: b('Recebida pelo webhook'),
     },
     required: ['empresa_id', 'caso_id', 'canal', 'tipo_interacao', 'data_hora'],
   },
@@ -212,7 +213,7 @@ export const ENTITIES = {
   },
   ModeloMensagem: {
     description: 'Modelos de mensagem (globais HS ou da empresa). aprovado_meta indica template aprovado na WhatsApp Business Platform (futuro).',
-    properties: { empresa_id: s('Empresa (vazio = global)'), nome: s('Nome'), canal: e(['WHATSAPP', 'EMAIL', 'SMS'], 'Canal', 'WHATSAPP'), conteudo: s('Texto com {{nome}}, {{credor}}, {{valor}}, {{vencimento}}'), status: e(['ATIVO', 'INATIVO'], 'Status', 'ATIVO'), aprovado_meta: b('Aprovado na Meta') },
+    properties: { empresa_id: s('Empresa (vazio = global)'), nome: s('Nome'), canal: e(['WHATSAPP', 'EMAIL', 'SMS'], 'Canal', 'WHATSAPP'), conteudo: s('Texto com {{nome}}, {{credor}}, {{valor}}, {{vencimento}}'), status: e(['ATIVO', 'INATIVO'], 'Status', 'ATIVO'), aprovado_meta: b('Aprovado na Meta'), nome_template_meta: s('Nome do modelo aprovado na Meta'), idioma_template: s('Idioma do modelo (ex.: pt_BR)') },
     required: ['nome', 'conteudo'],
   },
   ConfiguracaoComunicacao: {
@@ -227,8 +228,13 @@ export const ENTITIES = {
   },
   LogIntegracao: {
     description: 'Logs de integrações externas (futuro)',
-    properties: { empresa_id: s('Empresa'), integracao: s('Integração'), direcao: e(['ENTRADA', 'SAIDA'], 'Direção'), status: s('Status'), payload_resumo: s('Resumo (sem dados sensíveis)'), data_hora: ts('Data/hora') },
+    properties: { empresa_id: s('Empresa'), integracao: s('Integração'), direcao: e(['ENTRADA', 'SAIDA'], 'Direção'), status: s('Status (TRIAGEM, VINCULADA, DESCARTADA...)'), payload_resumo: s('Resumo da mensagem (acesso restrito à gestão HS)'), caso_id: s('Caso vinculado'), data_hora: ts('Data/hora') },
     required: ['integracao'],
+  },
+  EventoWebhook: {
+    description: 'Eventos recebidos de provedores externos (idempotência)',
+    properties: { origem: e(['WHATSAPP', 'ASAAS'], 'Origem'), externo_id: s('ID do evento no provedor'), recebido_em: ts('Recebido em') },
+    required: ['origem', 'externo_id'],
   },
   SolicitacaoTitular: {
     description: 'Solicitações de titulares (LGPD art. 18)',

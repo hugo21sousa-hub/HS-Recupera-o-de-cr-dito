@@ -7,8 +7,8 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { ENTITIES } from '../schema/entities.mjs';
 
-export const ENTIDADES_INTERNAS = ['Conta', 'Sessao', 'Convite', 'Arquivo'];
-const CAMPOS_INDEXADOS = ['empresa_id', 'caso_id', 'divida_id', 'devedor_id', 'usuario_id', 'email', 'operador_id', 'pagamento_id', 'carteira_id', 'acordo_id', 'negociacao_id', 'contrato_servico_id', 'autorizacao_id', 'token_hash', 'file_uri', 'responsavel_id', 'cpf_cnpj'];
+export const ENTIDADES_INTERNAS = ['Conta', 'Sessao', 'Convite', 'Arquivo', 'Desafio2FA'];
+const CAMPOS_INDEXADOS = ['externo_id', 'mensagem_externa_id', 'telefone_destino', 'gateway_assinatura_id', 'empresa_id', 'caso_id', 'divida_id', 'devedor_id', 'usuario_id', 'email', 'operador_id', 'pagamento_id', 'carteira_id', 'acordo_id', 'negociacao_id', 'contrato_servico_id', 'autorizacao_id', 'token_hash', 'file_uri', 'responsavel_id', 'cpf_cnpj'];
 const CHAVE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 export function abrirBanco(arquivo) {
