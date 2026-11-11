@@ -13,7 +13,8 @@
     "docs": "node scripts/gen-api-doc.mjs",
     "setup": "npm install && npm --prefix web install && npm --prefix web run build",
     "dev:web": "npm --prefix web run dev",
-    "retencao": "node --disable-warning=ExperimentalWarning scripts/retencao.mjs"
+    "retencao": "node --disable-warning=ExperimentalWarning scripts/retencao.mjs",
+    "demo": "node --disable-warning=ExperimentalWarning scripts/demo.mjs"
   },
   "engines": {
     "node": ">=22.13"

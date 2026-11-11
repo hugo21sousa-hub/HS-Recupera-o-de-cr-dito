@@ -52,7 +52,8 @@ export async function abrirLink(promessa) {
   const janela = window.open('about:blank', '_blank');
   try {
     const { url } = await promessa;
-    if (janela) janela.location = url; else window.location = url;
+    const absoluta = new URL(url, window.location.origin).href;
+    if (janela && !janela.closed) janela.location.replace(absoluta); else window.location.assign(absoluta);
   } catch (e) {
     janela?.close();
     throw e;

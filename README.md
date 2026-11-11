@@ -33,6 +33,20 @@ npm start
 
 Empresas clientes se cadastram sozinhas em `http://localhost:3000/cadastro`. Os dados ficam na pasta `data/`: banco `hs.sqlite` e arquivos anexados.
 
+## Demonstração com dados de exemplo
+
+Para conhecer o sistema já preenchido (empresa, devedores, dívidas, casos em vários estágios, acordo, pagamentos):
+
+```bash
+DATA_DIR=./data-demo npm run demo
+```
+
+```bash
+DATA_DIR=./data-demo EXIGIR_2FA_HS=false npm start
+```
+
+Entre em `http://localhost:3000` com a senha `Demo2026hs` e um destes usuários: `empresa@demo.hs` (administrador da empresa), `financeiro@demo.hs`, `admin@demo.hs` (superadmin HS), `gestor@demo.hs` ou `operador@demo.hs`. Na demonstração, o 2FA da equipe HS fica desligado (`EXIGIR_2FA_HS=false`). Nunca use isso em produção.
+
 ## Primeiros passos dentro do sistema
 
 1. **Superadmin** › Equipe interna: convide gestores e operadores. O sistema gera um link de acesso para você enviar a cada pessoa.
@@ -67,6 +81,7 @@ Empresas clientes se cadastram sozinhas em `http://localhost:3000/cadastro`. Os 
 | `npm run build` | Recompila o frontend depois de alterar `web/` |
 | `npm run dev` + `npm run dev:web` | Modo desenvolvimento (servidor na 3000, telas com recarga automática na 5173) |
 | `npm run criar-superadmin -- email "Nome"` | Cria superadmin ou gera novo link de acesso para ele |
+| `npm run demo` | Cria uma base de demonstração (use outra `DATA_DIR`) |
 | `npm run retencao` | Executa a rotina de retenção LGPD manualmente |
 | `npm run docs` | Regenera `docs/API.md` |
 
