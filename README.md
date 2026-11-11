@@ -7,6 +7,10 @@ Plataforma SaaS multiempresa para recuperação de crédito, com dois serviços 
 
 Sistema completo e independente: servidor Node.js, banco SQLite, frontend React e login próprio. Não depende de Base44 nem de nenhum outro serviço.
 
+## Colocar no ar (servidor)
+
+Numa VPS Ubuntu, um único comando instala tudo: HTTPS, serviço, firewall, backup diário e o primeiro superadmin. Siga **[docs/INSTALAR_VPS.md](docs/INSTALAR_VPS.md)**.
+
 ## Rodar no seu computador
 
 Requisito: **Node.js 22.13 ou superior** ([nodejs.org](https://nodejs.org)).

@@ -107,3 +107,15 @@ test('falha numa ação desfaz todas as gravações dela (transação)', async (
   await assert.rejects(app.exclusivo(async () => { await app.db.Notificacao.create({ usuario_id: 'u', titulo: 't' }); throw new Error('boom'); }));
   assert.equal((await app.exclusivo(() => app.db.Notificacao.filter({ usuario_id: 'u' }))).length, 0);
 });
+
+test('atrás do proxy, o limite de tentativas é por IP real do cliente', async () => {
+  const d = mkdtempSync(join(tmpdir(), 'hs-px-'));
+  const a = criarApp({ dataDir: d, webDir: join(d, 'web'), confiarProxy: true, env: {} });
+  await new Promise((ok) => a.server.listen(0, ok));
+  const url = `http://127.0.0.1:${a.server.address().port}/api/auth/login`;
+  const tentar = (ip) => fetch(url, { method: 'POST', headers: { 'X-HS': '1', 'Content-Type': 'application/json', 'X-Forwarded-For': ip }, body: '{"email":"x@x.com","senha":"errada1"}' });
+  for (let i = 0; i < 21; i++) await tentar('203.0.113.7');
+  assert.equal((await tentar('203.0.113.7')).status, 429);
+  assert.equal((await tentar('198.51.100.9')).status, 401, 'outro cliente não é bloqueado');
+  a.server.close(); a.banco.fechar(); rmSync(d, { recursive: true, force: true });
+});

@@ -7,7 +7,9 @@ const { server, agendarRetencao } = criarApp({
   urlBase: process.env.URL_BASE || `http://localhost:${porta}`,
   producao,
   webDir: process.env.WEB_DIR || './web/dist',
+  confiarProxy: process.env.TRUST_PROXY === 'true',
 });
-server.listen(porta, () => console.log(`HS Recuperação de Crédito rodando em http://localhost:${porta}`));
+const host = process.env.HOST || '0.0.0.0';
+server.listen(porta, host, () => console.log(`HS Recuperação de Crédito rodando em http://${host}:${porta}`));
 agendarRetencao();
 for (const s of ['SIGINT', 'SIGTERM']) process.on(s, () => server.close(() => process.exit(0)));

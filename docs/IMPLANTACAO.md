@@ -47,6 +47,8 @@ Regras do WhatsApp que o sistema aplica: fora da janela de 24 h desde a última 
 
 No Asaas, cadastre o webhook de cobranças apontando para `https://SEU_DOMINIO/webhooks/asaas`, com o mesmo token de autenticação. O Asaas só cobra a **assinatura da plataforma**; os devedores continuam pagando direto às empresas credoras.
 
+> **Instalação automática:** em uma VPS Ubuntu, use `deploy/instalar.sh` seguindo o [passo a passo](INSTALAR_VPS.md). As seções abaixo descrevem a instalação manual.
+
 ## Opção 1: VPS (recomendado para começar)
 
 Qualquer servidor Linux com 1 GB de RAM (DigitalOcean, Hostinger, Contabo, AWS Lightsail…).

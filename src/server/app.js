@@ -22,7 +22,7 @@ const SISTEMA = { id: 'sistema', nome: 'Sistema', email: 'sistema', perfil: 'SIS
 // Ações liberadas para quem ainda precisa ativar o 2FA obrigatório
 const LIBERADAS_SEM_2FA = new Set(['meuPerfil', 'listarNotificacoes', 'marcarNotificacaoLida']);
 
-export function criarApp({ dataDir = './data', urlBase = '', producao = false, webDir = './web/dist', arquivoBanco, env = process.env, transporteEmail, fetchImpl, exigir2faHS = env.EXIGIR_2FA_HS !== 'false' } = {}) {
+export function criarApp({ dataDir = './data', urlBase = '', producao = false, webDir = './web/dist', arquivoBanco, env = process.env, transporteEmail, fetchImpl, exigir2faHS = env.EXIGIR_2FA_HS !== 'false', confiarProxy = false } = {}) {
   mkdirSync(dataDir, { recursive: true });
   const segredoPath = join(dataDir, 'segredo');
   const segredo = process.env.SEGREDO || (existsSync(segredoPath) ? readFileSync(segredoPath, 'utf8') : (() => { const s = randomBytes(32).toString('hex'); writeFileSync(segredoPath, s, { mode: 0o600 }); return s; })());
@@ -133,7 +133,9 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
   async function rotear(req, res) {
     headersSeguranca(res);
     const url = new URL(req.url, 'http://local');
-    const ip = req.socket.remoteAddress || '?';
+    // Atrás do proxy (Caddy), o IP real é o último item de X-Forwarded-For, acrescentado pelo próprio proxy
+    const xff = confiarProxy ? String(req.headers['x-forwarded-for'] || '').split(',').map((x) => x.trim()).filter(Boolean) : [];
+    const ip = xff.length ? xff[xff.length - 1] : req.socket.remoteAddress || '?';
     const rota = `${req.method} ${url.pathname}`;
 
     if (url.pathname.startsWith('/api/')) {
