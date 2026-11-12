@@ -9,7 +9,10 @@ Sistema completo e independente: servidor Node.js, banco SQLite, frontend React 
 
 ## Colocar no ar (servidor)
 
-Numa VPS Ubuntu, um único comando instala tudo: HTTPS, serviço, firewall, backup diário e o primeiro superadmin. Siga **[docs/INSTALAR_VPS.md](docs/INSTALAR_VPS.md)**.
+Um único comando instala tudo: HTTPS, serviço, firewall, backup diário e o primeiro superadmin.
+
+- **Grátis:** Oracle Cloud "Always Free" + endereço DuckDNS. Siga **[docs/INSTALAR_ORACLE.md](docs/INSTALAR_ORACLE.md)**.
+- **VPS paga** (Hostinger, AWS Lightsail, Vultr…): siga **[docs/INSTALAR_VPS.md](docs/INSTALAR_VPS.md)**.
 
 ## Rodar no seu computador
 

@@ -2,6 +2,7 @@
 # =============================================================================
 # HS Recuperação de Crédito: instalação automática em VPS Ubuntu 22.04 / 24.04
 #
+# Funciona em VPS comuns (Hostinger, AWS, Vultr…) e na Oracle Cloud Always Free (x86 ou ARM).
 # Uso (como root, num servidor novo, com o domínio já apontando para o IP):
 #   curl -fsSL https://raw.githubusercontent.com/hugo21sousa-hub/HS-Recupera-o-de-cr-dito/main/deploy/instalar.sh \
 #     | sudo bash -s -- app.seudominio.com.br voce@seudominio.com.br "Seu Nome"
@@ -46,11 +47,18 @@ if [ -n "$IP_PUBLICO" ] && [ "$IP_PUBLICO" != "$IP_DOMINIO" ]; then
   amarelo "O HTTPS só será emitido depois que o DNS apontar para este servidor (o Caddy tenta de novo sozinho)."
 fi
 
+# Oracle Cloud? (as imagens deles têm firewall iptables próprio)
+ORACLE=0
+if grep -qi oracle /sys/class/dmi/id/chassis_asset_tag 2>/dev/null || grep -qi oracle /sys/class/dmi/id/sys_vendor 2>/dev/null \
+   || { [ -f /etc/iptables/rules.v4 ] && grep -q REJECT /etc/iptables/rules.v4; }; then
+  ORACLE=1
+fi
+
 # ---------- pacotes ----------
 passo "Atualizando o sistema e instalando dependências"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq ca-certificates curl gnupg git sqlite3 ufw debian-keyring debian-archive-keyring apt-transport-https unattended-upgrades >/dev/null
+apt-get install -y -qq ca-certificates curl gnupg git sqlite3 $([ "$ORACLE" = 1 ] && echo iptables-persistent || echo ufw) debian-keyring debian-archive-keyring apt-transport-https unattended-upgrades >/dev/null
 dpkg-reconfigure -f noninteractive unattended-upgrades >/dev/null 2>&1 || true
 
 passo "Instalando Node.js 22"
@@ -70,6 +78,15 @@ if ! command -v caddy >/dev/null; then
   apt-get update -qq && apt-get install -y -qq caddy >/dev/null
 fi
 verde "$(caddy version | cut -d' ' -f1)"
+
+# ---------- memória (servidores pequenos) ----------
+MEM_MB=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
+if [ "$MEM_MB" -lt 2000 ] && [ "$(swapon --show --noheadings | wc -l)" -eq 0 ]; then
+  passo "Pouca memória (${MEM_MB} MB): criando 2 GB de swap"
+  fallocate -l 2G /swapfile 2>/dev/null || dd if=/dev/zero of=/swapfile bs=1M count=2048 status=none
+  chmod 600 /swapfile && mkswap /swapfile >/dev/null && swapon /swapfile
+  grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
 
 # ---------- usuário e código ----------
 passo "Preparando usuário, pastas e código"
@@ -187,11 +204,23 @@ systemctl enable -q caddy
 systemctl reload caddy 2>/dev/null || systemctl restart caddy
 
 passo "Firewall (SSH, HTTP e HTTPS)"
-ufw allow OpenSSH >/dev/null
-ufw allow 80/tcp >/dev/null
-ufw allow 443/tcp >/dev/null
-ufw --force enable >/dev/null
-verde "$(ufw status | head -1)"
+if [ "$ORACLE" = 1 ]; then
+  # As imagens Ubuntu da Oracle Cloud usam iptables próprio (netfilter-persistent) com REJECT no fim;
+  # o ufw conflita com ele. Abrimos 80/443 antes do REJECT e salvamos as regras.
+  for porta in 80 443; do
+    iptables -C INPUT -p tcp -m state --state NEW --dport "$porta" -j ACCEPT 2>/dev/null \
+      || iptables -I INPUT "$(iptables -L INPUT --line-numbers | awk '/REJECT/{print $1; exit}' | grep . || echo 1)" -p tcp -m state --state NEW --dport "$porta" -j ACCEPT
+  done
+  command -v netfilter-persistent >/dev/null && netfilter-persistent save >/dev/null 2>&1 || true
+  verde "Portas 80 e 443 liberadas no iptables (Oracle Cloud)."
+  amarelo "Lembrete: libere também as portas 80 e 443 na Security List da rede (VCN) no painel da Oracle."
+else
+  ufw allow OpenSSH >/dev/null
+  ufw allow 80/tcp >/dev/null
+  ufw allow 443/tcp >/dev/null
+  ufw --force enable >/dev/null
+  verde "$(ufw status | head -1)"
+fi
 
 # ---------- backup ----------
 passo "Backup diário (03:15) com 14 dias de histórico em $BACKUP_DIR"
