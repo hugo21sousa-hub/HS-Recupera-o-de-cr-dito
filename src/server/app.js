@@ -355,8 +355,12 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
       const planos = await db.Plano.filter({});
       for (const p of PLANOS_PADRAO) if (!planos.some((x) => x.nome === p.nome)) await db.Plano.create(p);
       if ((await db.Conta.filter({ email: emailAdm })).length) return null; // já tem senha
+      // Código escolhido pelo dono no ambiente (PRIMEIRO_ACESSO_CODIGO): link previsível, sem precisar dos logs
+      const codigo = String(env.PRIMEIRO_ACESSO_CODIGO || '').trim();
+      if (codigo && !/^[A-Za-z0-9_-]{16,100}$/.test(codigo)) console.error('[hs] PRIMEIRO_ACESSO_CODIGO ignorado: use de 16 a 100 letras e números, sem espaços.');
+      const tokenFixo = /^[A-Za-z0-9_-]{16,100}$/.test(codigo) ? codigo : null;
       // Não cancela links anteriores: o servidor reinicia com frequência (deploys, plano grátis "dormindo")
-      const c = await auth.gerarConvite(emailAdm, { invalidarAnteriores: false });
+      const c = await auth.gerarConvite(emailAdm, { invalidarAnteriores: false, tokenFixo });
       console.log(`\n[hs] PRIMEIRO ACESSO do superadmin ${emailAdm}: abra este link para criar a senha (vale 7 dias):\n[hs] ${c.link}\n`);
       return c.link;
     });

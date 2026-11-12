@@ -153,10 +153,13 @@ export function criarAuth({ db, agora = () => new Date(), urlBase = '', segredo 
     },
 
     /** Gera link de convite/redefinição (o administrador envia ao usuário). */
-    async gerarConvite(email, { invalidarAnteriores = true } = {}) {
+    async gerarConvite(email, { invalidarAnteriores = true, tokenFixo = null } = {}) {
       const e = normEmail(email);
       if (invalidarAnteriores) for (const c of await db.Convite.filter({ email: e, usado: false })) await db.Convite.update(c.id, { usado: true });
-      const token = randomBytes(24).toString('base64url');
+      const token = tokenFixo || randomBytes(24).toString('base64url');
+      if (tokenFixo && (await db.Convite.filter({ token_hash: hashToken(token), usado: false })).length) {
+        return { link: `${urlBase}/convite/${token}`, expira_em: null };
+      }
       const expira = new Date(agora().getTime() + CONVITE_DIAS * 86400e3).toISOString();
       await db.Convite.create({ token_hash: hashToken(token), email: e, expira_em: expira, usado: false });
       return { link: `${urlBase}/convite/${token}`, expira_em: expira };

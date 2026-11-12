@@ -149,3 +149,19 @@ test('primeiro acesso: links gerados em reinícios seguidos continuam válidos a
   assert.equal(await a.primeiroAcesso(), null, 'com senha criada, não gera mais links');
   a.server.close(); await a.banco.fechar(); rmSync(d, { recursive: true, force: true });
 });
+
+test('primeiro acesso com código escolhido no ambiente (PRIMEIRO_ACESSO_CODIGO)', async () => {
+  const d = mkdtempSync(join(tmpdir(), 'hs-pc-'));
+  const a = criarApp({ dataDir: d, webDir: join(d, 'web'), env: { ...envBanco(), SUPERADMIN_EMAIL: 'dono@hs.com', PRIMEIRO_ACESSO_CODIGO: 'MeuCodigoSecreto2026xyz' } });
+  await a.primeiroAcesso(); await a.primeiroAcesso(); // reinícios não duplicam nem invalidam
+  await new Promise((ok) => a.server.listen(0, ok));
+  const b = `http://127.0.0.1:${a.server.address().port}`;
+  const ver = await fetch(`${b}/api/auth/convite/MeuCodigoSecreto2026xyz`);
+  assert.equal(ver.status, 200);
+  assert.equal((await ver.json()).data.email, 'dono@hs.com');
+  const r = await fetch(`${b}/api/auth/convite`, { method: 'POST', headers: { 'X-HS': '1', 'Content-Type': 'application/json' }, body: JSON.stringify({ token: 'MeuCodigoSecreto2026xyz', senha: 'SenhaForte1' }) });
+  assert.equal(r.status, 200);
+  assert.equal(await a.primeiroAcesso(), null, 'depois de criar a senha o código não reabre o acesso');
+  assert.equal((await fetch(`${b}/api/auth/convite/MeuCodigoSecreto2026xyz`)).status, 404);
+  a.server.close(); await a.banco.fechar(); rmSync(d, { recursive: true, force: true });
+});

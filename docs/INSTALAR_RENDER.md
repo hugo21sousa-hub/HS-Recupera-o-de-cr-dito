@@ -64,6 +64,14 @@ O sistema cria sozinho as tabelas (no esquema `hs`, que fica fora da API públic
 
 Pronto: o sistema está em **https://hs-recuperacao.onrender.com**. O endereço exato aparece no topo da página do serviço no Render.
 
+### Alternativa sem procurar nos Logs
+
+No Render, em **Environment**, adicione a variável `PRIMEIRO_ACESSO_CODIGO` com um código que só você saiba (de 16 a 100 letras e números, sem espaços). Salve e aguarde o deploy. O seu link de primeiro acesso passa a ser:
+
+`https://hs-recuperacao.onrender.com/convite/SEU_CODIGO`
+
+Depois que você criar a senha, o código deixa de funcionar e pode ser apagado do Render.
+
 ## 4. Manter o sistema "acordado" (recomendado)
 
 No plano grátis, o Render desliga o sistema após 15 minutos sem acesso, e o próximo acesso demora cerca de 1 minuto. Já o Supabase pausa projetos parados por 7 dias. Para evitar as duas coisas, de graça:
