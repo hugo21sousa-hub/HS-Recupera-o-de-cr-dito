@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { auth, hs } from '../api.js';
+import { auth, hs, sair } from '../api.js';
 import { useSessao } from '../sessao.jsx';
 import { Marca } from '../layout.jsx';
+import { DEMO } from '../api.js';
+import { USUARIOS_DEMO, SENHA_DEMO } from '../demo/seed.js';
 import { Campos, useFormulario, useToast, Spinner, Carregando, Badge } from '../ui.jsx';
 import { rotulo } from '../format.js';
 
@@ -59,6 +61,20 @@ export function Entrar() {
         {!desafio ? (
           <>
             <h1 style={{ marginTop: 12 }}>Entrar</h1>
+            {DEMO && (
+              <div className="stack">
+                <div className="aviso info">Demonstração com dados de exemplo. Escolha um perfil para entrar (senha <strong>{SENHA_DEMO}</strong>).</div>
+                <div className="stack" style={{ gap: 6 }}>
+                  {USUARIOS_DEMO.map(([email, papel, desc]) => (
+                    <button key={email} type="button" className="btn" style={{ height: 'auto', padding: '8px 12px', justifyContent: 'flex-start', textAlign: 'left', whiteSpace: 'normal' }}
+                      onClick={async () => { await auth.login(email, SENHA_DEMO); await entrar(); }}>
+                      <span><strong>{papel}</strong><br /><span className="small muted">{desc}</span></span>
+                    </button>
+                  ))}
+                </div>
+                <p className="small muted" style={{ margin: 0 }}>Ou entre com e-mail e senha:</p>
+              </div>
+            )}
             <FormSimples botao="Entrar"
               campos={[{ nome: 'email', rotulo: 'E-mail', tipo: 'email', obrigatorio: true, autoComplete: 'username' }, { nome: 'senha', rotulo: 'Senha', tipo: 'senha', obrigatorio: true, autoComplete: 'current-password' }]}
               onSubmit={async (d) => { const r = await auth.login(d.email, d.senha); if (r?.precisa_2fa) setDesafio(r.desafio); else await entrar(); }}
@@ -205,7 +221,7 @@ export function Onboarding() {
   return (
     <div style={{ minHeight: '100%', padding: '32px 16px' }}>
       <div style={{ maxWidth: 860, margin: '0 auto' }} className="stack">
-        <div className="row between"><Marca escura /><button className="btn sm" onClick={async () => { await auth.logout(); window.location.href = '/entrar'; }}>Sair</button></div>
+        <div className="row between"><Marca escura /><button className="btn sm" onClick={() => sair()}>Sair</button></div>
         <div className="row small"><Badge status={temEmpresa ? 'CONCLUIDA' : 'PENDENTE'}>1. Empresa</Badge><span className="muted">→</span><Badge status={temEmpresa ? 'PENDENTE' : 'info'}>2. Serviço</Badge></div>
         {!temEmpresa ? (
           <form className="card stack" onSubmit={cadastrar}>

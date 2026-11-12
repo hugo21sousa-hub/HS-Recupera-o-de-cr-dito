@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { auth, hs } from './api.js';
+import { hs, sair as sairDoSistema, DEMO, restaurarDemo } from './api.js';
 import { useSessao } from './sessao.jsx';
 import { rotulo, dataHora } from './format.js';
 
@@ -121,7 +121,7 @@ export function Layout() {
   }, [loc.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
   const menu = s.ehHS ? MENU_HS : MENU_EMPRESA;
   const permitido = (i) => (Array.isArray(i.p) ? s.podeAlgum(...i.p) : s.pode(i.p)) && !(i.semP && s.pode(i.semP));
-  const sair = async () => { await auth.logout().catch(() => {}); window.location.href = '/entrar'; };
+  const sair = () => sairDoSistema();
   return (
     <div className="app">
       <aside className={`lateral ${aberta ? 'aberta' : ''}`} aria-label="Menu principal">
@@ -157,7 +157,15 @@ export function Layout() {
             <button className="btn sm" onClick={sair}>Sair</button>
           </div>
         </header>
-        <main className="conteudo"><Outlet /></main>
+        <main className="conteudo">
+          {DEMO && (
+            <div className="aviso info row between" style={{ marginBottom: 16 }}>
+              <span>Você está na <strong>demonstração</strong>: as alterações ficam só neste navegador. Downloads e anexos ficam desativados.</span>
+              <button className="btn sm" onClick={() => restaurarDemo()}>Restaurar dados de exemplo</button>
+            </div>
+          )}
+          <Outlet />
+        </main>
       </div>
     </div>
   );

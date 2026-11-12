@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { DEMO } from './api.js';
 import './styles.css';
 import { SessaoProvider, useSessao } from './sessao.jsx';
 import { ToastProvider, ConfirmProvider, Carregando, Vazio } from './ui.jsx';
@@ -107,10 +108,13 @@ function Raiz() {
   );
 }
 
+// Na demonstração (página publicada), a navegação fica em memória
+const Roteador = DEMO ? MemoryRouter : BrowserRouter;
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
+    <Roteador>
       <ToastProvider><ConfirmProvider><SessaoProvider><Raiz /></SessaoProvider></ConfirmProvider></ToastProvider>
-    </BrowserRouter>
+    </Roteador>
   </StrictMode>,
 );

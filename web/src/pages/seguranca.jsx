@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import QRCode from 'qrcode';
-import { auth } from '../api.js';
+import { auth, sair } from '../api.js';
 import { useSessao } from '../sessao.jsx';
 import { Marca } from '../layout.jsx';
 import { useToast, Spinner, Badge } from '../ui.jsx';
@@ -65,7 +65,7 @@ export function Exigir2FA() {
   return (
     <div style={{ minHeight: '100%', padding: '32px 16px' }}>
       <div style={{ maxWidth: 640, margin: '0 auto' }} className="stack">
-        <div className="row between"><Marca escura /><button className="btn sm" onClick={async () => { await auth.logout(); window.location.href = '/entrar'; }}>Sair</button></div>
+        <div className="row between"><Marca escura /><button className="btn sm" onClick={() => sair()}>Sair</button></div>
         <div className="card stack">
           <h1>Proteja sua conta</h1>
           <div className="aviso alerta">Por segurança, a equipe HS só acessa dados de devedores com a verificação em duas etapas ativa.</div>

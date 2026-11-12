@@ -398,7 +398,7 @@ export function Importar() {
       <div className="card stack">
         <div className="row">
           <input type="file" accept=".csv,text/csv" onChange={(e) => ler(e.target.files[0])} style={{ maxWidth: 360 }} />
-          <button className="btn" onClick={() => baixarArquivo('modelo-importacao-hs.csv', '﻿' + MODELO_CSV, 'text/csv;charset=utf-8')}>Baixar modelo CSV</button>
+          <button className="btn" onClick={() => { try { baixarArquivo('modelo-importacao-hs.csv', '﻿' + MODELO_CSV, 'text/csv;charset=utf-8'); } catch (e) { toast.erro(e); } }}>Baixar modelo CSV</button>
           {enviando && <Spinner />}
         </div>
         <p className="small muted">Valores no formato 1.234,56 ou 1234.56; datas em DD/MM/AAAA ou AAAA-MM-DD. Devedores repetidos (mesmo CPF/CNPJ) são reaproveitados e dívidas idênticas são ignoradas. Máximo de 5.000 linhas. Planilhas Excel: salve como CSV antes.</p>

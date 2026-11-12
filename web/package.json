@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "build:demo": "vite build --config vite.demo.config.js && node scripts-demo-html.mjs"
   },
   "dependencies": {
     "jspdf": "2.5.2",

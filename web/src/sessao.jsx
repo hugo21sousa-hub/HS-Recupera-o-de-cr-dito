@@ -16,7 +16,13 @@ export function SessaoProvider({ children }) {
       setEstado({ carregando: false, logado: false, perfil: null, erro: e.status === 401 ? null : e });
     }
   }, []);
-  useEffect(() => { carregar(); onSessaoExpirada(() => setEstado({ carregando: false, logado: false, perfil: null })); }, [carregar]);
+  useEffect(() => {
+    carregar();
+    onSessaoExpirada(() => setEstado({ carregando: false, logado: false, perfil: null }));
+    const recarregar = () => { setEstado({ carregando: true, logado: false, perfil: null }); carregar(); };
+    window.addEventListener('hs-sessao', recarregar);
+    return () => window.removeEventListener('hs-sessao', recarregar);
+  }, [carregar]);
   const permissoes = estado.perfil?.permissoes || [];
   const valor = {
     ...estado,

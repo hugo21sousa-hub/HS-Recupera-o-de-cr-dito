@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { hs, abrirLink, baixarArquivo } from '../api.js';
+import { hs, abrirLink, baixarArquivo, DEMO } from '../api.js';
 import { useSessao } from '../sessao.jsx';
 import { Tabela, Badge, Cabecalho, FormModal, useApi, useToast, useConfirm, Vazio, Abas, useExecutar, Stat } from '../ui.jsx';
 import { brl, data, dataHora, rotulo, pct, mascaraDoc, hojeISO } from '../format.js';
@@ -121,6 +121,7 @@ export function Pagamentos() {
 }
 
 function gerarPDF(p) {
+  if (DEMO) throw new Error('Prestação de contas gerada. O download do PDF fica desativado na demonstração.');
   const rel = JSON.parse(p.relatorio);
   const doc = new jsPDF();
   doc.setFillColor(11, 37, 69); doc.rect(0, 0, 210, 28, 'F');
@@ -176,7 +177,7 @@ export function Relatorios() {
           <thead><tr>{s.ehHS && <th>Credor</th>}<th>Período</th><th className="num">Casos</th><th className="num">Negociado</th><th className="num">Recuperado (confirmado)</th><th>Gerado em</th><th></th></tr></thead>
           <tbody>{(prestacoes.data || []).slice().sort((a, b) => (a.data_geracao < b.data_geracao ? 1 : -1)).map((p) => (
             <tr key={p.id}>{s.ehHS && <td>{nomesEmp.get(p.empresa_id) || JSON.parse(p.relatorio).credor}</td>}<td>{data(p.periodo_inicio)} – {data(p.periodo_fim)}</td><td className="num">{p.quantidade_casos}</td><td className="num">{brl(p.valor_negociado_centavos)}</td><td className="num">{brl(p.valor_confirmado_centavos)}</td><td>{dataHora(p.data_geracao)}</td>
-              <td className="right"><button className="btn sm" onClick={() => gerarPDF(p)}>Baixar PDF</button></td></tr>
+              <td className="right"><button className="btn sm" onClick={() => { try { gerarPDF(p); } catch (e) { toast.erro(e); } }}>Baixar PDF</button></td></tr>
           ))}</tbody>
         </table>{!prestacoes.data?.length && <Vazio titulo="Nenhuma prestação de contas gerada">{listaContratos.length ? 'Gere a primeira escolhendo um contrato e um período.' : 'Disponível para empresas com contrato de cobrança gerenciada.'}</Vazio>}</div>
       </div>
