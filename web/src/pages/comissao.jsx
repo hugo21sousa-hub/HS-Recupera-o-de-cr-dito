@@ -66,7 +66,8 @@ export function Comissoes() {
     <div className="stack" style={{ maxWidth: 820 }}>
       <Cabecalho titulo="Comissão da cobrança gerenciada" sub="Percentual da HS por faixa de atraso, cobrado somente sobre os valores recebidos e confirmados pelo credor." />
       <div className="card stack">
-        <h2>Tabela padrão</h2>
+        <h2>Tabela padrão (referência)</h2>
+        <p className="small muted" style={{ margin: 0 }}>Usada no site e como ponto de partida das propostas. Para combinar condições diferentes com uma empresa, use uma tabela própria no contrato dela (Contratos de cobrança › Nova proposta).</p>
         <EditorFaixas faixas={faixas} onChange={setFaixas} />
         <div className="aviso info small">A tabela padrão vale para novas propostas de contrato e aparece no site. Contratos já enviados mantêm a tabela com que foram propostos. Cada dívida fica com o percentual da faixa em que estava no dia do encaminhamento.</div>
         <p className="small muted">Exemplo: pagamento de {brl(exemplo)} recebido numa dívida da 2ª faixa gera comissão de {brl(Math.round(exemplo * (faixas[1]?.bps ?? faixas[0].bps) / 10000))}.</p>
