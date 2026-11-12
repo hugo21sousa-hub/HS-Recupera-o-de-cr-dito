@@ -22,6 +22,7 @@ export function dashboardFinanceiro({ dividas, negociacoes, acordos, pagamentos,
     valor_recuperado_confirmado_centavos: recuperado,
     saldo_pendente_centavos: soma(ativas.map((d) => d.saldo_atual_centavos)),
     taxa_recuperacao_bps: taxaBps(recuperado, valor_original),
+    comissao_hs_centavos: soma(confirmados.map((p) => p.comissao_hs_centavos || 0)),
     quantidade_dividas: ativas.length,
   };
 }
@@ -47,6 +48,7 @@ export function prestacaoContas({ casos, interacoes, negociacoes, acordos, pagam
     valor_informado_centavos: soma(pagsPeriodo.map((p) => p.valor_centavos)),
     pagamentos_confirmados: confirmados.length,
     valor_recuperado_centavos: soma(confirmados.map((p) => p.valor_confirmado_centavos ?? p.valor_centavos)),
+    comissao_hs_centavos: soma(confirmados.map((p) => p.comissao_hs_centavos || 0)),
     casos_suspensos: casos.filter((c) => c.status_operacional === 'SUSPENSO').length,
     casos_sem_sucesso: casos.filter((c) => c.status_operacional === 'SEM_SUCESSO').length,
   };

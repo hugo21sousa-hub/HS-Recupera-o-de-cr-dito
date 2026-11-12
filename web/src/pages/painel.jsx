@@ -131,7 +131,7 @@ export function PainelEmpresa() {
             <Stat rotulo="Informado como pago (a conferir)" valor={brl(f.valor_informado_pago_centavos)} tom="alerta" />
             <Stat rotulo="Em negociação" valor={brl(f.valor_em_negociacao_centavos)} ajuda="Propostas não são dinheiro recuperado" />
             <Stat rotulo="Acordos formalizados" valor={brl(f.valor_acordos_centavos)} ajuda="Acordos não são dinheiro recuperado" />
-            <Stat rotulo="Encaminhado à HS" valor={brl(f.valor_encaminhado_hs_centavos)} />
+            <Stat rotulo="Encaminhado à HS" valor={brl(f.valor_encaminhado_hs_centavos)} ajuda={f.comissao_hs_centavos ? `Comissão HS sobre recebidos: ${brl(f.comissao_hs_centavos)}` : undefined} />
           </div>
           <div className="grid g3">
             <Link to="/pagamentos" className="card stat"><span className="rot">Pagamentos aguardando sua conferência</span><span className="val" style={{ color: o.pagamentos_aguardando_confirmacao ? 'var(--alerta)' : undefined }}>{o.pagamentos_aguardando_confirmacao}</span></Link>

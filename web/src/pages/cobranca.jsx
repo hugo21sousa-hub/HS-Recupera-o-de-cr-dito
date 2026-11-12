@@ -4,6 +4,7 @@ import { hs } from '../api.js';
 import { useSessao } from '../sessao.jsx';
 import { Tabela, Badge, Cabecalho, FormModal, Modal, useApi, useToast, useConfirm, Carregando, ErroCarga, Vazio, Stat, Spinner, Campos, useFormulario, useExecutar } from '../ui.jsx';
 import { brl, data, dataHora, rotulo, pct } from '../format.js';
+import { TabelaComissao } from './comissao.jsx';
 
 const STATUS_CASO = ['AGUARDANDO_VALIDACAO', 'AGUARDANDO_OPERADOR', 'ATRIBUIDO', 'PRIMEIRO_CONTATO_PENDENTE', 'EM_CONTATO', 'DEVEDOR_RESPONDEU', 'EM_NEGOCIACAO', 'ACORDO_AGUARDANDO_PAGAMENTO', 'PAGAMENTO_INFORMADO', 'PAGAMENTO_EM_CONFIRMACAO', 'PARCIALMENTE_RECUPERADO', 'RECUPERADO_INTEGRALMENTE', 'SEM_SUCESSO', 'SUSPENSO', 'CONTESTACAO'];
 
@@ -158,7 +159,7 @@ export function Encaminhar() {
 
   const verPrevia = async () => {
     setEnviando(true);
-    try { setPrevia(await hs('previewEncaminhamento', selecao)); setPasso(2); } catch (e) { toast.erro(e); } finally { setEnviando(false); }
+    try { setPrevia(await hs('previewEncaminhamento', { ...selecao, contrato_servico_id: contrato || undefined })); setPasso(2); } catch (e) { toast.erro(e); } finally { setEnviando(false); }
   };
   const concluir = async () => {
     const a = aut.validar();
@@ -212,7 +213,13 @@ export function Encaminhar() {
             <Stat rotulo="Valor total" valor={brl(r.valor_total_centavos)} /><Stat rotulo="Valor vencido" valor={brl(r.valor_vencido_centavos)} tom="critico" />
             <Stat rotulo="Elegíveis" valor={`${r.elegiveis} · ${brl(r.valor_elegivel_centavos)}`} tom="ok" /><Stat rotulo="Registros incompletos" valor={r.registros_incompletos} tom={r.registros_incompletos ? 'alerta' : ''} />
             <Stat rotulo="Não podem ser encaminhados" valor={r.registros_bloqueados} tom={r.registros_bloqueados ? 'critico' : ''} />
+            <Stat rotulo="Comissão HS se tudo for recebido" valor={brl(r.comissao_estimada_elegiveis_centavos)} ajuda="Cobrada só sobre o que entrar" />
           </div>
+          {previa.itens.some((i) => i.elegivel) && (
+            <div className="tabela-wrap"><table><thead><tr><th>Dívida elegível</th><th className="num">Atraso</th><th>Faixa</th><th className="num">Comissão HS</th><th className="num">Saldo</th><th className="num">Comissão se receber tudo</th></tr></thead><tbody>
+              {previa.itens.filter((i) => i.elegivel).map((i) => <tr key={i.divida_id}><td>{i.devedor_nome}{i.documento_referencia ? ` · ${i.documento_referencia}` : ''}</td><td className="num">{i.dias_atraso} dias</td><td>{i.comissao_faixa}</td><td className="num"><strong>{pct(i.comissao_bps)}</strong></td><td className="num">{brl(i.saldo_centavos)}</td><td className="num">{brl(i.comissao_estimada_centavos)}</td></tr>)}
+            </tbody></table></div>
+          )}
           {previa.itens.some((i) => !i.elegivel) && (
             <div className="tabela-wrap"><table><thead><tr><th>Dívida</th><th>Impedimentos</th><th>Pendências (corrigíveis)</th></tr></thead><tbody>
               {previa.itens.filter((i) => !i.elegivel).map((i) => <tr key={i.divida_id}><td><Link to={`/dividas/${i.divida_id}`} target="_blank">{i.devedor_nome || 'Dívida'}{i.documento_referencia ? ` · ${i.documento_referencia}` : ''}</Link></td><td>{i.problemas.join('; ') || '—'}</td><td>{i.pendencias.join('; ') || '—'}</td></tr>)}
@@ -241,7 +248,9 @@ export function Encaminhar() {
             Autorizo a HS Recuperação de Crédito a realizar a cobrança extrajudicial administrativa de <strong>{r.elegiveis} dívida(s)</strong>, no valor de <strong>{brl(r.valor_elegivel_centavos)}</strong>,
             com desconto de até <strong>{pct(Math.round(Number(String(av.limite_desconto_bps).replace(',', '.')) * 100))}</strong>, em até <strong>{av.limite_parcelamento}x</strong>,
             pelos canais <strong>{(av.canais_autorizados || []).map(rotulo).join(', ')}</strong>, das {av.horario_contato}. O pagamento será feito diretamente à minha empresa, que confirmará o recebimento.
+            {' '}Estou ciente da <strong>comissão da HS</strong> conforme a faixa de atraso de cada dívida (abaixo), cobrada somente sobre os valores efetivamente recebidos e confirmados.
           </div>
+          <TabelaComissao faixas={previa?.tabela_comissao} />
           <label className="check"><input type="checkbox" checked={aceite} onChange={(e) => setAceite(e.target.checked)} />Li e autorizo expressamente, em nome da empresa, nos termos acima.</label>
           <p className="small muted">A autorização fica registrada com seu nome, data e versão. Você pode revogá-la a qualquer momento em Autorizações.</p>
           <div className="row" style={{ justifyContent: 'space-between' }}><button className="btn" onClick={() => setPasso(3)}>Voltar</button><button className="btn prim" disabled={!aceite || enviando} onClick={concluir}>{enviando && <Spinner />}Autorizar e encaminhar</button></div>

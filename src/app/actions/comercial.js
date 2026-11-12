@@ -1,7 +1,8 @@
 import { assertCentavos } from '../../core/money.js';
-import { parseDataISO } from '../../core/dates.js';
 import { isHS, can } from '../../core/permissions.js';
 import { verificarMensagem } from '../../core/compliance.js';
+import { TABELA_PADRAO, validarFaixas, rotuloFaixa, faixaPara } from '../../core/comissao.js';
+import { diasAtraso, parseDataISO } from '../../core/dates.js';
 import {
   AccessError, ValidationError, requirePerm, getById, find, criar, alterar, empresaAlvo, paginar, filtrosPermitidos, exigir, notificar, carregarCaso,
 } from '../context.js';
@@ -13,6 +14,36 @@ export const PLANOS_PADRAO = [
   { nome: 'HS PROFISSIONAL', preco_mensal_centavos: 7990, limite_devedores: 1000, limite_usuarios: 5, funcionalidades: ['devedores', 'dividas', 'pagamentos', 'dashboard_basico', 'carteiras', 'importacao', 'negociacao', 'relatorios'], status: 'ATIVO', ordem: 2 },
   { nome: 'HS EMPRESARIAL', preco_mensal_centavos: 12990, limite_devedores: 5000, limite_usuarios: 15, funcionalidades: ['devedores', 'dividas', 'pagamentos', 'dashboard_basico', 'carteiras', 'importacao', 'negociacao', 'relatorios', 'exportacao', 'api_futura'], status: 'ATIVO', ordem: 3 },
 ];
+
+/** Tabela de comissão vigente: a do contrato, senão a padrão configurada pela HS, senão a de fábrica. */
+export async function tabelaComissao(ctx, contrato = null) {
+  if (contrato?.comissao_faixas?.length) return contrato.comissao_faixas;
+  const cfg = (await find(ctx, 'ConfiguracaoHS'))[0];
+  return cfg?.comissao_faixas?.length ? cfg.comissao_faixas : TABELA_PADRAO;
+}
+export const comRotulos = (faixas) => faixas.map((f, i) => ({ ...f, faixa: rotuloFaixa(faixas, i) }));
+
+/**
+ * Comissão de um caso HS. Casos antigos (encaminhados antes da tabela existir) recebem a faixa
+ * correspondente ao atraso na data do encaminhamento, e o valor fica gravado no caso.
+ */
+export async function comissaoDoCaso(ctx, caso, divida) {
+  if (!caso || caso.modalidade_cobranca !== 'HS_GERENCIADA') return null;
+  if (Number.isSafeInteger(caso.comissao_bps)) return { bps: caso.comissao_bps, faixa: caso.comissao_faixa, dias: caso.dias_atraso_no_envio };
+  const contrato = caso.contrato_servico_id ? await getById(ctx, 'ContratoServico', caso.contrato_servico_id) : null;
+  const div = divida || await getById(ctx, 'Divida', caso.divida_id);
+  const dias = diasAtraso(div.data_vencimento, (caso.data_recebimento || ctx.now().toISOString()).slice(0, 10));
+  const f = faixaPara(dias, await tabelaComissao(ctx, contrato));
+  await ctx.db.CasoCobranca.update(caso.id, { comissao_bps: f.bps, comissao_faixa: f.faixa, dias_atraso_no_envio: dias });
+  Object.assign(caso, { comissao_bps: f.bps, comissao_faixa: f.faixa, dias_atraso_no_envio: dias });
+  return { bps: f.bps, faixa: f.faixa, dias };
+}
+
+/** Contrato ativo e vigente da empresa (o mais recente). */
+export async function contratoAtivoDaEmpresa(ctx, empresa_id) {
+  const hoje = ctx.now().toISOString().slice(0, 10);
+  return (await find(ctx, 'ContratoServico', { empresa_id, status: 'ATIVO' })).filter((c) => c.aceite && (!c.data_fim || c.data_fim >= hoje)).sort((a, b) => ((a.data_inicio || '') < (b.data_inicio || '') ? 1 : -1))[0] || null;
+}
 
 /** Webhook do Asaas (ctx de sistema). Idempotente por id do evento. */
 export async function processarWebhookAsaas(ctx, ev) {
@@ -51,6 +82,30 @@ export async function processarWebhookAsaas(ctx, ev) {
 }
 
 export const actions = {
+  /** Tabela de comissão da cobrança gerenciada (da empresa: a do seu contrato ativo, se houver). */
+  obterTabelaComissao: {
+    perm: null,
+    async run(ctx, input = {}) {
+      let contrato = null;
+      if (!isHS(ctx.user) && ctx.user.empresa_id) contrato = await contratoAtivoDaEmpresa(ctx, ctx.user.empresa_id);
+      if (isHS(ctx.user) && input.contrato_servico_id) contrato = await getById(ctx, 'ContratoServico', input.contrato_servico_id);
+      const padrao = await tabelaComissao(ctx);
+      return { faixas: comRotulos(await tabelaComissao(ctx, contrato)), origem: contrato?.comissao_faixas?.length ? 'CONTRATO' : 'PADRAO', padrao: comRotulos(padrao) };
+    },
+  },
+
+  salvarTabelaComissao: {
+    perm: 'config.sistema',
+    async run(ctx, { faixas }) {
+      const validas = validarFaixas(faixas);
+      const atual = (await find(ctx, 'ConfiguracaoHS'))[0];
+      const dados = { comissao_faixas: validas, atualizado_por: ctx.user.id, atualizado_em: ctx.now().toISOString() };
+      if (atual) await alterar(ctx, 'ConfiguracaoHS', atual, dados, 'ALTERAR_TABELA_COMISSAO');
+      else await criar(ctx, 'ConfiguracaoHS', dados, 'ALTERAR_TABELA_COMISSAO');
+      return { faixas: comRotulos(validas) };
+    },
+  },
+
   listarPlanos: {
     perm: null,
     async run(ctx) {
@@ -161,6 +216,8 @@ export const actions = {
         forma_cobranca_servico: input.forma_cobranca_servico || 'MENSAL', data_inicio: input.data_inicio, data_fim: input.data_fim || null,
         escopo: input.escopo || '', limites: input.limites || '', documento: input.documento || null, status: 'PROPOSTO', aceite: false,
         responsavel_autorizacao: null,
+        // Sem tabela própria, o contrato "congela" a tabela padrão vigente na proposta
+        comissao_faixas: input.comissao_faixas?.length ? validarFaixas(input.comissao_faixas) : await tabelaComissao(ctx),
       };
       if (input.id) {
         const c = await getById(ctx, 'ContratoServico', input.id);

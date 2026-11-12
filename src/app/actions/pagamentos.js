@@ -1,11 +1,13 @@
 import { detectarDuplicidade, validarPagamentoInformado, calcularConfirmacao, statusCasoAposConfirmacao } from '../../core/payments.js';
 import { transicao, podeTransitar, casoAtivo } from '../../core/caseStatus.js';
 import { isHS } from '../../core/permissions.js';
+import { calcularComissao } from '../../core/comissao.js';
 import {
   AccessError, ValidationError, requirePerm, getById, find, criar, alterar, auditar, carregarCaso, carregarDaEmpresa,
   exigir, notificar, paginar, filtrosPermitidos, comNomes,
 } from '../context.js';
 import { listarPorCaso } from './negociacao.js';
+import { comissaoDoCaso } from './comercial.js';
 
 async function casoDaDivida(ctx, divida_id) {
   return (await find(ctx, 'CasoCobranca', { divida_id })).find(casoAtivo) || null;
@@ -111,7 +113,11 @@ export const actions = {
         await ctx.db.ConfirmacaoPagamento.update(conf.id, { status: 'DESCARTADA_CONCORRENCIA' });
         throw new ValidationError('Saldo alterado durante a confirmação; tente novamente');
       }
-      await alterar(ctx, 'Pagamento', pag, { ...efeitos.pagamento, data_confirmacao: agora, confirmado_por: ctx.user.id }, 'CONFIRMAR_PAGAMENTO');
+      // Comissão da HS: só em casos de cobrança gerenciada e só sobre o valor confirmado
+      const casoPag = pag.caso_id ? await getById(ctx, 'CasoCobranca', pag.caso_id) : await casoDaDivida(ctx, divida.id);
+      const cm = await comissaoDoCaso(ctx, casoPag, divida);
+      const comissao = cm ? { comissao_bps: cm.bps, comissao_hs_centavos: calcularComissao(efeitos.pagamento.valor_confirmado_centavos, cm.bps) } : { comissao_bps: 0, comissao_hs_centavos: 0 };
+      await alterar(ctx, 'Pagamento', pag, { ...efeitos.pagamento, ...comissao, data_confirmacao: agora, confirmado_por: ctx.user.id }, 'CONFIRMAR_PAGAMENTO');
       await ctx.db.LancamentoFinanceiro.create({ empresa_id: pag.empresa_id, divida_id: divida.id, tipo: 'PAGAMENTO_CONFIRMADO', valor_centavos: -efeitos.pagamento.valor_confirmado_centavos, saldo_anterior_centavos: divida.saldo_atual_centavos, saldo_posterior_centavos: efeitos.divida.saldo_atual_centavos, referencia_id: pag.id, usuario_id: ctx.user.id, data_hora: agora });
       let divPatch = { ...efeitos.divida };
       if (parcela) await alterar(ctx, 'Parcela', parcela, efeitos.parcela, 'BAIXAR_PARCELA');
@@ -142,7 +148,7 @@ export const actions = {
         else if (quitada) await alterar(ctx, 'CasoCobranca', atual, { status_operacional: 'RECUPERADO_INTEGRALMENTE', data_encerramento: agora, motivo_status: 'Quitação confirmada pelo credor' }, 'ENCERRAR_CASO_QUITACAO');
         if (caso.operador_id) await ctx.db.Notificacao.create({ empresa_id: null, usuario_id: caso.operador_id, tipo: 'PAGAMENTO_CONFIRMADO', titulo: 'Pagamento confirmado pelo credor', mensagem: quitada ? 'Dívida quitada; caso encerrado.' : 'Pagamento parcial confirmado.', lida: false, data_criacao: agora, link: `/casos/${caso.id}` });
       }
-      return { pagamento_id: pag.id, valor_confirmado_centavos: efeitos.pagamento.valor_confirmado_centavos, saldo_atual_centavos: divPatch.saldo_atual_centavos, quitada };
+      return { pagamento_id: pag.id, valor_confirmado_centavos: efeitos.pagamento.valor_confirmado_centavos, saldo_atual_centavos: divPatch.saldo_atual_centavos, quitada, ...comissao };
     },
   },
 

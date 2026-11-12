@@ -108,6 +108,7 @@ export function Pagamentos() {
         { titulo: 'Data informada', render: (p) => data(p.data_informada) },
         { titulo: 'Valor informado', num: true, render: (p) => brl(p.valor_centavos) },
         { titulo: 'Confirmado', num: true, render: (p) => brl(p.valor_confirmado_centavos) },
+        { titulo: 'Comissão HS', num: true, render: (p) => (p.comissao_hs_centavos ? <span title={pct(p.comissao_bps)}>{brl(p.comissao_hs_centavos)}</span> : '—') },
         { titulo: 'Forma', render: (p) => rotulo(p.forma_pagamento) },
         { titulo: 'Transação', render: (p) => p.identificador_transacao || '—' },
         { titulo: 'Status', render: (p) => <><Badge status={p.status_confirmacao} />{p.motivo_rejeicao && <div className="small muted">{p.motivo_rejeicao}</div>}</> },
@@ -138,8 +139,15 @@ function gerarPDF(p) {
       ['Acordos realizados', rel.acordos_realizados], ['Pagamentos informados', `${rel.pagamentos_informados} (${brl(rel.valor_informado_centavos)})`],
       ['Pagamentos confirmados pelo credor', rel.pagamentos_confirmados], ['Valores recuperados (confirmados)', brl(rel.valor_recuperado_centavos)],
       ['Casos suspensos', rel.casos_suspensos], ['Casos sem sucesso', rel.casos_sem_sucesso],
+      ['Comissão da HS no período (sobre valores confirmados)', brl(rel.comissao_hs_centavos || 0)],
     ],
   });
+  if (rel.comissoes?.length) {
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 8, head: [['Confirmado em', 'Devedor', 'Valor recebido', 'Comissão', 'Valor da comissão']], headStyles: { fillColor: [29, 95, 167] }, styles: { fontSize: 9 },
+      body: rel.comissoes.map((c) => [data(c.data), c.devedor, brl(c.valor_centavos), pct(c.comissao_bps), brl(c.comissao_centavos)]),
+    });
+  }
   doc.setFontSize(8); doc.setTextColor(107, 114, 128);
   doc.text('Valores recuperados consideram somente pagamentos confirmados pelo credor. Os pagamentos são feitos diretamente à empresa credora.', 14, doc.lastAutoTable.finalY + 10, { maxWidth: 182 });
   doc.save(`prestacao-contas-${p.periodo_inicio}-${p.periodo_fim}.pdf`);

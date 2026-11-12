@@ -9,6 +9,7 @@ import { Layout } from './layout.jsx';
 import { Entrar, Cadastro, Convite, Onboarding, Documento, Esqueci } from './pages/acesso.jsx';
 import { Exigir2FA } from './pages/seguranca.jsx';
 import { Site } from './pages/site.jsx';
+import { Comissoes } from './pages/comissao.jsx';
 import { PainelEmpresa, PainelHS } from './pages/painel.jsx';
 import { Devedores, DevedorDetalhe, Dividas, DividaDetalhe, Parcelas, Importar } from './pages/cadastros.jsx';
 import { MinhasCobrancas, CobrancasHS, Carteiras, CarteiraDetalhe, Encaminhar, Autorizacoes } from './pages/cobranca.jsx';
@@ -101,6 +102,7 @@ function Raiz() {
           <Route path="/hs/contratos" element={P('contrato.gerenciar', <ContratosHS />)} />
           <Route path="/hs/planos" element={P('plano.gerenciar', <Planos />)} />
           <Route path="/hs/modelos" element={P('config.sistema', <Modelos global />)} />
+          <Route path="/hs/comissoes" element={P('config.sistema', <Comissoes />)} />
           <Route path="/hs/whatsapp" element={P('caso.distribuir', <TriagemWhatsApp />)} />
           <Route path="/hs/auditoria" element={P('auditoria.ler', <Auditoria />)} />
         </>}

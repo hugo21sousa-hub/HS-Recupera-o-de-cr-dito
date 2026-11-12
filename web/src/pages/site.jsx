@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { publico } from '../api.js';
 import { Marca } from '../layout.jsx';
-import { brl, rotulo, mascaraFone } from '../format.js';
+import { brl, rotulo, mascaraFone, pct } from '../format.js';
 
 const SERVICOS = [
   {
@@ -50,7 +50,7 @@ const GARANTIAS = [
 const DUVIDAS = [
   ['A HS recebe o dinheiro das dívidas?', 'Não. O devedor paga diretamente para a sua empresa, pelos meios que você já usa (Pix, boleto, transferência). Você confirma o recebimento no sistema.'],
   ['Preciso contratar a cobrança da HS para usar a plataforma?', 'Não. Você pode usar só a plataforma e cobrar com a sua equipe, contratar a cobrança gerenciada ou usar as duas formas ao mesmo tempo.'],
-  ['Quanto custa a cobrança gerenciada?', 'Ela é contratada à parte, com proposta conforme o tamanho da carteira: carteira específica, pacote de casos ou carteira completa. Peça a proposta depois de criar a sua conta.'],
+  ['Quanto custa a cobrança gerenciada?', 'Você paga uma comissão apenas sobre o que for efetivamente recebido, com percentual conforme o tempo de atraso da dívida (veja a tabela em Planos). Se nada for recebido, não há comissão. A contratação é feita por contrato próprio, por carteira específica, pacote de casos ou carteira completa.'],
   ['Outras empresas podem ver os meus dados?', 'Não. Cada empresa tem um ambiente isolado. A equipe HS só acessa os casos que você encaminhar e autorizar.'],
   ['Como a equipe HS negocia em meu nome?', 'Dentro dos limites que você define: desconto máximo, número de parcelas, entrada mínima, canais e horários de contato. Fora disso, a proposta vai para a sua aprovação.'],
   ['Posso importar a minha lista de devedores?', 'Sim. Basta uma planilha CSV (o Excel salva nesse formato). O sistema mostra uma prévia com os erros antes de importar.'],
@@ -151,7 +151,20 @@ export function Site() {
               </article>
             )) : <p className="muted">Fale conosco para conhecer os planos.</p>}
           </div>
-          <p className="site-nota-centro">A cobrança gerenciada pela equipe HS é contratada à parte, com proposta para a sua carteira.</p>
+          <div className="site-cartao site-comissao">
+            <div>
+              <h3>Cobrança gerenciada pela equipe HS</h3>
+              <p className="site-resumo">Você só paga sobre o que recuperar.</p>
+              <p className="small muted" style={{ margin: 0 }}>A comissão é um percentual sobre os valores <strong>efetivamente recebidos e confirmados</strong> por você, conforme o tempo de atraso da dívida no dia em que ela é encaminhada. Se nada for recebido, não há comissão. Você vê o percentual de cada dívida antes de encaminhar.</p>
+            </div>
+            {dados?.comissao?.length > 0 && (
+              <table className="site-tabela-comissao">
+                <thead><tr><th>Atraso da dívida</th><th className="num">Comissão</th></tr></thead>
+                <tbody>{dados.comissao.map((f) => <tr key={f.faixa}><td>{f.faixa}</td><td className="num"><strong>{pct(f.bps)}</strong></td></tr>)}</tbody>
+              </table>
+            )}
+          </div>
+          <p className="site-nota-centro">A cobrança gerenciada é contratada à parte da assinatura, com contrato próprio para a sua carteira.</p>
         </div>
       </section>
 

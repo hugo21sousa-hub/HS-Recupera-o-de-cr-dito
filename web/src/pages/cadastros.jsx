@@ -3,7 +3,8 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { hs, enviarArquivo, abrirLink, baixarArquivo } from '../api.js';
 import { useSessao } from '../sessao.jsx';
 import { Tabela, Badge, Cabecalho, FormModal, Modal, useApi, useToast, useConfirm, Carregando, ErroCarga, Dl, Abas, Vazio, Stat, Spinner, useExecutar } from '../ui.jsx';
-import { brl, data, dataHora, mascaraDoc, mascaraFone, rotulo, hojeISO, reaisParaCentavos, centavosParaTexto } from '../format.js';
+import { brl, data, dataHora, mascaraDoc, mascaraFone, rotulo, hojeISO, reaisParaCentavos, centavosParaTexto, pct } from '../format.js';
+import { TabelaComissao } from './comissao.jsx';
 
 export const CAMPOS_DEVEDOR = [
   { nome: 'nome', rotulo: 'Nome / razão social', obrigatorio: true, full: true },
@@ -201,6 +202,29 @@ export function RegistrarPagamento({ divida, parcelas = [], casoId, onClose, onF
   );
 }
 
+/** Quanto a HS cobraria (ou cobra) nesta dívida. */
+function QuadroComissaoHS({ divida }) {
+  const s = useSessao();
+  const { data: c } = useApi('comissaoDivida', { divida_id: divida.id }, [divida.saldo_atual_centavos]);
+  const [verTabela, setVerTabela] = useState(false);
+  if (!c) return null;
+  return (
+    <div className="card stack">
+      <div className="row between">
+        <h2 style={{ margin: 0 }}>Cobrança pela equipe HS</h2>
+        <button className="btn sm" onClick={() => setVerTabela(!verTabela)}>{verTabela ? 'Ocultar tabela' : 'Ver tabela de comissão'}</button>
+      </div>
+      {c.ja_encaminhada ? (
+        <p style={{ margin: 0 }}>Esta dívida está com a HS. Comissão fixada no encaminhamento: <strong>{pct(c.comissao_bps)}</strong> ({c.comissao_faixa} de atraso), cobrada só sobre o que você receber. Sobre o saldo atual, seria até <strong>{brl(c.estimativa_centavos)}</strong>.</p>
+      ) : (
+        <p style={{ margin: 0 }}>Se encaminhar hoje, a comissão da HS será de <strong>{pct(c.comissao_bps)}</strong>, porque a dívida está com <strong>{c.dias_atraso} dias de atraso</strong> (faixa {c.comissao_faixa}). Ela incide <strong>somente sobre o que você efetivamente receber</strong>: se o devedor pagar todo o saldo de {brl(divida.saldo_atual_centavos)}, a comissão será de {brl(c.estimativa_centavos)}. Se nada for recebido, não há comissão.</p>
+      )}
+      {!c.tem_contrato && !c.ja_encaminhada && <div className="aviso alerta small">Para encaminhar à HS, você precisa de um contrato de cobrança gerenciada ativo{s.pode('contrato.ler') ? <> (veja em <Link to="/contratos">Contratos</Link>)</> : ''}. A tabela mostrada é a padrão da HS.</div>}
+      {verTabela && <TabelaComissao faixas={c.tabela} destaque={c.comissao_faixa} />}
+    </div>
+  );
+}
+
 function EditorParcelas({ divida, onClose, onFeito }) {
   const total = divida.valor_original_centavos + (divida.encargos_centavos || 0);
   const [n, setN] = useState(2);
@@ -297,6 +321,7 @@ export function DividaDetalhe() {
         {s.pode('carteira.encaminhar_hs') && dv.modalidade_cobranca === 'HS_GERENCIADA' && casoAtivo && <button className="btn" onClick={retirar}>Retirar da HS</button>}
         {casoAtivo && <Link className="btn" to={`/casos/${casoAtivo.id}`}>Ver caso</Link>}
       </Cabecalho>
+      {aberta && <QuadroComissaoHS divida={dv} />}
       {dv.status_validacao === 'REPROVADA' && <div className="aviso critico">A HS devolveu esta dívida para correção: {dv.pendencia_validacao}. Corrija os dados e reative o caso.</div>}
       <div className="grid g4">
         <Stat rotulo="Valor original" valor={brl(dv.valor_original_centavos)} ajuda={dv.encargos_centavos ? `+ encargos ${brl(dv.encargos_centavos)}` : undefined} />

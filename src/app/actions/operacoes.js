@@ -5,6 +5,7 @@ import { telefoneBR } from '../../core/documento.js';
 import { diasAtraso } from '../../core/dates.js';
 import { formatBRL } from '../../core/money.js';
 import { validarCarteira } from '../../core/portfolio.js';
+import { comissaoDoCaso } from './comercial.js';
 import {
   AccessError, ValidationError, requirePerm, getById, find, criar, alterar, auditar, carregarCaso, empresaAlvo,
   paginar, filtrosPermitidos, exigir, notificar, comNomes,
@@ -104,6 +105,7 @@ export const actions = {
     perm: null,
     async run(ctx, { caso_id }) {
       const caso = await carregarCaso(ctx, caso_id);
+      await comissaoDoCaso(ctx, caso);
       const q = { caso_id: caso.id };
       const [divida, devedorBruto, empresa, autorizacao, interacoes, tarefas, negociacoes, acordos, atribuicoes] = await Promise.all([
         getById(ctx, 'Divida', caso.divida_id), getById(ctx, 'Devedor', caso.devedor_id), getById(ctx, 'Empresa', caso.empresa_id),

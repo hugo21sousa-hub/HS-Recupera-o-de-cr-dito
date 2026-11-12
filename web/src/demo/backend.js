@@ -2,6 +2,7 @@
 import { handle } from '../../../src/app/router.js';
 import { memDB } from './memdb.js';
 import { semear, SENHA_DEMO } from './seed.js';
+import { TABELA_PADRAO, rotuloFaixa } from '../../../src/core/comissao.js';
 
 const banco = memDB();
 const db = banco.db;
@@ -49,7 +50,9 @@ export async function rpc(action, payload) {
 export async function publico() {
   await iniciar();
   const planos = (await db.Plano.filter({ status: 'ATIVO' })).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
-  return { planos, contato: { email: null, whatsapp: null } };
+  const cfg = (await db.ConfiguracaoHS.filter({}))[0];
+  const f = cfg?.comissao_faixas?.length ? cfg.comissao_faixas : TABELA_PADRAO;
+  return { planos, contato: { email: null, whatsapp: null }, comissao: f.map((x, i) => ({ ...x, faixa: rotuloFaixa(f, i) })) };
 }
 
 const indisponivel = () => { throw new Erro('Indisponível na demonstração.', 422); };

@@ -17,6 +17,7 @@ import { processarWebhookWhatsApp } from '../app/actions/whatsapp.js';
 import { processarWebhookAsaas } from '../app/actions/comercial.js';
 import { executarRetencao } from '../app/retencao.js';
 import { PERFIS_HS } from '../core/permissions.js';
+import { TABELA_PADRAO, rotuloFaixa } from '../core/comissao.js';
 
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8' };
 const COOKIE = 'hs_sessao';
@@ -175,6 +176,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
       return json(res, 200, { ok: true, data: {
         planos: planos.sort((a, b) => (a.ordem || 0) - (b.ordem || 0)).map((p) => ({ nome: p.nome, preco_mensal_centavos: p.preco_mensal_centavos, limite_devedores: p.limite_devedores, limite_usuarios: p.limite_usuarios, funcionalidades: p.funcionalidades || [] })),
         contato: { email: env.CONTATO_EMAIL || null, whatsapp: env.CONTATO_WHATSAPP || null },
+        comissao: await exclusivo(async () => { const cfg = (await db.ConfiguracaoHS.filter({}))[0]; const f = cfg?.comissao_faixas?.length ? cfg.comissao_faixas : TABELA_PADRAO; return f.map((x, i) => ({ ...x, faixa: rotuloFaixa(f, i) })); }),
       } });
     }
     if (rota === 'GET /api/auth/sessao') {

@@ -135,6 +135,10 @@ export const actions = {
         inicio: periodo_inicio, fim: periodo_fim,
       });
       const empresa = await getById(ctx, 'Empresa', contrato.empresa_id);
+      const devedores = new Map((await find(ctx, 'Devedor', { empresa_id: contrato.empresa_id })).map((d) => [d.id, d.nome]));
+      const divs = new Map((await find(ctx, 'Divida', { empresa_id: contrato.empresa_id })).map((d) => [d.id, d]));
+      rel.comissoes = pagamentos.filter((p) => dividas.has(p.divida_id) && p.status_confirmacao === 'CONFIRMADO' && p.data_confirmacao && p.data_confirmacao.slice(0, 10) >= periodo_inicio && p.data_confirmacao.slice(0, 10) <= periodo_fim)
+        .map((p) => ({ data: p.data_confirmacao.slice(0, 10), devedor: devedores.get(divs.get(p.divida_id)?.devedor_id) || '—', valor_centavos: p.valor_confirmado_centavos ?? p.valor_centavos, comissao_bps: p.comissao_bps || 0, comissao_centavos: p.comissao_hs_centavos || 0 }));
       return criar(ctx, 'PrestacaoContas', {
         empresa_id: contrato.empresa_id, contrato_servico_id: contrato.id, periodo_inicio, periodo_fim, quantidade_casos: casos.length,
         valor_cobrado_centavos: contrato.valor_contratado_centavos || 0, valor_negociado_centavos: rel.valor_negociado_centavos, valor_confirmado_centavos: rel.valor_recuperado_centavos,
@@ -178,7 +182,7 @@ export const actions = {
           { titulo: 'Devedor', valor: (r) => dev(r)?.nome }, { titulo: 'CPF/CNPJ', valor: (r) => dev(r)?.cpf_cnpj },
           { titulo: 'Documento da dívida', valor: (r) => divs.get(r.divida_id)?.documento_referencia }, { titulo: 'Data informada', campo: 'data_informada' },
           { titulo: 'Valor informado', valor: (r) => reais(r.valor_centavos) }, { titulo: 'Status', campo: 'status_confirmacao' },
-          { titulo: 'Valor confirmado', valor: (r) => reais(r.valor_confirmado_centavos) }, { titulo: 'Data confirmação', valor: (r) => (r.data_confirmacao || '').slice(0, 10) }, { titulo: 'Forma', campo: 'forma_pagamento' },
+          { titulo: 'Valor confirmado', valor: (r) => reais(r.valor_confirmado_centavos) }, { titulo: 'Comissão HS', valor: (r) => reais(r.comissao_hs_centavos) }, { titulo: 'Data confirmação', valor: (r) => (r.data_confirmacao || '').slice(0, 10) }, { titulo: 'Forma', campo: 'forma_pagamento' },
         ]);
       } else if (input.tipo === 'casos') {
         const rows = await find(ctx, 'CasoCobranca', { empresa_id });

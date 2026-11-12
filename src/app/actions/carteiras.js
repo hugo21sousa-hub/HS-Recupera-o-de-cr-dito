@@ -1,6 +1,9 @@
 import { validarCarteira } from '../../core/portfolio.js';
 import { soma, assertCentavos } from '../../core/money.js';
 import { casoAtivo } from '../../core/caseStatus.js';
+import { faixaPara, calcularComissao } from '../../core/comissao.js';
+import { diasAtraso } from '../../core/dates.js';
+import { tabelaComissao, contratoAtivoDaEmpresa, comRotulos, comissaoDoCaso } from './comercial.js';
 import {
   AccessError, ValidationError, getById, find, criar, alterar, auditar, empresaAlvo, exigirEmpresaOperante,
   carregarDaEmpresa, paginar, filtrosPermitidos, exigir, notificar,
@@ -35,7 +38,7 @@ async function resolverSelecao(ctx, empresa_id, input) {
   return [...unicos.values()];
 }
 
-async function montarValidacao(ctx, empresa_id, dividas) {
+async function montarValidacao(ctx, empresa_id, dividas, contrato = null) {
   const casos = await find(ctx, 'CasoCobranca', { empresa_id });
   const itens = [];
   for (const d of dividas) {
@@ -47,7 +50,20 @@ async function montarValidacao(ctx, empresa_id, dividas) {
     });
   }
   const cfg = (await find(ctx, 'ConfiguracaoEmpresa', { empresa_id }))[0];
-  return validarCarteira(itens, { exigirDocumento: cfg?.exigir_documento_hs !== false, hoje: ctx.now().toISOString().slice(0, 10) });
+  const hoje = ctx.now().toISOString().slice(0, 10);
+  const v = validarCarteira(itens, { exigirDocumento: cfg?.exigir_documento_hs !== false, hoje });
+  // Comissão da HS por dívida (faixa de atraso de hoje); estimativa sobre o saldo, cobrada só sobre o que for recebido
+  const faixas = await tabelaComissao(ctx, contrato);
+  const porId = new Map(dividas.map((d) => [d.id, d]));
+  for (const it of v.itens) {
+    const d = porId.get(it.divida_id);
+    const dias = d?.data_vencimento ? diasAtraso(d.data_vencimento, hoje) : 0;
+    const f = faixaPara(dias, faixas);
+    Object.assign(it, { dias_atraso: dias, comissao_bps: f.bps, comissao_faixa: f.faixa, comissao_estimada_centavos: calcularComissao(it.saldo_centavos, f.bps) });
+  }
+  v.resumo.comissao_estimada_elegiveis_centavos = v.itens.filter((i) => i.elegivel).reduce((a, i) => a + i.comissao_estimada_centavos, 0);
+  v.tabela_comissao = comRotulos(faixas);
+  return v;
 }
 
 async function contratoAtivo(ctx, empresa_id, contrato_id) {
@@ -150,7 +166,26 @@ export const actions = {
     async run(ctx, input) {
       const empresa_id = await empresaAlvo(ctx, input);
       const dividas = await resolverSelecao(ctx, empresa_id, input);
-      return montarValidacao(ctx, empresa_id, dividas);
+      const contrato = input.contrato_servico_id ? await getById(ctx, 'ContratoServico', input.contrato_servico_id) : await contratoAtivoDaEmpresa(ctx, empresa_id);
+      return montarValidacao(ctx, empresa_id, dividas, contrato && contrato.empresa_id === empresa_id ? contrato : null);
+    },
+  },
+
+  /** Quanto a HS cobraria se esta dívida fosse encaminhada hoje. */
+  comissaoDivida: {
+    perm: 'divida.ler',
+    async run(ctx, input) {
+      const div = await carregarDaEmpresa(ctx, 'Divida', input.divida_id, input);
+      const contrato = await contratoAtivoDaEmpresa(ctx, div.empresa_id);
+      const faixas = await tabelaComissao(ctx, contrato);
+      const casoHS = (await find(ctx, 'CasoCobranca', { divida_id: div.id })).find((c) => c.modalidade_cobranca === 'HS_GERENCIADA' && casoAtivo(c));
+      if (casoHS) {
+        const cm = await comissaoDoCaso(ctx, casoHS, div);
+        return { ja_encaminhada: true, comissao_bps: cm.bps, comissao_faixa: cm.faixa, dias_atraso: cm.dias, estimativa_centavos: calcularComissao(div.saldo_atual_centavos, cm.bps), tabela: comRotulos(faixas), tem_contrato: !!contrato };
+      }
+      const dias = diasAtraso(div.data_vencimento, ctx.now().toISOString().slice(0, 10));
+      const f = faixaPara(dias, faixas);
+      return { ja_encaminhada: false, comissao_bps: f.bps, comissao_faixa: f.faixa, dias_atraso: dias, estimativa_centavos: calcularComissao(div.saldo_atual_centavos, f.bps), tabela: comRotulos(faixas), tem_contrato: !!contrato };
     },
   },
 
@@ -173,7 +208,7 @@ export const actions = {
       if (a.entrada_minima_bps !== undefined) assertCentavos(a.entrada_minima_bps, 'entrada mínima', { allowZero: true });
 
       const dividas = await resolverSelecao(ctx, empresa_id, input);
-      const validacao = await montarValidacao(ctx, empresa_id, dividas);
+      const validacao = await montarValidacao(ctx, empresa_id, dividas, contrato);
       const elegiveis = validacao.itens.filter((i) => i.elegivel);
       exigir(elegiveis.length > 0, 'Nenhuma dívida elegível para encaminhamento');
       if (contrato.quantidade_casos_contratada) {
@@ -189,7 +224,7 @@ export const actions = {
         entrada_minima_bps: a.entrada_minima_bps || 0, exige_aprovacao_sempre: a.exige_aprovacao_sempre === true,
         canais_autorizados: a.canais_autorizados, horario_contato: a.horario_contato || '08:00-20:00',
         data_autorizacao: agora, responsavel: ctx.user.id, responsavel_nome: ctx.user.nome, documento: a.documento || null,
-        versao: versoes.length + 1, texto_aceite: input.texto_aceite || 'Autorizo a HS Recuperação de Crédito a realizar cobrança extrajudicial administrativa das dívidas listadas, nos limites acima. O pagamento será feito diretamente à empresa credora.',
+        versao: versoes.length + 1, texto_aceite: input.texto_aceite || 'Autorizo a HS Recuperação de Crédito a realizar cobrança extrajudicial administrativa das dívidas listadas, nos limites acima. O pagamento será feito diretamente à empresa credora. A comissão da HS, conforme a faixa de atraso de cada dívida, incide somente sobre os valores efetivamente recebidos e confirmados.',
         status: 'ATIVA',
       }, 'CONCEDER_AUTORIZACAO');
 
@@ -202,6 +237,7 @@ export const actions = {
       for (const e of elegiveis) {
         const div = await getById(ctx, 'Divida', e.divida_id);
         await alterar(ctx, 'Divida', div, { modalidade_cobranca: 'HS_GERENCIADA', status_validacao: 'EM_VALIDACAO' }, 'ALTERAR_MODALIDADE');
+        const itemValid = validacao.itens.find((x) => x.divida_id === div.id);
         const item = (await find(ctx, 'CarteiraDevedor', { carteira_id, divida_id: div.id }))[0];
         if (item) await ctx.db.CarteiraDevedor.update(item.id, { autorizacao_id: autorizacao.id, modalidade_cobranca: 'HS_GERENCIADA', status: 'ENCAMINHADO' });
         else await ctx.db.CarteiraDevedor.create({ empresa_id, carteira_id, divida_id: div.id, devedor_id: div.devedor_id, modalidade_cobranca: 'HS_GERENCIADA', autorizacao_id: autorizacao.id, status: 'ENCAMINHADO' });
@@ -210,6 +246,7 @@ export const actions = {
           modalidade_cobranca: 'HS_GERENCIADA', operador_id: null, gestor_id: null, status_operacional: 'AGUARDANDO_VALIDACAO',
           prioridade: div.saldo_atual_centavos >= 1_000_000 ? 'ALTA' : 'NORMAL', data_recebimento: agora, data_inicio: null,
           ultima_interacao: null, proxima_atividade: null, data_encerramento: null,
+          dias_atraso_no_envio: itemValid.dias_atraso, comissao_bps: itemValid.comissao_bps, comissao_faixa: itemValid.comissao_faixa,
         }));
       }
       const cart = await getById(ctx, 'Carteira', carteira_id);

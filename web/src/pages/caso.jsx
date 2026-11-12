@@ -174,7 +174,7 @@ export function CasoDetalhe() {
         </div>
         <div className="card">
           <h2>Limites autorizados</h2>
-          {d.autorizacao ? <Dl itens={[['Desconto máximo', pct(d.autorizacao.limite_desconto_bps)], ['Parcelamento', `até ${d.autorizacao.limite_parcelamento}x`], ['Entrada mínima', pct(d.autorizacao.entrada_minima_bps)], ['Canais', (d.autorizacao.canais_autorizados || []).map(rotulo).join(', ')], ['Horário', d.autorizacao.horario_contato], ['Aprovação sempre', d.autorizacao.exige_aprovacao_sempre ? 'Sim' : 'Não'], ['Condições', d.autorizacao.condicoes || '—'], ['Autorização', <Badge key="a" status={d.autorizacao.status}>v{d.autorizacao.versao} · {rotulo(d.autorizacao.status)}</Badge>]]} />
+          {d.autorizacao ? <Dl itens={[['Desconto máximo', pct(d.autorizacao.limite_desconto_bps)], ['Parcelamento', `até ${d.autorizacao.limite_parcelamento}x`], ['Entrada mínima', pct(d.autorizacao.entrada_minima_bps)], ['Canais', (d.autorizacao.canais_autorizados || []).map(rotulo).join(', ')], ['Horário', d.autorizacao.horario_contato], ['Aprovação sempre', d.autorizacao.exige_aprovacao_sempre ? 'Sim' : 'Não'], c.comissao_bps != null && ['Comissão HS', `${pct(c.comissao_bps)} (${c.comissao_faixa}) sobre o recebido`], ['Condições', d.autorizacao.condicoes || '—'], ['Autorização', <Badge key="a" status={d.autorizacao.status}>v{d.autorizacao.versao} · {rotulo(d.autorizacao.status)}</Badge>]]} />
             : <p className="muted">Cobrança própria: as condições são definidas pela própria empresa.</p>}
         </div>
       </div>

@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { hs, auth } from '../api.js';
 import { useSessao } from '../sessao.jsx';
 import { Tabela, Badge, Cabecalho, FormModal, Modal, useApi, useToast, useConfirm, Carregando, ErroCarga, Vazio, Dl, Abas, useExecutar, Campos, useFormulario, Spinner } from '../ui.jsx';
-import { brl, data, dataHora, rotulo, mascaraDoc } from '../format.js';
+import { brl, data, dataHora, rotulo, mascaraDoc, pct } from '../format.js';
 import { CAMPOS_EMPRESA } from './acesso.jsx';
 import { Seguranca2FA } from './seguranca.jsx';
+import { TabelaComissao, EditorFaixas } from './comissao.jsx';
+import { rotuloFaixa } from '../../../src/core/comissao.js';
 
 export function LinkAcesso({ link, email, onClose, enviado }) {
   const toast = useToast();
@@ -73,7 +75,7 @@ export function Contratos() {
   const { executar } = useExecutar();
   const [r, setR] = useState(0);
   const aceitar = async (c) => {
-    const ok = await confirmar({ titulo: 'Aceitar contrato de cobrança gerenciada', botao: 'Aceitar contrato', mensagem: <div className="stack"><Dl itens={[['Modalidade', rotulo(c.modalidade)], ['Valor do serviço', brl(c.valor_contratado_centavos)], ['Forma de cobrança', c.forma_cobranca_servico], ['Vigência', `${data(c.data_inicio)} a ${data(c.data_fim)}`], ['Limite de casos', c.quantidade_casos_contratada || 'Sem limite'], ['Escopo', c.escopo || '—'], ['Limites', c.limites || '—']]} /><p className="small">Ao aceitar, você contrata a HS para cobrança extrajudicial administrativa, conforme os Termos de Uso. O valor do serviço é cobrado separadamente da assinatura e não incide sobre os valores pagos pelos devedores, que vão direto à sua empresa.</p></div> });
+    const ok = await confirmar({ titulo: 'Aceitar contrato de cobrança gerenciada', botao: 'Aceitar contrato', mensagem: <div className="stack"><Dl itens={[['Modalidade', rotulo(c.modalidade)], ['Valor do serviço', brl(c.valor_contratado_centavos)], ['Forma de cobrança', c.forma_cobranca_servico], ['Vigência', `${data(c.data_inicio)} a ${data(c.data_fim)}`], ['Limite de casos', c.quantidade_casos_contratada || 'Sem limite'], ['Escopo', c.escopo || '—'], ['Limites', c.limites || '—']]} />{c.comissao_faixas?.length > 0 && <><h3>Comissão da HS sobre valores recebidos</h3><TabelaComissao faixas={c.comissao_faixas.map((f, i, a) => ({ ...f, faixa: rotuloFaixa(a, i) }))} /></>}<p className="small">Ao aceitar, você contrata a HS para cobrança extrajudicial administrativa, conforme os Termos de Uso. O valor do serviço é cobrado separadamente da assinatura e não incide sobre os valores pagos pelos devedores, que vão direto à sua empresa.</p></div> });
     if (ok) { await executar('aceitarContrato', { contrato_id: c.id, aceite: true }, 'Contrato aceito'); setR(r + 1); }
   };
   const encerrar = async (c) => {
@@ -87,6 +89,7 @@ export function Contratos() {
         { titulo: 'Modalidade', render: (c) => rotulo(c.modalidade) }, { titulo: 'Escopo', render: (c) => rotulo(c.tipo_carteira) },
         { titulo: 'Valor do serviço', num: true, render: (c) => (c.status === 'SOLICITADO' ? 'Aguardando proposta' : brl(c.valor_contratado_centavos)) },
         { titulo: 'Casos', num: true, render: (c) => c.quantidade_casos_contratada || '—' },
+        { titulo: 'Comissão', render: (c) => (c.comissao_faixas?.length ? c.comissao_faixas.map((f) => pct(f.bps)).join(' / ') : 'Tabela padrão') },
         { titulo: 'Vigência', render: (c) => (c.data_inicio ? `${data(c.data_inicio)} a ${data(c.data_fim)}` : '—') },
         { titulo: 'Aceite', render: (c) => (c.aceite ? dataHora(c.data_aceite) : '—') }, { titulo: 'Status', render: (c) => <Badge status={c.status} /> },
         { titulo: '', render: (c) => s.pode('contrato.contratar') && <div className="row" style={{ justifyContent: 'flex-end' }}>

@@ -186,6 +186,9 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 }
 
 /* ---------- Site de apresentação ---------- */
+.site-comissao { margin-top: 24px; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 24px; align-items: center; }
+.site-tabela-comissao th, .site-tabela-comissao td { padding: 10px 12px; }
+@media (max-width: 760px) { .site-comissao { grid-template-columns: 1fr; } }
 .site { background: #fff; min-height: 100%; color: var(--texto); }
 .site-largura { max-width: 1160px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 .site-estreita { max-width: 820px; }

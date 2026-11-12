@@ -52,6 +52,7 @@ export const MENU_HS = [
     { to: '/hs/equipe', r: 'Equipe interna', p: 'usuario.gerenciar_interno' },
     { to: '/hs/contratos', r: 'Contratos de cobrança', p: 'contrato.gerenciar' },
     { to: '/hs/planos', r: 'Planos e assinaturas', p: 'plano.gerenciar' },
+    { to: '/hs/comissoes', r: 'Comissão da cobrança', p: 'config.sistema' },
     { to: '/hs/modelos', r: 'Modelos de mensagem', p: 'config.sistema' },
     { to: '/hs/auditoria', r: 'Auditoria', p: 'auditoria.ler' },
   ] },

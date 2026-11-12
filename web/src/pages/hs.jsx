@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { hs } from '../api.js';
 import { useSessao } from '../sessao.jsx';
 import { Tabela, Badge, Cabecalho, FormModal, Modal, useApi, useToast, useConfirm, Vazio, Dl, useExecutar, Stat } from '../ui.jsx';
 import { brl, data, dataHora, rotulo, mascaraDoc, pct, hojeISO } from '../format.js';
 import { colunasCaso, ListaCasos } from './cobranca.jsx';
+import { EditorFaixas, TabelaComissao } from './comissao.jsx';
 
 const STATUS_EMPRESA = ['CADASTRO_INCOMPLETO', 'AGUARDANDO_VALIDACAO', 'ATIVA', 'SUSPENSA', 'CANCELADA'];
 
@@ -194,8 +195,23 @@ export function Operadores() {
   );
 }
 
+function ComissaoContrato({ inicial, padrao, onChange }) {
+  const [propria, setPropria] = useState(!!inicial);
+  const [faixas, setFaixas] = useState(inicial || padrao.map(({ ate_dias, bps }) => ({ ate_dias, bps })));
+  useEffect(() => { onChange(propria ? faixas : null); }, [propria, faixas]); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <div className="stack">
+      <h3 style={{ margin: 0 }}>Comissão da HS sobre valores recebidos</h3>
+      <label className="check"><input type="checkbox" checked={propria} onChange={(e) => setPropria(e.target.checked)} />Usar tabela própria neste contrato</label>
+      {propria ? <EditorFaixas faixas={faixas} onChange={setFaixas} /> : <><p className="small muted" style={{ margin: 0 }}>Sem tabela própria, o contrato usa a tabela padrão vigente (abaixo).</p><TabelaComissao faixas={padrao} /></>}
+    </div>
+  );
+}
+
 export function ContratosHS() {
   const [editar, setEditar] = useState(null);
+  const [faixasContrato, setFaixasContrato] = useState(null);
+  const tabela = useApi('obterTabelaComissao', {});
   const [r, setR] = useState(0);
   const confirmar = useConfirm();
   const { executar } = useExecutar();
@@ -222,8 +238,10 @@ export function ContratosHS() {
           {c.status === 'ATIVO' && <button className="btn sm perigo" onClick={async () => { const ok = await confirmar({ titulo: 'Encerrar contrato', perigo: true, pedirMotivo: true, mensagem: 'Casos em andamento serão suspensos.' }); if (ok) { await executar('encerrarContrato', { contrato_id: c.id, motivo: ok.motivo }, 'Contrato encerrado'); setR(r + 1); } }}>Encerrar</button>}
         </div> },
       ]} vazio={<Vazio titulo="Nenhum contrato" />} />
-      {editar && <FormModal titulo={editar.id ? 'Proposta de contrato' : 'Nova proposta'} inicial={editar} onClose={() => setEditar(null)} campos={campos} botao="Enviar proposta à empresa"
-        onSubmit={async (v) => { await hs('salvarContrato', { ...v, id: editar.id }); setR(r + 1); }} />}
+      {editar && <FormModal grande titulo={editar.id ? 'Proposta de contrato' : 'Nova proposta'} inicial={editar} onClose={() => { setEditar(null); setFaixasContrato(null); }} campos={campos} botao="Enviar proposta à empresa"
+        onSubmit={async (v) => { await hs('salvarContrato', { ...v, id: editar.id, comissao_faixas: faixasContrato || undefined }); setR(r + 1); }}>
+        {tabela.data && <ComissaoContrato inicial={editar.comissao_faixas && editar.status !== 'SOLICITADO' ? editar.comissao_faixas : null} padrao={tabela.data.padrao} onChange={setFaixasContrato} />}
+      </FormModal>}
     </div>
   );
 }
