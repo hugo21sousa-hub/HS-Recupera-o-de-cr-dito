@@ -8,6 +8,7 @@ import { ToastProvider, ConfirmProvider, Carregando, Vazio } from './ui.jsx';
 import { Layout } from './layout.jsx';
 import { Entrar, Cadastro, Convite, Onboarding, Documento, Esqueci } from './pages/acesso.jsx';
 import { Exigir2FA } from './pages/seguranca.jsx';
+import { Site } from './pages/site.jsx';
 import { PainelEmpresa, PainelHS } from './pages/painel.jsx';
 import { Devedores, DevedorDetalhe, Dividas, DividaDetalhe, Parcelas, Importar } from './pages/cadastros.jsx';
 import { MinhasCobrancas, CobrancasHS, Carteiras, CarteiraDetalhe, Encaminhar, Autorizacoes } from './pages/cobranca.jsx';
@@ -32,13 +33,14 @@ function Raiz() {
   if (!s.logado) {
     return (
       <Routes>
+        <Route path="/" element={<Site />} />
         <Route path="/entrar" element={<Entrar />} />
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/esqueci" element={<Esqueci />} />
         <Route path="/convite/:token" element={<Convite />} />
         <Route path="/termos" element={<Documento tipo="termos" />} />
         <Route path="/privacidade" element={<Documento tipo="privacidade" />} />
-        <Route path="*" element={<Navigate to="/entrar" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
   }

@@ -15,6 +15,7 @@ O sistema é um único processo Node.js que guarda tudo numa pasta de dados (`DA
 | `DATABASE_SCHEMA` | `hs` no Supabase | Esquema das tabelas. No Supabase, **nunca** use `public`, porque ele é exposto pela API do projeto |
 | `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` | — | Anexos e backups diários no Supabase Storage (bucket privado `hs-arquivos`) |
 | `SUPERADMIN_EMAIL` / `SUPERADMIN_NOME` | — | Cria o primeiro superadmin ao iniciar e mostra o link de primeiro acesso nos logs |
+| `CONTATO_EMAIL` / `CONTATO_WHATSAPP` | — | Contato exibido no rodapé do site de apresentação (ex.: `contato@seudominio.com.br`, `5511999999999`) |
 | `EXIGIR_2FA_HS` | `true` | Verificação em duas etapas obrigatória para superadmin, gestores e operadores |
 
 ### Integrações (opcionais: cada uma só liga quando suas variáveis existem)

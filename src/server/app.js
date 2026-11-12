@@ -169,6 +169,14 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
       const ok = await exclusivo(() => db.Plano.filter({ id: '_' })).then(() => true).catch(() => false);
       return json(res, ok ? 200 : 503, { ok });
     }
+    if (rota === 'GET /api/publico') {
+      // Dados do site de apresentação (sem login): planos ativos e contato configurado
+      const planos = await exclusivo(() => db.Plano.filter({ status: 'ATIVO' }));
+      return json(res, 200, { ok: true, data: {
+        planos: planos.sort((a, b) => (a.ordem || 0) - (b.ordem || 0)).map((p) => ({ nome: p.nome, preco_mensal_centavos: p.preco_mensal_centavos, limite_devedores: p.limite_devedores, limite_usuarios: p.limite_usuarios, funcionalidades: p.funcionalidades || [] })),
+        contato: { email: env.CONTATO_EMAIL || null, whatsapp: env.CONTATO_WHATSAPP || null },
+      } });
+    }
     if (rota === 'GET /api/auth/sessao') {
       const s = await exclusivo(() => auth.sessao(lerCookie(req)));
       return json(res, 200, { ok: true, data: { logado: !!s, email_disponivel: email.disponivel } });

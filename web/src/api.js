@@ -37,6 +37,7 @@ const wrapDemo = (fn) => async (...a) => {
     throw new ApiError(e.message, e.status || 500, e.details);
   }
 };
+export const publico = DEMO ? wrapDemo(demo.publico) : () => req('/api/publico');
 export const hs = DEMO ? wrapDemo(demo.rpc) : (action, payload = {}) => req('/api/rpc', { action, payload });
 const authServidor = {
   login: (email, senha) => req('/api/auth/login', { email, senha }),

@@ -119,3 +119,13 @@ test('atrás do proxy, o limite de tentativas é por IP real do cliente', async 
   assert.equal((await tentar('198.51.100.9')).status, 401, 'outro cliente não é bloqueado');
   a.server.close(); await a.banco.fechar(); rmSync(d, { recursive: true, force: true });
 });
+
+test('site público: planos ativos sem login e sem dados internos', async () => {
+  await app.exclusivo(async () => { if (!(await app.db.Plano.filter({})).length) await app.db.Plano.create({ nome: 'HS ESSENCIAL', preco_mensal_centavos: 4990, status: 'ATIVO', ordem: 1, limite_devedores: 200, funcionalidades: ['devedores'] }); await app.db.Plano.create({ nome: 'OCULTO', preco_mensal_centavos: 1, status: 'INATIVO' }); });
+  const r = await fetch(base + '/api/publico');
+  const j = await r.json();
+  assert.equal(r.status, 200);
+  assert.ok(j.data.planos.some((p) => p.nome === 'HS ESSENCIAL'));
+  assert.ok(!j.data.planos.some((p) => p.nome === 'OCULTO'));
+  assert.equal(j.data.planos[0].id, undefined, 'não expõe ids');
+});

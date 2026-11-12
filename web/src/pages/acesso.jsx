@@ -12,7 +12,7 @@ function TelaAcesso({ children }) {
   return (
     <div className="acesso">
       <div className="lado">
-        <Marca />
+        <Link to="/" aria-label="Ir para o site" style={{ textDecoration: 'none' }}><Marca /></Link>
         <div>
           <h2>Recupere seus créditos com organização, transparência e respeito ao devedor.</h2>
           <ul>
@@ -261,7 +261,7 @@ export function Documento({ tipo }) {
   const termos = tipo === 'termos';
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', padding: '32px 16px' }} className="stack">
-      <Marca escura />
+      <div className="row between"><Link to="/" aria-label="Voltar ao site"><Marca escura /></Link><Link className="btn sm" to="/">Voltar</Link></div>
       <div className="card stack">
         <h1>{termos ? 'Termos de Uso' : 'Política de Privacidade'}</h1>
         <div className="aviso alerta">Modelo-base. O texto definitivo deve ser revisado pelo jurídico da HS antes da comercialização.</div>

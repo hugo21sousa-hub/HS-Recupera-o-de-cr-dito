@@ -90,6 +90,10 @@ Sempre que houver uma alteração no GitHub (branch `main`), o Render publica a 
 
 No Render, abra **hs-recuperacao › Environment**, clique em **Add Environment Variable**, preencha as variáveis descritas em `docs/IMPLANTACAO.md` e salve. O Render reinicia sozinho.
 
+## Contato no site
+
+O endereço principal mostra o site de apresentação da HS, com os planos atualizados automaticamente. Para exibir o seu e-mail e WhatsApp no rodapé, adicione no Render (**Environment**) as variáveis `CONTATO_EMAIL` e `CONTATO_WHATSAPP` (ex.: `5511999999999`).
+
 ## Limites do plano grátis
 
 | Serviço | Limite | Para 10 clientes |

@@ -46,6 +46,12 @@ export async function rpc(action, payload) {
   return data;
 }
 
+export async function publico() {
+  await iniciar();
+  const planos = (await db.Plano.filter({ status: 'ATIVO' })).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+  return { planos, contato: { email: null, whatsapp: null } };
+}
+
 const indisponivel = () => { throw new Erro('Indisponível na demonstração.', 422); };
 
 export const authDemo = {
