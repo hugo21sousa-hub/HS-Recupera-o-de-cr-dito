@@ -129,3 +129,23 @@ test('site público: planos ativos sem login e sem dados internos', async () => 
   assert.ok(!j.data.planos.some((p) => p.nome === 'OCULTO'));
   assert.equal(j.data.planos[0].id, undefined, 'não expõe ids');
 });
+
+test('primeiro acesso: links gerados em reinícios seguidos continuam válidos até um ser usado', async () => {
+  const d = mkdtempSync(join(tmpdir(), 'hs-pa-'));
+  const env = { ...envBanco(), SUPERADMIN_EMAIL: 'boot@hs.com' };
+  const a = criarApp({ dataDir: d, webDir: join(d, 'web'), env });
+  const l1 = await a.primeiroAcesso();
+  const l2 = await a.primeiroAcesso(); // simula reinício
+  const l3 = await a.primeiroAcesso();
+  assert.ok(l1 && l2 && l3 && l1 !== l2);
+  await new Promise((ok) => a.server.listen(0, ok));
+  const b = `http://127.0.0.1:${a.server.address().port}`;
+  const tok = (l) => l.split('/').pop();
+  assert.equal((await fetch(`${b}/api/auth/convite/${tok(l1)}`)).status, 200, 'o link mais antigo ainda vale');
+  const r = await fetch(`${b}/api/auth/convite`, { method: 'POST', headers: { 'X-HS': '1', 'Content-Type': 'application/json' }, body: JSON.stringify({ token: tok(l2), senha: 'SenhaForte1' }) });
+  assert.equal(r.status, 200);
+  assert.equal((await fetch(`${b}/api/auth/convite/${tok(l1)}`)).status, 404, 'após usar um, os outros deixam de valer');
+  assert.equal((await fetch(`${b}/api/auth/convite/${tok(l3)}`)).status, 404);
+  assert.equal(await a.primeiroAcesso(), null, 'com senha criada, não gera mais links');
+  a.server.close(); await a.banco.fechar(); rmSync(d, { recursive: true, force: true });
+});

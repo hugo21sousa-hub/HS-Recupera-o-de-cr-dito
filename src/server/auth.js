@@ -153,9 +153,9 @@ export function criarAuth({ db, agora = () => new Date(), urlBase = '', segredo 
     },
 
     /** Gera link de convite/redefinição (o administrador envia ao usuário). */
-    async gerarConvite(email) {
+    async gerarConvite(email, { invalidarAnteriores = true } = {}) {
       const e = normEmail(email);
-      for (const c of await db.Convite.filter({ email: e, usado: false })) await db.Convite.update(c.id, { usado: true });
+      if (invalidarAnteriores) for (const c of await db.Convite.filter({ email: e, usado: false })) await db.Convite.update(c.id, { usado: true });
       const token = randomBytes(24).toString('base64url');
       const expira = new Date(agora().getTime() + CONVITE_DIAS * 86400e3).toISOString();
       await db.Convite.create({ token_hash: hashToken(token), email: e, expira_em: expira, usado: false });
@@ -182,6 +182,8 @@ export function criarAuth({ db, agora = () => new Date(), urlBase = '', segredo 
         await db.Conta.create({ email: c.email, nome: String(nome || '').slice(0, 120), senha_hash: hashSenha(senha), status: 'ATIVA', falhas: 0, criado_em: agora().toISOString() });
       }
       await db.Convite.update(c.id, { usado: true, usado_em: agora().toISOString() });
+      // Qualquer outro link pendente para este e-mail deixa de valer
+      for (const outro of await db.Convite.filter({ email: c.email, usado: false })) await db.Convite.update(outro.id, { usado: true });
       return abrirSessao(c.email);
     },
 

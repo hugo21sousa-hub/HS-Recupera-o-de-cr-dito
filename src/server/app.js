@@ -355,7 +355,8 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
       const planos = await db.Plano.filter({});
       for (const p of PLANOS_PADRAO) if (!planos.some((x) => x.nome === p.nome)) await db.Plano.create(p);
       if ((await db.Conta.filter({ email: emailAdm })).length) return null; // já tem senha
-      const c = await auth.gerarConvite(emailAdm);
+      // Não cancela links anteriores: o servidor reinicia com frequência (deploys, plano grátis "dormindo")
+      const c = await auth.gerarConvite(emailAdm, { invalidarAnteriores: false });
       console.log(`\n[hs] PRIMEIRO ACESSO do superadmin ${emailAdm}: abra este link para criar a senha (vale 7 dias):\n[hs] ${c.link}\n`);
       return c.link;
     });
