@@ -1,7 +1,6 @@
 // Arquivos privados em disco. O cliente recebe apenas um file_uri opaco; o download usa link assinado e temporário.
 import { randomBytes, createHmac, timingSafeEqual } from 'node:crypto';
-import { mkdirSync, writeFileSync, existsSync, readFileSync, unlinkSync } from 'node:fs';
-import { join } from 'node:path';
+import { armazenamentoDisco } from './armazenamento.js';
 
 export const TIPOS_PERMITIDOS = { 'application/pdf': 'pdf', 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'text/csv': 'csv', 'text/plain': 'txt' };
 export const TAMANHO_MAX = 10 * 1024 * 1024;
@@ -16,8 +15,8 @@ function conferirConteudo(buf, mime) {
   return !buf.includes(0); // texto
 }
 
-export function criarArquivos({ db, dir, segredo, agora = () => new Date() }) {
-  mkdirSync(dir, { recursive: true });
+export function criarArquivos({ db, dir, segredo, agora = () => new Date(), armazenamento }) {
+  const arm = armazenamento || armazenamentoDisco(dir);
   const assinar = (uri, exp) => createHmac('sha256', segredo).update(`${uri}.${exp}`).digest('base64url');
 
   return {
@@ -26,7 +25,7 @@ export function criarArquivos({ db, dir, segredo, agora = () => new Date() }) {
       if (!buffer.length || buffer.length > TAMANHO_MAX) return { erro: 'Arquivo vazio ou maior que 10 MB' };
       if (!conferirConteudo(buffer, mime)) return { erro: 'Conteúdo do arquivo não corresponde ao tipo informado' };
       const file_uri = `arq_${randomBytes(20).toString('hex')}`;
-      writeFileSync(join(dir, file_uri), buffer, { mode: 0o600 });
+      await arm.put(file_uri, buffer, mime);
       await db.Arquivo.create({ file_uri, mime, nome: String(nome || 'arquivo').replace(/[^\w.\- ]+/g, '_').slice(0, 150), tamanho: buffer.length, enviado_por: email, enviado_em: agora().toISOString(), vinculado: false });
       return { file_uri };
     },
@@ -41,8 +40,7 @@ export function criarArquivos({ db, dir, segredo, agora = () => new Date() }) {
 
     async remover(file_uri) {
       if (!/^arq_[0-9a-f]{40}$/.test(String(file_uri))) return;
-      const p = join(dir, file_uri);
-      if (existsSync(p)) unlinkSync(p);
+      await arm.del(file_uri);
       const meta = (await db.Arquivo.filter({ file_uri }))[0];
       if (meta) await db.Arquivo.delete(meta.id);
     },
@@ -58,10 +56,10 @@ export function criarArquivos({ db, dir, segredo, agora = () => new Date() }) {
       const esperado = Buffer.from(assinar(file_uri, exp));
       const recebido = Buffer.from(String(sig || ''));
       if (esperado.length !== recebido.length || !timingSafeEqual(esperado, recebido)) return null;
-      const p = join(dir, file_uri);
-      if (!existsSync(p)) return null;
+      const buffer = await arm.get(file_uri);
+      if (!buffer) return null;
       const meta = (await db.Arquivo.filter({ file_uri }))[0];
-      return { buffer: readFileSync(p), mime: meta?.mime || 'application/octet-stream', nome: meta?.nome || file_uri };
+      return { buffer, mime: meta?.mime || 'application/octet-stream', nome: meta?.nome || file_uri };
     },
   };
 }

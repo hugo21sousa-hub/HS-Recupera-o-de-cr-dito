@@ -1,0 +1,35 @@
+# Configuração automática para o Render (plano grátis) + Supabase (banco e arquivos).
+# Passo a passo: docs/INSTALAR_RENDER.md
+services:
+  - type: web
+    name: hs-recuperacao
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm ci --omit=dev && npm --prefix web ci && npm --prefix web run build
+    startCommand: npm start
+    healthCheckPath: /api/saude
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: TRUST_PROXY
+        value: "true"
+      - key: EXIGIR_2FA_HS
+        value: "true"
+      - key: DATABASE_SCHEMA
+        value: hs
+      - key: SEGREDO
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPERADMIN_EMAIL
+        sync: false
+      - key: SUPERADMIN_NOME
+        sync: false

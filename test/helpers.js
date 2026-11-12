@@ -1,9 +1,23 @@
 import assert from 'node:assert/strict';
+import { after } from 'node:test';
+import { randomBytes } from 'node:crypto';
+import { abrirBancoPg } from '../src/server/db-pg.js';
+
+// Com TEST_DATABASE_URL, todos os testes rodam contra PostgreSQL (um schema isolado por cenário).
+const PG = process.env.TEST_DATABASE_URL;
+const abertos = [];
+if (PG) after(async () => { for (const b of abertos) await b.fechar(); });
+export const envBanco = () => (PG ? { DATABASE_URL: PG, DATABASE_SCHEMA: 'auto', HS_TESTE_DROP_SCHEMA: '1' } : {});
 import { handle } from '../src/app/router.js';
 import { ENTITIES } from '../src/schema/entities.mjs';
 
 /** Banco em memória com a mesma interface usada pelo adaptador Base44 (filter/create/update/delete). */
 export function fakeDB() {
+  if (PG) {
+    const b = abrirBancoPg(PG, { schema: `t_${randomBytes(6).toString('hex')}`, env: { HS_TESTE_DROP_SCHEMA: '1' } });
+    abertos.push(b);
+    return b.db;
+  }
   const tables = {};
   let seq = 0;
   const handler = (name) => {

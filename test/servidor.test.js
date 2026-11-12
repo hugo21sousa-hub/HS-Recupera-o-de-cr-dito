@@ -4,16 +4,16 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { criarApp } from '../src/server/app.js';
-import { cnpj } from './helpers.js';
+import { cnpj, envBanco } from './helpers.js';
 
 let app, base, dir;
 before(async () => {
   dir = mkdtempSync(join(tmpdir(), 'hs-srv-'));
-  app = criarApp({ dataDir: dir, urlBase: 'http://teste', webDir: join(dir, 'web') });
+  app = criarApp({ dataDir: dir, urlBase: 'http://teste', webDir: join(dir, 'web'), env: envBanco() });
   await new Promise((ok) => app.server.listen(0, ok));
   base = `http://127.0.0.1:${app.server.address().port}`;
 });
-after(() => { app.server.close(); app.banco.fechar(); rmSync(dir, { recursive: true, force: true }); });
+after(async () => { app.server.close(); await app.banco.fechar(); rmSync(dir, { recursive: true, force: true }); });
 
 function cliente() {
   let cookie = '';
@@ -110,12 +110,12 @@ test('falha numa ação desfaz todas as gravações dela (transação)', async (
 
 test('atrás do proxy, o limite de tentativas é por IP real do cliente', async () => {
   const d = mkdtempSync(join(tmpdir(), 'hs-px-'));
-  const a = criarApp({ dataDir: d, webDir: join(d, 'web'), confiarProxy: true, env: {} });
+  const a = criarApp({ dataDir: d, webDir: join(d, 'web'), confiarProxy: true, env: envBanco() });
   await new Promise((ok) => a.server.listen(0, ok));
   const url = `http://127.0.0.1:${a.server.address().port}/api/auth/login`;
   const tentar = (ip) => fetch(url, { method: 'POST', headers: { 'X-HS': '1', 'Content-Type': 'application/json', 'X-Forwarded-For': ip }, body: '{"email":"x@x.com","senha":"errada1"}' });
   for (let i = 0; i < 21; i++) await tentar('203.0.113.7');
   assert.equal((await tentar('203.0.113.7')).status, 429);
   assert.equal((await tentar('198.51.100.9')).status, 401, 'outro cliente não é bloqueado');
-  a.server.close(); a.banco.fechar(); rmSync(d, { recursive: true, force: true });
+  a.server.close(); await a.banco.fechar(); rmSync(d, { recursive: true, force: true });
 });

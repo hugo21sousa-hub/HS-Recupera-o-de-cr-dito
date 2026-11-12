@@ -11,6 +11,10 @@ O sistema é um único processo Node.js que guarda tudo numa pasta de dados (`DA
 | `URL_BASE` | `http://localhost:PORT` | Endereço público, usado nos links de convite (ex.: `https://app.hsrecupera.com.br`) |
 | `NODE_ENV` | — | Use `production` em produção: ativa cookie `Secure` e HSTS |
 | `SEGREDO` | gerado em `DATA_DIR/segredo` | Chave que assina os links de arquivos e cifra os segredos do 2FA. Se definir, use 64 caracteres aleatórios e **nunca a troque** depois (os 2FA ativos deixariam de funcionar). |
+| `DATABASE_URL` | — | Se definido, usa PostgreSQL (ex.: Supabase) em vez de SQLite |
+| `DATABASE_SCHEMA` | `hs` no Supabase | Esquema das tabelas. No Supabase, **nunca** use `public`, porque ele é exposto pela API do projeto |
+| `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` | — | Anexos e backups diários no Supabase Storage (bucket privado `hs-arquivos`) |
+| `SUPERADMIN_EMAIL` / `SUPERADMIN_NOME` | — | Cria o primeiro superadmin ao iniciar e mostra o link de primeiro acesso nos logs |
 | `EXIGIR_2FA_HS` | `true` | Verificação em duas etapas obrigatória para superadmin, gestores e operadores |
 
 ### Integrações (opcionais: cada uma só liga quando suas variáveis existem)

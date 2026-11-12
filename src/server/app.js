@@ -4,6 +4,9 @@ import { readFileSync, existsSync, statSync, writeFileSync, mkdirSync } from 'no
 import { join, extname, resolve, sep } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { abrirBanco } from './db.js';
+import { abrirBancoPg } from './db-pg.js';
+import { armazenamentoSupabase, configSupabase } from './armazenamento.js';
+import { gzipSync } from 'node:zlib';
 import { criarAuth } from './auth.js';
 import { criarArquivos } from './files.js';
 import { handle } from '../app/router.js';
@@ -25,11 +28,17 @@ const LIBERADAS_SEM_2FA = new Set(['meuPerfil', 'listarNotificacoes', 'marcarNot
 export function criarApp({ dataDir = './data', urlBase = '', producao = false, webDir = './web/dist', arquivoBanco, env = process.env, transporteEmail, fetchImpl, exigir2faHS = env.EXIGIR_2FA_HS !== 'false', confiarProxy = false } = {}) {
   mkdirSync(dataDir, { recursive: true });
   const segredoPath = join(dataDir, 'segredo');
-  const segredo = process.env.SEGREDO || (existsSync(segredoPath) ? readFileSync(segredoPath, 'utf8') : (() => { const s = randomBytes(32).toString('hex'); writeFileSync(segredoPath, s, { mode: 0o600 }); return s; })());
-  const banco = abrirBanco(arquivoBanco || join(dataDir, 'hs.sqlite'));
+  const segredo = env.SEGREDO || (existsSync(segredoPath) ? readFileSync(segredoPath, 'utf8') : (() => { const s = randomBytes(32).toString('hex'); writeFileSync(segredoPath, s, { mode: 0o600 }); return s; })());
+  const databaseUrl = env.DATABASE_URL;
+  const esquema = env.DATABASE_SCHEMA === 'auto' ? `t_${randomBytes(6).toString('hex')}` : env.DATABASE_SCHEMA || null;
+  const banco = databaseUrl ? abrirBancoPg(databaseUrl, { schema: esquema, env }) : abrirBanco(arquivoBanco || join(dataDir, 'hs.sqlite'));
+  const supa = configSupabase(env);
+  const armazenamento = supa ? armazenamentoSupabase(supa, fetchImpl || fetch) : undefined;
+  if (databaseUrl && !supa) console.warn('[hs] DATABASE_URL sem SUPABASE_URL/SUPABASE_SERVICE_KEY: anexos ficarão no disco local (podem se perder em hospedagens sem disco permanente).');
+  if (databaseUrl && !env.SEGREDO) console.warn('[hs] Defina SEGREDO no ambiente: sem ele, links de arquivos e 2FA deixam de valer a cada reinício.');
   const { db, exclusivo } = banco;
   const auth = criarAuth({ db, urlBase, segredo });
-  const arquivos = criarArquivos({ db, dir: join(dataDir, 'arquivos'), segredo });
+  const arquivos = criarArquivos({ db, dir: join(dataDir, 'arquivos'), segredo, armazenamento });
   const email = criarEmail({ config: configSMTP(env), transporte: transporteEmail, urlBase });
   const whatsCfg = configWhatsApp(env);
   const whatsapp = criarWhatsApp({ config: whatsCfg, fetchImpl: fetchImpl || fetch });
@@ -46,7 +55,19 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
 
   const ctxSistema = (posteriores = []) => ({ db, user: SISTEMA, authEmail: 'sistema', now: () => new Date(), files: arquivos, ...integracoes, aposConfirmar: posteriores });
 
+  /** Banco PostgreSQL + Supabase Storage: backup diário (JSON compactado) no bucket, guardando 14 dias. */
+  async function backupNaNuvem() {
+    if (banco.tipo !== 'postgres' || !armazenamento?.listar) return null;
+    const dados = await exclusivo(() => banco.exportar());
+    const nome = `backups/hs-${new Date().toISOString().slice(0, 10)}.json.gz`;
+    await armazenamento.put(nome, gzipSync(JSON.stringify({ gerado_em: new Date().toISOString(), tabelas: dados })), 'application/gzip');
+    const todos = (await armazenamento.listar('backups/')).filter((n) => /hs-\d{4}-\d{2}-\d{2}\.json\.gz$/.test(n)).sort();
+    for (const velho of todos.slice(0, Math.max(0, todos.length - 14))) await armazenamento.del(velho);
+    return nome;
+  }
+
   async function rodarRetencao() {
+    await backupNaNuvem().catch((e) => console.error('[backup]', e.message));
     return transacao(async (pos) => {
       const r = await executarRetencao(ctxSistema(pos));
       const agoraISO = new Date().toISOString();
@@ -143,7 +164,11 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
       if (req.method !== 'GET' && req.headers['x-hs'] !== '1') return json(res, 403, { ok: false, error: 'Requisição recusada' });
     }
 
-    if (rota === 'GET /api/saude') return json(res, 200, { ok: true });
+    if (rota === 'GET /api/saude') {
+      // Também mantém o banco "acordado" (o Supabase grátis pausa projetos sem uso)
+      const ok = await exclusivo(() => db.Plano.filter({ id: '_' })).then(() => true).catch(() => false);
+      return json(res, ok ? 200 : 503, { ok });
+    }
     if (rota === 'GET /api/auth/sessao') {
       const s = await exclusivo(() => auth.sessao(lerCookie(req)));
       return json(res, 200, { ok: true, data: { logado: !!s, email_disponivel: email.disponivel } });
@@ -306,5 +331,27 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
   };
   server.on('close', () => timer && clearInterval(timer));
 
-  return { server, db, banco, auth, exclusivo, email, rodarRetencao, agendarRetencao };
+  /**
+   * Primeiro acesso sem terminal (ex.: Render grátis): com SUPERADMIN_EMAIL definido, cria o superadmin,
+   * os planos padrão e mostra nos registros (logs) o link para definir a senha. Enquanto a pessoa não
+   * criar a senha, um novo link é mostrado a cada inicialização.
+   */
+  async function primeiroAcesso() {
+    const emailAdm = String(env.SUPERADMIN_EMAIL || '').trim().toLowerCase();
+    if (!emailAdm) return null;
+    const { PLANOS_PADRAO } = await import('../app/actions/comercial.js');
+    return exclusivo(async () => {
+      let u = (await db.UsuarioPlataforma.filter({ email: emailAdm }))[0];
+      if (u && u.perfil !== 'SUPERADMIN_HS') return null;
+      if (!u) u = await db.UsuarioPlataforma.create({ nome: env.SUPERADMIN_NOME || 'Administrador HS', email: emailAdm, perfil: 'SUPERADMIN_HS', empresa_id: null, status: 'ATIVO', data_criacao: new Date().toISOString() });
+      const planos = await db.Plano.filter({});
+      for (const p of PLANOS_PADRAO) if (!planos.some((x) => x.nome === p.nome)) await db.Plano.create(p);
+      if ((await db.Conta.filter({ email: emailAdm })).length) return null; // já tem senha
+      const c = await auth.gerarConvite(emailAdm);
+      console.log(`\n[hs] PRIMEIRO ACESSO do superadmin ${emailAdm}: abra este link para criar a senha (vale 7 dias):\n[hs] ${c.link}\n`);
+      return c.link;
+    });
+  }
+
+  return { server, db, banco, auth, exclusivo, email, rodarRetencao, agendarRetencao, backupNaNuvem, primeiroAcesso };
 }

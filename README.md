@@ -11,6 +11,7 @@ Sistema completo e independente: servidor Node.js, banco SQLite, frontend React 
 
 Um único comando instala tudo: HTTPS, serviço, firewall, backup diário e o primeiro superadmin.
 
+- **Grátis, 100% na nuvem e sem cartão (recomendado para começar):** Render + Supabase. Siga **[docs/INSTALAR_RENDER.md](docs/INSTALAR_RENDER.md)**.
 - **Grátis:** Oracle Cloud "Always Free" + endereço DuckDNS. Siga **[docs/INSTALAR_ORACLE.md](docs/INSTALAR_ORACLE.md)**.
 - **Grátis (alternativa):** Google Cloud e2-micro + DuckDNS. Siga **[docs/INSTALAR_GOOGLE.md](docs/INSTALAR_GOOGLE.md)**.
 - **VPS paga** (Hostinger, AWS Lightsail, Vultr…): siga **[docs/INSTALAR_VPS.md](docs/INSTALAR_VPS.md)**.
@@ -73,7 +74,7 @@ Entre em `http://localhost:3000` com a senha `Demo2026hs` e um destes usuários:
 |---|---|
 | `src/core/` | Regras de negócio puras: dinheiro em centavos, CPF/CNPJ, permissões, status dos casos, negociação, pagamentos, validação de carteira, relatórios, salvaguardas de cobrança. |
 | `src/app/` | As 97 ações do backend (autorização, gravação e auditoria). Referência em `docs/API.md`. |
-| `src/server/` | Servidor HTTP, banco SQLite com transações, contas e sessões, convites e arquivos privados. |
+| `src/server/` | Servidor HTTP, banco (SQLite em disco ou PostgreSQL/Supabase) com transações, contas e sessões, convites e arquivos privados. |
 | `src/schema/entities.mjs` | Definição das 31 entidades de negócio. |
 | `web/` | Frontend React: painéis da empresa e da Central de Operações HS. |
 | `test/` | 41 testes automatizados (segurança, operação, financeiro, relatórios, servidor, 2FA, e-mail, WhatsApp, Asaas e retenção). |

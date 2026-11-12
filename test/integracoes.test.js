@@ -11,7 +11,7 @@ import { criarWhatsApp } from '../src/server/whatsapp.js';
 import { processarWebhookWhatsApp } from '../src/app/actions/whatsapp.js';
 import { processarWebhookAsaas } from '../src/app/actions/comercial.js';
 import { executarRetencao } from '../src/app/retencao.js';
-import { cenario, casosHS, AGORA } from './helpers.js';
+import { cenario, casosHS, AGORA, envBanco } from './helpers.js';
 
 test('TOTP segue a RFC 6238 (vetor oficial)', () => {
   const segredo = base32(Buffer.from('12345678901234567890'));
@@ -27,11 +27,11 @@ let app, base, dir;
 const transporte = nodemailer.createTransport({ jsonTransport: true });
 before(async () => {
   dir = mkdtempSync(join(tmpdir(), 'hs-int-'));
-  app = criarApp({ dataDir: dir, urlBase: 'http://teste', webDir: join(dir, 'web'), transporteEmail: transporte, env: {} });
+  app = criarApp({ dataDir: dir, urlBase: 'http://teste', webDir: join(dir, 'web'), transporteEmail: transporte, env: envBanco() });
   await new Promise((ok) => app.server.listen(0, ok));
   base = `http://127.0.0.1:${app.server.address().port}`;
 });
-after(() => { app.server.close(); app.banco.fechar(); rmSync(dir, { recursive: true, force: true }); });
+after(async () => { app.server.close(); await app.banco.fechar(); rmSync(dir, { recursive: true, force: true }); });
 
 function cliente() {
   let cookie = '';
@@ -214,4 +214,60 @@ test('Assinatura online: fatura, confirmação pelo webhook, idempotência e ina
 test('falha de rede no WhatsApp vira mensagem clara (502), não erro interno', async () => {
   const w = criarWhatsApp({ config: { token: 't', phoneId: '1', versao: 'v21.0', base: 'http://x' }, fetchImpl: async () => { throw new TypeError('fetch failed'); } });
   await assert.rejects(w.enviarTexto('5511999999999', 'oi'), (e) => e.status === 502 && /envio manual/.test(e.message));
+});
+
+// ---------- Supabase Storage (API simulada) ----------
+test('anexos e backup no Supabase Storage (bucket privado com chave de serviço)', async () => {
+  const objetos = new Map();
+  const chamadas = [];
+  const { createServer } = await import('node:http');
+  const mock = createServer((req, res) => {
+    const partes = []; req.on('data', (c) => partes.push(c)); req.on('end', () => {
+      chamadas.push(`${req.method} ${req.url}`);
+      if (req.headers.apikey !== 'chave-servico') { res.writeHead(401); return res.end(); }
+      const corpo = Buffer.concat(partes);
+      if (req.url === '/storage/v1/bucket') { res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end('{"name":"hs-arquivos"}'); }
+      if (req.url.startsWith('/storage/v1/object/list/')) {
+        const { prefix } = JSON.parse(corpo.toString());
+        const nomes = [...objetos.keys()].filter((k) => k.startsWith(prefix)).map((k) => ({ name: k.slice(prefix.length) }));
+        res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify(nomes));
+      }
+      const chave = decodeURIComponent(req.url.replace('/storage/v1/object/hs-arquivos/', ''));
+      if (req.method === 'POST') { objetos.set(chave, corpo); res.writeHead(200); return res.end('{}'); }
+      if (req.method === 'GET') { if (!objetos.has(chave)) { res.writeHead(404); return res.end(); } res.writeHead(200); return res.end(objetos.get(chave)); }
+      if (req.method === 'DELETE') { objetos.delete(chave); res.writeHead(200); return res.end('{}'); }
+      res.writeHead(404); res.end();
+    });
+  });
+  await new Promise((ok) => mock.listen(0, ok));
+  const d = mkdtempSync(join(tmpdir(), 'hs-sb-'));
+  const a = criarApp({ dataDir: d, webDir: join(d, 'web'), env: { ...envBanco(), SUPABASE_URL: `http://127.0.0.1:${mock.address().port}`, SUPABASE_SERVICE_KEY: 'chave-servico', SEGREDO: 'x'.repeat(64) } });
+  await new Promise((ok) => a.server.listen(0, ok));
+  const base2 = `http://127.0.0.1:${a.server.address().port}`;
+  let cookie = '';
+  const req = async (method, path, body, headers = {}) => {
+    const r = await fetch(base2 + path, { method, headers: { 'X-HS': '1', ...(body && !(body instanceof Uint8Array) ? { 'Content-Type': 'application/json' } : {}), ...(cookie ? { Cookie: cookie } : {}), ...headers }, body: body instanceof Uint8Array ? body : body ? JSON.stringify(body) : undefined });
+    const sc = r.headers.get('set-cookie'); if (sc) cookie = sc.split(';')[0];
+    return r;
+  };
+  await req('POST', '/api/auth/cadastro', { email: 'sb@loja.com', senha: 'SenhaForte1' });
+  const rpc = async (action, payload) => (await (await req('POST', '/api/rpc', { action, payload })).json()).data;
+  await rpc('registrarEmpresa', { razao_social: 'Loja SB', cnpj: '11444777000161', email: 'a@sb.com', telefone: '1133334444', endereco: 'Rua 1', responsavel_legal: 'X', aceite_termos: true, aceite_privacidade: true });
+  const dev = await rpc('salvarDevedor', { nome: 'Fulano', tipo_pessoa: 'PF', cpf_cnpj: '52998224725', whatsapp: '11999990000' });
+  const div = await rpc('salvarDivida', { devedor_id: dev.id, valor_original_centavos: 1000, data_vencimento: '2026-01-10' });
+  const up = await (await req('POST', '/api/upload', new TextEncoder().encode('%PDF-1.4 supabase'), { 'Content-Type': 'application/pdf', 'X-Filename': 'nf.pdf' })).json();
+  assert.ok(objetos.has(up.data.file_uri), 'arquivo foi para o bucket');
+  const doc = await rpc('anexarDocumento', { divida_id: div.id, file_uri: up.data.file_uri, nome_arquivo: 'nf.pdf' });
+  const { url } = await rpc('urlDocumento', { documento_id: doc.id });
+  const baixado = await fetch(base2 + url);
+  assert.equal(await baixado.text(), '%PDF-1.4 supabase');
+  assert.equal((await fetch(`${base2}/api/saude`)).status, 200);
+  if (a.banco.tipo === 'postgres') {
+    const nome = await a.backupNaNuvem();
+    assert.match(nome, /^backups\/hs-\d{4}-\d{2}-\d{2}\.json\.gz$/);
+    const { gunzipSync } = await import('node:zlib');
+    const conteudo = JSON.parse(gunzipSync(objetos.get(nome)).toString());
+    assert.ok(conteudo.tabelas.Divida.some((r) => r.id === div.id), 'backup contém os dados');
+  }
+  a.server.close(); await a.banco.fechar(); mock.close(); rmSync(d, { recursive: true, force: true });
 });
