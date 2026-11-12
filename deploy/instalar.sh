@@ -105,7 +105,7 @@ fi
 chown -R "$USUARIO:$USUARIO" "$APP_DIR"
 
 passo "Instalando dependências e compilando as telas (pode levar alguns minutos)"
-sudo -u "$USUARIO" -H env npm_config_cache="$APP_DIR/.npm-cache" bash -c "cd '$APP_DIR' && npm ci --omit=dev --no-audit --no-fund --silent && npm --prefix web ci --no-audit --no-fund --silent && npm --prefix web run build --silent" \
+sudo -u "$USUARIO" -H env npm_config_cache="$APP_DIR/.npm-cache" bash -c "cd '$APP_DIR' && npm ci --omit=dev --no-audit --no-fund --silent && npm --prefix web ci --include=dev --no-audit --no-fund --silent && npm --prefix web run build --silent" \
   || erro "Falha ao instalar/compilar. Verifique se o servidor tem pelo menos 1 GB de RAM (ou crie swap)."
 
 # ---------- configuração ----------
@@ -248,7 +248,7 @@ set -euo pipefail
 /usr/local/bin/hs-backup
 sudo -u $USUARIO -H git -C $APP_DIR fetch -q origin $RAMO
 sudo -u $USUARIO -H git -C $APP_DIR reset -q --hard origin/$RAMO
-sudo -u $USUARIO -H env npm_config_cache=$APP_DIR/.npm-cache bash -c "cd $APP_DIR && npm ci --omit=dev --no-audit --no-fund --silent && npm --prefix web ci --no-audit --no-fund --silent && npm --prefix web run build --silent"
+sudo -u $USUARIO -H env npm_config_cache=$APP_DIR/.npm-cache bash -c "cd $APP_DIR && npm ci --omit=dev --no-audit --no-fund --silent && npm --prefix web ci --include=dev --no-audit --no-fund --silent && npm --prefix web run build --silent"
 systemctl restart hs
 sleep 2
 curl -fsS http://127.0.0.1:$PORTA/api/saude >/dev/null && echo "Atualizado e no ar." || { echo "O sistema não respondeu. Veja: journalctl -u hs -n 50"; exit 1; }

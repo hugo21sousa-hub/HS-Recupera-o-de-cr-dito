@@ -6,7 +6,7 @@ services:
     runtime: node
     plan: free
     region: ohio  # mesma região do banco Supabase (us-east-2)
-    buildCommand: npm ci --omit=dev && npm --prefix web ci && npm --prefix web run build
+    buildCommand: npm ci --omit=dev && npm --prefix web ci --include=dev && npm --prefix web run build
     startCommand: npm start
     healthCheckPath: /api/saude
     autoDeploy: true
