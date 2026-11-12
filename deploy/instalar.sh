@@ -79,7 +79,9 @@ install -d -m 0700 -o root -g root "$BACKUP_DIR"
 install -d -m 0750 -o root -g "$USUARIO" /etc/hs
 
 if [ -d "$APP_DIR/.git" ]; then
-  git -C "$APP_DIR" fetch -q origin "$RAMO" && git -C "$APP_DIR" reset -q --hard "origin/$RAMO"
+  # o código pertence ao usuário do serviço: o git roda como ele (evita "dubious ownership")
+  sudo -u "$USUARIO" -H git -C "$APP_DIR" fetch -q origin "$RAMO" || erro "Não foi possível atualizar o código a partir do GitHub."
+  sudo -u "$USUARIO" -H git -C "$APP_DIR" reset -q --hard "origin/$RAMO"
 else
   git clone -q --depth 1 --branch "$RAMO" "$REPO_URL" "$APP_DIR" || erro "Não foi possível baixar $REPO_URL. Se o repositório for privado, veja docs/IMPLANTACAO.md (instalação com token)."
 fi
@@ -215,9 +217,8 @@ cat > /usr/local/bin/hs-atualizar <<EOF
 # Atualiza para a versão mais recente do GitHub (faz backup antes)
 set -euo pipefail
 /usr/local/bin/hs-backup
-git -C $APP_DIR fetch -q origin $RAMO
-git -C $APP_DIR reset -q --hard origin/$RAMO
-chown -R $USUARIO:$USUARIO $APP_DIR
+sudo -u $USUARIO -H git -C $APP_DIR fetch -q origin $RAMO
+sudo -u $USUARIO -H git -C $APP_DIR reset -q --hard origin/$RAMO
 sudo -u $USUARIO -H env npm_config_cache=$APP_DIR/.npm-cache bash -c "cd $APP_DIR && npm ci --omit=dev --no-audit --no-fund --silent && npm --prefix web ci --no-audit --no-fund --silent && npm --prefix web run build --silent"
 systemctl restart hs
 sleep 2

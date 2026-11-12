@@ -11,6 +11,17 @@ Em qualquer provedor (Hostinger VPS, AWS Lightsail, Vultr, Magalu Cloud…), esc
 - **Tamanho:** 2 GB de RAM (1 GB funciona, mas a compilação das telas fica mais lenta)
 - **Acesso:** anote o **IP** e a **senha de root** (ou cadastre sua chave SSH)
 
+### Na Hostinger
+
+1. Contrate um plano **VPS** (KVM 1 já basta para começar; KVM 2 dá folga). Os planos de "Hospedagem de Sites" **não servem**, porque não mantêm um sistema Node.js rodando o tempo todo.
+2. Na configuração da VPS, escolha:
+   - **Localização:** Brasil (São Paulo);
+   - **Sistema operacional:** Ubuntu 24.04 "limpo", sem painel de controle;
+   - **Senha de root:** defina e guarde.
+3. No hPanel, abra a VPS e anote o **endereço IP**. O botão **Terminal do navegador** abre o acesso direto, sem precisar de SSH (passo 3).
+4. Se o domínio foi comprado na Hostinger, crie o registro do passo 2 em **Domínios › DNS / Nameservers**.
+5. Se você ativar o **Firewall** da VPS no hPanel, libere as portas 22, 80 e 443.
+
 ## 2. Apontar o domínio
 
 No painel do seu domínio (Registro.br, por exemplo), crie um registro:
