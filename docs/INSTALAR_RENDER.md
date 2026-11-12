@@ -2,7 +2,7 @@
 
 Custo: **R$ 0**, em geral sem precisar de cartão. Tudo fica na nuvem:
 
-- **Supabase:** guarda o banco de dados (PostgreSQL, em São Paulo), os anexos e o backup diário.
+- **Supabase:** guarda o banco de dados (PostgreSQL), os anexos e o backup diário.
 - **Render:** roda o sistema e dá o endereço `https://….onrender.com`, com HTTPS.
 
 Para uma operação inicial (cerca de 10 clientes) sobra capacidade. Tempo estimado: 30 minutos.
@@ -15,7 +15,7 @@ Para uma operação inicial (cerca de 10 clientes) sobra capacidade. Tempo estim
 2. Clique em **New project** e preencha:
    - **Name:** `hs-recuperacao`
    - **Database Password:** clique em **Generate a password** e **guarde essa senha**
-   - **Region:** **South America (São Paulo)**
+   - **Region:** **East US (Ohio)**, a mesma região em que o Render roda (`render.yaml`). Banco e sistema juntos deixam as telas mais rápidas. Se criar o banco em outra região, ajuste `region` no `render.yaml`.
    - **Plano:** Free
 3. Clique em **Create new project** e aguarde de 1 a 2 minutos.
 
