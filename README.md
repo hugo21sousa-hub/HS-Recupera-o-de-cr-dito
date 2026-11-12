@@ -12,6 +12,7 @@ Sistema completo e independente: servidor Node.js, banco SQLite, frontend React 
 Um único comando instala tudo: HTTPS, serviço, firewall, backup diário e o primeiro superadmin.
 
 - **Grátis:** Oracle Cloud "Always Free" + endereço DuckDNS. Siga **[docs/INSTALAR_ORACLE.md](docs/INSTALAR_ORACLE.md)**.
+- **Grátis (alternativa):** Google Cloud e2-micro + DuckDNS. Siga **[docs/INSTALAR_GOOGLE.md](docs/INSTALAR_GOOGLE.md)**.
 - **VPS paga** (Hostinger, AWS Lightsail, Vultr…): siga **[docs/INSTALAR_VPS.md](docs/INSTALAR_VPS.md)**.
 
 ## Rodar no seu computador
