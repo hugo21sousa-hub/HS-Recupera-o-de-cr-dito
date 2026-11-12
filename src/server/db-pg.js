@@ -25,7 +25,7 @@ export function abrirBancoPg(url, { schema = null, env = process.env } = {}) {
 
   async function conectar() {
     const c = new pg.Client({ connectionString: url.replace(/[?&]sslmode=[^&]+/, ''), ssl: configSSL(url, env), application_name: 'hs-recuperacao' });
-    c.on('error', (e) => { console.error('[pg]', e.message); if (cliente === c) { cliente = null; pronto = null; } });
+    c.on('error', (e) => { console.error('[hs] conexão com o banco caiu:', e.message); if (cliente === c) { cliente = null; pronto = null; } });
     await c.connect();
     if (schema) {
       await c.query(`CREATE SCHEMA IF NOT EXISTS "${schema}"`);
@@ -38,7 +38,20 @@ export function abrirBancoPg(url, { schema = null, env = process.env } = {}) {
     }
     cliente = c;
   }
-  const garantir = () => (pronto ??= conectar().catch((e) => { pronto = null; throw e; }));
+  const DICAS = {
+    '28P01': 'o banco recusou a SENHA. Confira a senha dentro do DATABASE_URL (sem colchetes; prefira só letras e números).',
+    'ENOTFOUND': 'endereço do banco não encontrado. Confira o host no DATABASE_URL.',
+    'ECONNREFUSED': 'conexão recusada. Confira o host e a porta (Supabase: Session pooler, porta 5432).',
+    'ETIMEDOUT': 'tempo esgotado ao conectar. Use o endereço do Session pooler do Supabase (IPv4).',
+    'ENETUNREACH': 'rede inalcançável (provavelmente IPv6). Use o endereço do Session pooler do Supabase.',
+    '3D000': 'banco de dados inexistente. O final do DATABASE_URL deve ser /postgres.',
+  };
+  let ultimoAviso = 0;
+  const garantir = () => (pronto ??= conectar().catch((e) => {
+    pronto = null;
+    if (Date.now() - ultimoAviso > 60000) { ultimoAviso = Date.now(); console.error(`[hs] Não foi possível conectar ao banco (${e.code || e.message}): ${DICAS[e.code] || e.message}`); }
+    throw e;
+  }));
   async function q(sql, params) { await garantir(); return cliente.query(sql, params); }
 
   const toRow = (r) => r && { ...r.data, id: r.id, created_date: r.created_date, updated_date: r.updated_date };

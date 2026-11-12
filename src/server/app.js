@@ -323,7 +323,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
 
   const server = createServer((req, res) => {
     rotear(req, res).catch((e) => {
-      if (!e.status) console.error('[http]', e);
+      if (!e.status && !(e.code && /^(28P01|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|ENETUNREACH|3D000)$/.test(e.code))) console.error('[http]', e);
       if (!res.headersSent) json(res, e.status || 500, { ok: false, error: e.status ? e.message : 'Erro interno' });
       else res.end();
     });
@@ -332,7 +332,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
   // Retenção LGPD e limpeza: ao iniciar e a cada 24 h
   let timer = null;
   const agendarRetencao = () => {
-    const rodar = () => rodarRetencao().then((r) => { if (r.titulares_anonimizados) console.log('[retencao]', r); }).catch((e) => console.error('[retencao]', e));
+    const rodar = () => rodarRetencao().then((r) => { if (r.titulares_anonimizados) console.log('[retencao]', r); }).catch((e) => console.error('[retencao]', e.code ? `${e.code} (ver mensagem do banco acima)` : e));
     rodar();
     timer = setInterval(rodar, 24 * 3600e3);
     timer.unref();

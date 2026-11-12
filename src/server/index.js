@@ -12,5 +12,5 @@ const { server, agendarRetencao, primeiroAcesso } = criarApp({
 const host = process.env.HOST || '0.0.0.0';
 server.listen(porta, host, () => console.log(`HS Recuperação de Crédito rodando em http://${host}:${porta}`));
 agendarRetencao();
-primeiroAcesso().catch((e) => console.error('[primeiro acesso]', e.message));
+primeiroAcesso().catch((e) => console.error('[primeiro acesso] aguardando o banco:', e.code || e.message));
 for (const s of ['SIGINT', 'SIGTERM']) process.on(s, () => server.close(() => process.exit(0)));
