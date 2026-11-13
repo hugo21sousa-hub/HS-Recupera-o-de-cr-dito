@@ -30,7 +30,7 @@ const ESCRITA = new Set([
   'salvarModeloMensagem', 'salvarDevedor', 'registrarNaoContatar', 'salvarDivida', 'cancelarDivida', 'salvarParcelas', 'importarPlanilha', 'anexarDocumento',
   'convidarUsuario', 'gerarLinkAcesso', 'salvarPoliticaRetencao',
   'simularNegociacao', 'proporNegociacao', 'cancelarNegociacao', 'formalizarAcordo', 'encerrarAcordo',
-  'alterarStatusCaso', 'registrarInteracao', 'prepararWhatsApp', 'enviarWhatsApp', 'salvarTarefa', 'concluirTarefa',
+  'alterarStatusCaso', 'registrarInteracao', 'prepararWhatsApp', 'enviarWhatsApp', 'enviarWhatsAppAssistido', 'enviarEmailDevedor', 'desfazerEnvio', 'salvarTarefa', 'concluirTarefa',
   'informarPagamento', 'gerarPrestacaoContas',
 ]);
 // Com contrato de cobrança gerenciada ativo, a empresa continua cadastrando e encaminhando dívidas ao Acorly

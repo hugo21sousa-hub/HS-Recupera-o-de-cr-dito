@@ -16,11 +16,14 @@ function separarRemetente(s) {
  */
 export function transporteBrevo({ chave, fetchImpl = fetch }) {
   return {
-    async sendMail({ from, to, subject, text, html }) {
+    async sendMail({ from, to, subject, text, html, replyTo, headers }) {
+      const corpo = { sender: separarRemetente(from), to: [{ email: to }], subject, textContent: text, htmlContent: html };
+      if (replyTo) corpo.replyTo = { email: replyTo };
+      if (headers && Object.keys(headers).length) corpo.headers = headers;
       const r = await fetchImpl('https://api.brevo.com/v3/smtp/email', {
         method: 'POST', signal: AbortSignal.timeout(15000),
         headers: { 'api-key': chave, 'Content-Type': 'application/json', accept: 'application/json' },
-        body: JSON.stringify({ sender: separarRemetente(from), to: [{ email: to }], subject, textContent: text, htmlContent: html }),
+        body: JSON.stringify(corpo),
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(`Brevo recusou o envio (${r.status}): ${j.message || ''}`);
@@ -42,6 +45,8 @@ export function criarEmail({ config, transporte, urlBase = '', env = process.env
   const brevo = env.BREVO_API_KEY ? transporteBrevo({ chave: env.BREVO_API_KEY, fetchImpl: fetchImpl || fetch }) : null;
   const t = transporte || brevo || (config ? nodemailer.createTransport({ host: config.host, port: config.port, secure: config.secure, auth: config.auth }) : null);
   const remetente = env.EMAIL_REMETENTE || config?.remetente || 'Acorly <nao-responda@localhost>';
+  // Endereço do domínio próprio usado como remetente dos e-mails de cobrança (ex.: cobranca@acorly.com.br)
+  const enderecoCobranca = env.EMAIL_COBRANCA_REMETENTE ? separarRemetente(env.EMAIL_COBRANCA_REMETENTE).email : null;
   const enviados = [];
 
   function modelo(titulo, paragrafos, botao) {
@@ -70,8 +75,33 @@ ${botao ? `<p style="margin:20px 0"><a href="${esc(botao.url)}" style="backgroun
     }
   }
 
+  /** E-mail de cobrança ao devedor: texto simples e respeitoso, identificação do credor e link de descadastro. */
+  async function paraDevedor({ para, nomeRemetente, responderPara, assunto, texto, rodape, descadastrar }) {
+    if (!t || !enderecoCobranca) return { ok: false, erro: 'envio de cobrança não configurado' };
+    const nome = String(nomeRemetente || 'Acorly').replace(/[<>"\r\n]/g, '').slice(0, 70);
+    const corpoHtml = esc(texto).split(/\n{2,}/).map((p) => `<p style="font-size:15px;line-height:1.55;margin:0 0 14px">${p.replace(/\n/g, '<br>')}</p>`).join('');
+    const html = `<!doctype html><html><body style="margin:0;background:#f5f7fa;font-family:Arial,Helvetica,sans-serif;color:#1f2937">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:10px;border:1px solid #e2e8f0">
+<tr><td style="padding:24px 28px">${corpoHtml}</td></tr>
+<tr><td style="padding:14px 28px;font-size:12px;color:#6b7280;border-top:1px solid #e2e8f0">${esc(rodape || '')}${descadastrar ? `<br><a href="${esc(descadastrar)}" style="color:#6b7280">Não quero mais receber e-mails sobre esta cobrança</a>` : ''}</td></tr>
+</table></td></tr></table></body></html>`;
+    const textoCompleto = `${texto}\n\n--\n${rodape || ''}${descadastrar ? `\nPara não receber mais e-mails sobre esta cobrança: ${descadastrar}` : ''}`;
+    const headers = descadastrar ? { 'List-Unsubscribe': `<${descadastrar}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } : {};
+    try {
+      const info = await t.sendMail({ from: `${nome} <${enderecoCobranca}>`, to: para, replyTo: responderPara || undefined, subject: assunto, text: textoCompleto, html, headers });
+      enviados.push({ para, assunto, cobranca: true, responderPara, info });
+      return { ok: true, id: info?.messageId || null };
+    } catch (e) {
+      console.error('[email] falha no e-mail de cobrança para', para, e.message);
+      return { ok: false, erro: 'o provedor de e-mail recusou o envio' };
+    }
+  }
+
   return {
     disponivel: !!t,
+    cobrancaDisponivel: !!t && !!enderecoCobranca,
+    paraDevedor,
     enviados,
     enviar,
     convite: (para, link, reset = false) => enviar({

@@ -126,6 +126,7 @@ export const actions = {
         interacoes: interacoes.sort((a, b) => (a.data_hora < b.data_hora ? 1 : -1)), tarefas, negociacoes, acordos, pagamentos,
         parcelas: parcelas.filter((p) => p.status !== 'SUBSTITUIDA'),
         atribuicoes: await Promise.all(atribuicoes.map(async (a) => ({ ...a, operador_nome: (await getById(ctx, 'UsuarioPlataforma', a.operador_id))?.nome, atribuido_por_nome: (await getById(ctx, 'UsuarioPlataforma', a.atribuido_por))?.nome }))),
+        email_cobranca: !!ctx.email?.cobrancaDisponivel,
         integracao_whatsapp: ctx.whatsapp?.disponivel && caso.modalidade_cobranca === 'HS_GERENCIADA' && isHS(ctx.user) ? 'API' : 'MANUAL',
       };
     },

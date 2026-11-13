@@ -203,6 +203,10 @@ O endereço principal mostra o site de apresentação da HS, com os planos atual
 3. Clique em **Verify** (Verificar) no Brevo.
 4. Cadastre o remetente `nao-responda@acorly.com.br`.
 5. No Render, troque `EMAIL_REMETENTE` para `Acorly <nao-responda@acorly.com.br>`.
+6. Cadastre também o remetente `cobranca@acorly.com.br` no Brevo e adicione no Render a variável `EMAIL_COBRANCA_REMETENTE` = `cobranca@acorly.com.br`. Ela libera o **envio de e-mails aos devedores** pela Central de mensagens:
+   - o nome que aparece é o do credor, por exemplo "Loja X via Acorly", ou "HS Recuperação de Crédito" na cobrança gerenciada;
+   - as respostas do devedor vão para o e-mail de quem enviou;
+   - cada e-mail traz um link para o devedor deixar de receber e-mails.
 
 Com o domínio verificado, os e-mails param de cair no spam.
 

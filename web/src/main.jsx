@@ -15,6 +15,7 @@ import { Devedores, DevedorDetalhe, Dividas, DividaDetalhe, Parcelas, Importar }
 import { MinhasCobrancas, CobrancasHS, Carteiras, CarteiraDetalhe, Encaminhar, Autorizacoes } from './pages/cobranca.jsx';
 import { CasoDetalhe } from './pages/caso.jsx';
 import { Negociacoes, Acordos, Pagamentos, Relatorios } from './pages/financeiro.jsx';
+import { CentralMensagens } from './pages/central.jsx';
 import { Usuarios, Contratos, Assinatura, Configuracoes, MinhaConta, Modelos } from './pages/gestao.jsx';
 import { TriagemWhatsApp } from './pages/hs.jsx';
 import { Empresas, EmpresasAtendidas, CarteirasRecebidas, Validacao, Distribuicao, MeusCasos, TodosCasos, Interacoes, Tarefas, Operadores, ContratosHS, Planos, Auditoria } from './pages/hs.jsx';
@@ -68,6 +69,7 @@ function Raiz() {
           <Route path="/parcelas" element={P('divida.ler', <Parcelas />)} />
           <Route path="/importar" element={P('divida.editar', <Importar />)} />
           <Route path="/cobrancas" element={P('caso.ler_empresa', <MinhasCobrancas />)} />
+          <Route path="/mensagens" element={P('interacao.registrar', <CentralMensagens />)} />
           <Route path="/cobranca-hs" element={P('caso.ler_empresa', <CobrancasHS />)} />
           <Route path="/cobranca-hs/encaminhar" element={P('carteira.encaminhar_hs', <Encaminhar />)} />
           <Route path="/cobranca-hs/autorizacoes" element={P('carteira.ler', <Autorizacoes />)} />
@@ -91,7 +93,8 @@ function Raiz() {
           <Route path="/hs/distribuicao" element={P('caso.distribuir', <Distribuicao />)} />
           <Route path="/hs/meus" element={P(['caso.ler_atribuidos', 'caso.ler_todos_hs'], <MeusCasos />)} />
           <Route path="/hs/casos" element={P('caso.ler_todos_hs', <TodosCasos />)} />
-          <Route path="/hs/interacoes" element={P('interacao.registrar', <Interacoes />)} />
+          <Route path="/hs/mensagens" element={P('interacao.registrar', <CentralMensagens />)} />
+          <Route path="/hs/interacoes" element={<Navigate to="/hs/mensagens" replace />} />
           <Route path="/hs/negociacoes" element={P('negociacao.propor', <Negociacoes />)} />
           <Route path="/hs/acordos" element={P('negociacao.propor', <Acordos />)} />
           <Route path="/hs/pagamentos" element={P('pagamento.informar', <Pagamentos />)} />

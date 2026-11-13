@@ -72,7 +72,7 @@ export const ENTITIES = {
     properties: {
       ...EMP, nome: s('Nome / razão social'), tipo_pessoa: e(['PF', 'PJ'], 'Tipo de pessoa'), cpf_cnpj: s('CPF/CNPJ (dígitos)'), telefone: s('Telefone'), whatsapp: s('WhatsApp'),
       email: s('E-mail'), endereco: s('Endereço'), observacoes: s('Observações'), canal_preferido: s('Canal preferido'), base_legal: s('Base legal do tratamento', { default: 'EXERCICIO_REGULAR_DIREITO_CREDITO' }),
-      nao_contatar: b('Pediu interrupção de contato'), motivo_nao_contatar: s('Motivo/registro do pedido'),
+      nao_contatar: b('Pediu interrupção de contato'), motivo_nao_contatar: s('Motivo/registro do pedido'), nao_contatar_email: b('Pediu para não receber e-mails'), email_descadastrado_em: ts('Quando pediu para não receber e-mails'),
       status: e(['ATIVO', 'INATIVO', 'ANONIMIZADO'], 'Status', 'ATIVO'), data_anonimizacao: ts('Anonimização'),
     },
     required: ['empresa_id', 'nome', 'tipo_pessoa', 'cpf_cnpj'],
@@ -150,7 +150,7 @@ export const ENTITIES = {
       tipo_interacao: e(['TENTATIVA_CONTATO', 'MENSAGEM_ENVIADA', 'LIGACAO', 'RESPOSTA_DEVEDOR', 'SEM_RESPOSTA', 'RETORNO_AGENDADO', 'NOTA_INTERNA'], 'Tipo'),
       mensagem: s('Mensagem'), resposta: s('Resposta do devedor'), resultado: e(['SEM_RESPOSTA', 'RESPONDEU', 'NUMERO_INVALIDO', 'PROMESSA_PAGAMENTO', 'RECUSA', 'CONTESTOU', 'SOLICITOU_INTERRUPCAO', 'OUTRO'], 'Resultado'),
       proxima_acao: s('Próxima ação'), observacoes: s('Observações'), envio_automatico: b('Enviado por integração oficial'),
-      mensagem_externa_id: s('ID da mensagem no WhatsApp'), telefone_destino: s('Telefone de destino (envio pela API)'), status_entrega: s('sent/delivered/read/failed'), recebida_por_integracao: b('Recebida pelo webhook'),
+      mensagem_externa_id: s('ID da mensagem no WhatsApp'), telefone_destino: s('Telefone de destino (envio pela API)'), status_entrega: s('sent/delivered/read/failed'), recebida_por_integracao: b('Recebida pelo webhook'), envio_assistido: b('WhatsApp aberto com o texto pronto pelo sistema'), cancelada: b('Envio desfeito'), email_destino: s('E-mail de destino'),
     },
     required: ['empresa_id', 'caso_id', 'canal', 'tipo_interacao', 'data_hora'],
   },
@@ -219,7 +219,7 @@ export const ENTITIES = {
   },
   ModeloMensagem: {
     description: 'Modelos de mensagem (globais Acorly ou da empresa). aprovado_meta indica template aprovado na WhatsApp Business Platform (futuro).',
-    properties: { empresa_id: s('Empresa (vazio = global)'), nome: s('Nome'), canal: e(['WHATSAPP', 'EMAIL', 'SMS'], 'Canal', 'WHATSAPP'), conteudo: s('Texto com {{nome}}, {{credor}}, {{valor}}, {{vencimento}}'), status: e(['ATIVO', 'INATIVO'], 'Status', 'ATIVO'), aprovado_meta: b('Aprovado na Meta'), nome_template_meta: s('Nome do modelo aprovado na Meta'), idioma_template: s('Idioma do modelo (ex.: pt_BR)') },
+    properties: { empresa_id: s('Empresa (vazio = global)'), nome: s('Nome'), canal: e(['WHATSAPP', 'EMAIL', 'SMS'], 'Canal', 'WHATSAPP'), assunto: s('Assunto (e-mail)'), conteudo: s('Texto com {{nome}}, {{credor}}, {{valor}}, {{vencimento}}'), status: e(['ATIVO', 'INATIVO'], 'Status', 'ATIVO'), aprovado_meta: b('Aprovado na Meta'), nome_template_meta: s('Nome do modelo aprovado na Meta'), idioma_template: s('Idioma do modelo (ex.: pt_BR)') },
     required: ['nome', 'conteudo'],
   },
   ConfiguracaoComunicacao: {

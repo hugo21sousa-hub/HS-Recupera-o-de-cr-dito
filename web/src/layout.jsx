@@ -16,6 +16,7 @@ export const MENU_EMPRESA = [
   ] },
   { secao: 'Cobrança', itens: [
     { to: '/cobrancas', r: 'Minhas cobranças', p: 'caso.ler_empresa' },
+    { to: '/mensagens', r: 'Central de mensagens', p: 'interacao.registrar' },
     { to: '/cobranca-hs', r: 'Cobranças Acorly', p: 'caso.ler_empresa' },
     { to: '/carteiras', r: 'Carteiras', p: 'carteira.ler', recurso: 'carteiras' },
     { to: '/negociacoes', r: 'Negociações', p: 'negociacao.ler', contador: 'aprovacoes' },
@@ -41,7 +42,7 @@ export const MENU_HS = [
     { to: '/hs/distribuicao', r: 'Aguardando distribuição', p: 'caso.distribuir' },
     { to: '/hs/meus', r: 'Meus casos', p: ['caso.ler_atribuidos', 'caso.ler_todos_hs'] },
     { to: '/hs/casos', r: 'Todos os casos autorizados', p: 'caso.ler_todos_hs' },
-    { to: '/hs/interacoes', r: 'Interações', p: 'interacao.registrar' },
+    { to: '/hs/mensagens', r: 'Central de mensagens', p: 'interacao.registrar' },
     { to: '/hs/negociacoes', r: 'Negociações', p: 'negociacao.propor' },
     { to: '/hs/acordos', r: 'Acordos', p: 'negociacao.propor' },
     { to: '/hs/pagamentos', r: 'Pagamentos em confirmação', p: 'pagamento.informar' },

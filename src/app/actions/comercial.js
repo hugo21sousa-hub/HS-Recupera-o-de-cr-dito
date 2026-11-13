@@ -341,7 +341,8 @@ export const actions = {
       let empresa_id = null;
       if (isHS(ctx.user)) requirePerm(ctx.user, 'config.sistema');
       else { requirePerm(ctx.user, 'empresa.editar'); empresa_id = ctx.user.empresa_id; }
-      const dados = { empresa_id, nome: input.nome, canal: input.canal || 'WHATSAPP', conteudo: input.conteudo, status: input.status || 'ATIVO', aprovado_meta: false };
+      if (input.assunto) verificarMensagem(input.assunto);
+      const dados = { empresa_id, nome: input.nome, canal: input.canal || 'WHATSAPP', assunto: input.canal === 'EMAIL' ? String(input.assunto || '').slice(0, 150) : '', conteudo: input.conteudo, status: input.status || 'ATIVO', aprovado_meta: false };
       // Só o Acorly cadastra modelos aprovados na Meta (o número do WhatsApp Business é do Acorly)
       if (isHS(ctx.user) && input.nome_template_meta) Object.assign(dados, { aprovado_meta: true, nome_template_meta: String(input.nome_template_meta).trim(), idioma_template: input.idioma_template || 'pt_BR' });
       if (input.id) {

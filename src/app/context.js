@@ -153,7 +153,8 @@ export async function comNomes(ctx, pagina) {
     const div = await get('Divida', divida_id);
     const dev = div ? await get('Devedor', div.devedor_id) : null;
     const emp = await get('Empresa', r.empresa_id);
-    itens.push({ ...r, devedor_nome: dev?.nome ?? null, documento_referencia: r.documento_referencia ?? div?.documento_referencia ?? null, credor: emp?.nome_fantasia || emp?.razao_social || null });
+    const autor = r.operador_id ? await get('UsuarioPlataforma', r.operador_id) : null;
+    itens.push({ ...r, ...(autor ? { operador_nome: autor.nome } : {}), devedor_nome: dev?.nome ?? null, documento_referencia: r.documento_referencia ?? div?.documento_referencia ?? null, credor: emp?.nome_fantasia || emp?.razao_social || null });
   }
   return { ...pagina, itens };
 }

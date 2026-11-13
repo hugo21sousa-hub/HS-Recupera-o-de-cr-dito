@@ -250,6 +250,7 @@ export function Modelos({ global = false }) {
         <div className="grid g2">{meus.map((m) => (
           <div key={m.id} className="card stack">
             <div className="row between"><strong>{m.nome}</strong><div className="row">{m.aprovado_meta && <Badge status="ATIVA">Aprovado na Meta</Badge>}<Badge status="info">{rotulo(m.canal)}</Badge>{!m.empresa_id && !global && <Badge status="info">Acorly</Badge>}</div></div>
+            {m.canal === 'EMAIL' && m.assunto && <div className="small"><strong>Assunto:</strong> {m.assunto}</div>}
             <div className="small" style={{ whiteSpace: 'pre-wrap' }}>{m.conteudo}</div>
             {pode && (global ? !m.empresa_id : !!m.empresa_id) && <div><button className="btn sm" onClick={() => setEditar(m)}>Editar</button></div>}
           </div>
@@ -257,6 +258,7 @@ export function Modelos({ global = false }) {
       ) : <Vazio titulo="Nenhum modelo" />}
       {editar && <FormModal titulo={editar.id ? 'Editar modelo' : 'Novo modelo'} inicial={editar} onClose={() => setEditar(null)} campos={[
         { nome: 'nome', rotulo: 'Nome', obrigatorio: true }, { nome: 'canal', rotulo: 'Canal', tipo: 'select', opcoes: ['WHATSAPP', 'EMAIL', 'SMS'], padrao: 'WHATSAPP', semVazio: true },
+        { nome: 'assunto', rotulo: 'Assunto do e-mail', full: true, mostrarSe: (v) => v.canal === 'EMAIL', padrao: 'Pendência financeira com {{credor}}' },
         { nome: 'conteudo', rotulo: 'Texto', tipo: 'textarea', obrigatorio: true, padrao: 'Olá, {{nome}}! Aqui é da equipe de relacionamento da {{credor}}. Identificamos um valor em aberto de {{valor}}, vencido em {{vencimento}}. Podemos conversar sobre uma condição para regularizar?' },
         { nome: 'status', rotulo: 'Status', tipo: 'select', opcoes: ['ATIVO', 'INATIVO'], padrao: 'ATIVO', semVazio: true },
         ...(global ? [

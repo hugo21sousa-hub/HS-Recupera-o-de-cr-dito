@@ -6,54 +6,13 @@ import { Badge, Cabecalho, FormModal, Modal, useApi, useToast, useConfirm, Carre
 import { brl, data, dataHora, rotulo, pct, mascaraFone, mascaraDoc, hojeISO, reaisParaCentavos, pctParaBps } from '../format.js';
 import { RegistrarPagamento } from './cadastros.jsx';
 import { AcoesPagamento, DecisaoNegociacao } from './financeiro.jsx';
+import { EnviarMensagem, RegistrarResposta } from '../mensagens.jsx';
 
 const TIPOS = ['MENSAGEM_ENVIADA', 'LIGACAO', 'TENTATIVA_CONTATO', 'RESPOSTA_DEVEDOR', 'SEM_RESPOSTA', 'RETORNO_AGENDADO', 'NOTA_INTERNA'];
 const RESULTADOS = ['SEM_RESPOSTA', 'RESPONDEU', 'NUMERO_INVALIDO', 'PROMESSA_PAGAMENTO', 'RECUSA', 'CONTESTOU', 'SOLICITOU_INTERRUPCAO', 'OUTRO'];
 const CANAIS = ['WHATSAPP', 'TELEFONE', 'EMAIL', 'SMS', 'CARTA', 'PRESENCIAL', 'INTERNO'];
 const STATUS_MANUAIS = ['EM_CONTATO', 'DEVEDOR_RESPONDEU', 'EM_NEGOCIACAO', 'SEM_SUCESSO', 'CONTESTACAO'];
 const TERMINAIS = ['RECUPERADO_INTEGRALMENTE', 'SEM_SUCESSO'];
-
-function PrepararWhatsApp({ caso, onClose, onRegistrado, api }) {
-  const modelos = useApi('listarModelosMensagem', { caso_id: caso.id });
-  const [modelo, setModelo] = useState('');
-  const [texto, setTexto] = useState('');
-  const [preparado, setPreparado] = useState(null);
-  const { executar, enviando } = useExecutar();
-  const preparar = async () => {
-    const r = await executar('prepararWhatsApp', { caso_id: caso.id, modelo_id: modelo || undefined, mensagem: modelo ? undefined : texto });
-    setPreparado(r);
-    window.open(r.link, '_blank', 'noopener');
-  };
-  const enviarApi = async () => {
-    await executar('enviarWhatsApp', { caso_id: caso.id, modelo_id: modelo || undefined, mensagem: modelo ? undefined : texto }, 'Mensagem enviada pelo WhatsApp Business');
-    onRegistrado(); onClose();
-  };
-  const registrar = async () => {
-    await executar('registrarInteracao', { caso_id: caso.id, canal: 'WHATSAPP', tipo_interacao: 'MENSAGEM_ENVIADA', mensagem: preparado.mensagem }, 'Envio registrado no histórico');
-    onRegistrado(); onClose();
-  };
-  return (
-    <Modal titulo="Mensagem por WhatsApp" onClose={onClose} rodape={preparado ? <><button className="btn" onClick={onClose}>Não enviei</button><button className="btn prim" disabled={enviando} onClick={registrar}>Sim, enviei: registrar</button></> : <><button className="btn" onClick={onClose}>Cancelar</button><button className={`btn ${api ? '' : 'prim'}`} disabled={enviando || (!modelo && !texto.trim())} onClick={preparar}>Abrir no meu WhatsApp</button>{api && <button className="btn prim" disabled={enviando || (!modelo && !texto.trim())} onClick={enviarApi}>Enviar pelo WhatsApp Business</button>}</>}>
-      <div className="stack">
-        {api ? <div className="aviso info">Integração oficial ativa. Fora da janela de 24 h desde a última resposta do devedor, só modelos aprovados pela Meta podem ser enviados.</div>
-          : <div className="aviso alerta">Envio manual: a integração oficial do WhatsApp Business não está ativa para este caso. O WhatsApp abre com o texto pronto; você envia e confirma aqui.</div>}
-        {!preparado ? (
-          <>
-            <div className="campo"><label>Modelo</label><select value={modelo} onChange={(e) => setModelo(e.target.value)}><option value="">Escrever mensagem livre</option>{(modelos.data || []).filter((m) => m.canal === 'WHATSAPP').map((m) => <option key={m.id} value={m.id}>{m.nome}{m.aprovado_meta ? ' (aprovado na Meta)' : ''}</option>)}</select></div>
-            {!modelo && <div className="campo"><label>Mensagem</label><textarea value={texto} onChange={(e) => setTexto(e.target.value)} maxLength={1500} placeholder="Escreva de forma respeitosa e objetiva." /></div>}
-            <p className="small muted">Mensagens com ameaça, constrangimento ou exposição são bloqueadas pelo sistema.</p>
-          </>
-        ) : (
-          <>
-            <div className="card" style={{ whiteSpace: 'pre-wrap' }}>{preparado.mensagem}</div>
-            <p>A mensagem foi enviada no WhatsApp?</p>
-            <a href={preparado.link} target="_blank" rel="noreferrer" className="small">Abrir o WhatsApp novamente</a>
-          </>
-        )}
-      </div>
-    </Modal>
-  );
-}
 
 function Simulador({ caso, saldo, onProposta }) {
   const [v, setV] = useState({ desconto: '0', entrada: '', parcelas: '1', primeira: new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10), dataEntrada: hojeISO(), condicoes: '', justificativa: '' });
@@ -152,7 +111,8 @@ export function CasoDetalhe() {
       </div>
 
       <div className="card row">
-        {operavel && <button className="btn prim" disabled={bloqueadoContato} onClick={() => setModal('whatsapp')}>Preparar WhatsApp</button>}
+        {operavel && <button className="btn prim" disabled={bloqueadoContato} onClick={() => setModal('mensagem')}>Enviar mensagem</button>}
+        {operavel && <button className="btn" onClick={() => setModal('resposta')}>Registrar resposta</button>}
         {operavel && <button className="btn" onClick={() => setModal('contato')}>Registrar contato</button>}
         {operavel && <button className="btn" onClick={() => setModal('tarefa')}>Nova tarefa</button>}
         {operavel && s.pode('pagamento.informar') && <button className="btn ok" onClick={() => setModal('pagamento')}>Informar pagamento</button>}
@@ -193,7 +153,7 @@ export function CasoDetalhe() {
         {aba === 'historico' && (d.interacoes.length ? (
           <ul className="timeline">{d.interacoes.map((i) => (
             <li key={i.id} className={['MENSAGEM_ENVIADA', 'LIGACAO', 'TENTATIVA_CONTATO'].includes(i.tipo_interacao) ? 'saida' : i.tipo_interacao === 'RESPOSTA_DEVEDOR' ? 'resposta' : ''}>
-              <div className="row small muted"><span>{dataHora(i.data_hora)}</span><Badge status="info">{rotulo(i.canal)}</Badge><span>{rotulo(i.tipo_interacao)}</span>{i.resultado && <Badge status={['RESPONDEU', 'PROMESSA_PAGAMENTO'].includes(i.resultado) ? 'CONFIRMADO' : ['RECUSA', 'CONTESTOU', 'SOLICITOU_INTERRUPCAO', 'NUMERO_INVALIDO'].includes(i.resultado) ? 'REJEITADO' : 'PENDENTE'}>{rotulo(i.resultado)}</Badge>}{!i.envio_automatico && ['MENSAGEM_ENVIADA'].includes(i.tipo_interacao) && <span>(envio manual)</span>}{i.envio_automatico && <span>(WhatsApp Business{i.status_entrega ? ` · ${{ sent: 'enviada', delivered: 'entregue', read: 'lida', failed: 'falhou' }[i.status_entrega] || i.status_entrega}` : ''})</span>}{i.recebida_por_integracao && <span>(recebida automaticamente)</span>}</div>
+              <div className="row small muted"><span>{dataHora(i.data_hora)}</span><Badge status="info">{rotulo(i.canal)}</Badge><span>{rotulo(i.tipo_interacao)}</span>{i.resultado && <Badge status={['RESPONDEU', 'PROMESSA_PAGAMENTO'].includes(i.resultado) ? 'CONFIRMADO' : ['RECUSA', 'CONTESTOU', 'SOLICITOU_INTERRUPCAO', 'NUMERO_INVALIDO'].includes(i.resultado) ? 'REJEITADO' : 'PENDENTE'}>{rotulo(i.resultado)}</Badge>}{i.cancelada && <span>(envio desfeito)</span>}{i.envio_assistido && !i.cancelada && <span>(WhatsApp aberto pelo sistema)</span>}{i.email_destino && <span>(e-mail para {i.email_destino})</span>}{!i.envio_automatico && !i.envio_assistido && ['MENSAGEM_ENVIADA'].includes(i.tipo_interacao) && <span>(registro manual)</span>}{i.envio_automatico && i.canal === 'WHATSAPP' && <span>(WhatsApp Business{i.status_entrega ? ` · ${{ sent: 'enviada', delivered: 'entregue', read: 'lida', failed: 'falhou' }[i.status_entrega] || i.status_entrega}` : ''})</span>}{i.recebida_por_integracao && <span>(recebida automaticamente)</span>}</div>
               {i.mensagem && <div style={{ whiteSpace: 'pre-wrap' }}>{i.mensagem}</div>}
               {i.resposta && <div style={{ whiteSpace: 'pre-wrap' }}><strong>Resposta:</strong> {i.resposta}</div>}
               {i.observacoes && <div className="small muted">{i.observacoes}</div>}
@@ -268,7 +228,8 @@ export function CasoDetalhe() {
         </tbody></table> : <Vazio titulo="Sem atribuições" />)}
       </div>
 
-      {modal === 'whatsapp' && <PrepararWhatsApp caso={c} api={d.integracao_whatsapp === 'API'} onClose={() => setModal(null)} onRegistrado={recarregar} />}
+      {modal === 'mensagem' && <EnviarMensagem casoId={c.id} apiWhatsApp={d.integracao_whatsapp === 'API'} emailDisponivel={d.email_cobranca} onClose={() => setModal(null)} onEnviado={recarregar} />}
+      {modal === 'resposta' && <RegistrarResposta casoId={c.id} onClose={() => setModal(null)} onFeito={recarregar} />}
       {modal === 'contato' && <FormModal titulo="Registrar contato" onClose={() => setModal(null)} campos={[
         { nome: 'canal', rotulo: 'Canal', tipo: 'select', opcoes: CANAIS, obrigatorio: true, padrao: 'TELEFONE', semVazio: true },
         { nome: 'tipo_interacao', rotulo: 'Tipo', tipo: 'select', opcoes: TIPOS, obrigatorio: true, padrao: 'LIGACAO', semVazio: true },

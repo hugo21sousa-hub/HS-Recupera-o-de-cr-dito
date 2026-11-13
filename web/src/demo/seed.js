@@ -1,3 +1,4 @@
+import { garantirModelosPadrao } from '../../../src/app/actions/mensagens.js';
 // Dados de demonstração: mesma base do "npm run demo", criada pelas regras reais do sistema.
 export const SENHA_DEMO = 'Demo2026hs';
 export const USUARIOS_DEMO = [
@@ -15,7 +16,7 @@ export async function semear(db, como) {
   await como('admin@demo.hs', 'seedPlanos');
   await como('admin@demo.hs', 'convidarUsuario', { nome: 'Gustavo Gestor', email: 'gestor@demo.hs', perfil: 'GESTOR_OPERACOES_HS' });
   const op = await como('admin@demo.hs', 'convidarUsuario', { nome: 'Olivia Operadora', email: 'operador@demo.hs', perfil: 'OPERADOR_HS', capacidade_casos: 30, alcada_desconto_bps: 1500 });
-  await como('admin@demo.hs', 'salvarModeloMensagem', { nome: 'Primeiro contato', conteudo: 'Olá, {{nome}}! Aqui é da equipe de relacionamento da {{credor}}. Identificamos um valor em aberto de {{valor}}, vencido em {{vencimento}}. Podemos conversar sobre uma condição para regularizar?' });
+  await garantirModelosPadrao(db);
 
   const { empresa } = await como('empresa@demo.hs', 'registrarEmpresa', {
     razao_social: 'Loja Exemplo Comércio Ltda', nome_fantasia: 'Loja Exemplo', cnpj: '11222333000181', email: 'contato@lojaexemplo.com.br',
@@ -46,7 +47,7 @@ export async function semear(db, como) {
   const val = await como('gestor@demo.hs', 'listarCasos', { escopo: 'validacao' });
   const porNome = Object.fromEntries(val.itens.map((c) => [c.devedor_nome, c]));
   await como('gestor@demo.hs', 'validarCaso', { caso_ids: ['João Pereira', 'Maria Souza', 'Pedro Santos'].map((n) => porNome[n].id), aprovado: true });
-  for (const n of ['João Pereira', 'Maria Souza']) await como('gestor@demo.hs', 'atribuirCaso', { caso_id: porNome[n].id, operador_id: op.id });
+  for (const n of ['João Pereira', 'Maria Souza', 'Pedro Santos']) await como('gestor@demo.hs', 'atribuirCaso', { caso_id: porNome[n].id, operador_id: op.id });
 
   const joao = porNome['João Pereira'].id;
   await como('operador@demo.hs', 'registrarInteracao', { caso_id: joao, canal: 'WHATSAPP', tipo_interacao: 'MENSAGEM_ENVIADA', mensagem: 'Olá, João! Podemos conversar sobre uma condição para regularizar o valor em aberto?', resultado: 'RESPONDEU', resposta: 'Quero pagar com desconto em 3 vezes', fora_horario_justificado: true });
@@ -60,7 +61,7 @@ export async function semear(db, como) {
   const maria = porNome['Maria Souza'].id;
   await como('operador@demo.hs', 'registrarInteracao', { caso_id: maria, canal: 'TELEFONE', tipo_interacao: 'LIGACAO', resultado: 'RESPONDEU', resposta: 'Consigo pagar se tiver um desconto maior', fora_horario_justificado: true });
   await como('operador@demo.hs', 'proporNegociacao', { caso_id: maria, desconto_bps: 2500, entrada_centavos: 10000, quantidade_parcelas: 4, primeira_data_vencimento: dia(30), justificativa: 'Devedora desempregada, pede desconto maior' });
-  await como('operador@demo.hs', 'salvarTarefa', { caso_id: maria, descricao: 'Retornar ligação após decisão do credor', data_prazo: dia(2), prioridade: 'ALTA' });
+  await como('operador@demo.hs', 'salvarTarefa', { caso_id: maria, descricao: 'Retornar ligação após decisão do credor', data_prazo: dia(0), prioridade: 'ALTA' });
 
   const proprio = await como('empresa@demo.hs', 'abrirCobrancaPropria', { divida_id: dividas[4].id });
   await como('empresa@demo.hs', 'registrarInteracao', { caso_id: proprio.id, canal: 'EMAIL', tipo_interacao: 'MENSAGEM_ENVIADA', mensagem: 'Lembrete de pagamento em aberto.', fora_horario_justificado: true });

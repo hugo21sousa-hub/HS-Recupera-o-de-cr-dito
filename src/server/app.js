@@ -2,6 +2,7 @@
 import { createServer } from 'node:http';
 import { DIAS_TESTE } from '../app/acesso.js';
 import { confirmarPorDecursoDePrazo } from '../app/actions/pagamentos.js';
+import { garantirModelosPadrao } from '../app/actions/mensagens.js';
 import { readFileSync, existsSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, extname, resolve, sep } from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -15,6 +16,8 @@ import { handle } from '../app/router.js';
 import { criarEmail, configSMTP } from './email.js';
 import { criarWhatsApp, configWhatsApp } from './whatsapp.js';
 import { criarAsaas, configAsaas } from './asaas.js';
+import { criarDescadastro, paginaDescadastro } from './descadastro.js';
+import { getById, alterar, notificar } from '../app/context.js';
 import { processarWebhookWhatsApp } from '../app/actions/whatsapp.js';
 import { processarWebhookAsaas } from '../app/actions/comercial.js';
 import { executarRetencao } from '../app/retencao.js';
@@ -49,7 +52,8 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
   const whatsCfg = configWhatsApp(env);
   const whatsapp = criarWhatsApp({ config: whatsCfg, fetchImpl: fetchImpl || fetch });
   const asaas = criarAsaas({ config: configAsaas(env), fetchImpl: fetchImpl || fetch });
-  const integracoes = { email, whatsapp: whatsapp.disponivel ? whatsapp : null, asaas: asaas.disponivel ? asaas : null };
+  const descadastro = criarDescadastro({ segredo, urlBase });
+  const integracoes = { email, descadastro, whatsapp: whatsapp.disponivel ? whatsapp : null, asaas: asaas.disponivel ? asaas : null };
 
   /** Executa em transação; efeitos externos (e-mails) só depois do COMMIT. */
   async function transacao(fn) {
@@ -296,6 +300,23 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
       return json(res, 200, { ok: true }, { 'Set-Cookie': cookieSessao(r.token, r.expira) });
     }
 
+    if (url.pathname.startsWith('/descadastrar/') && (req.method === 'GET' || req.method === 'POST')) {
+      const id = descadastro.validar(decodeURIComponent(url.pathname.slice('/descadastrar/'.length)));
+      const html = (status, p) => { res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(paginaDescadastro(p)); };
+      if (!id) return html(404, { titulo: 'Link inválido', texto: 'Este link não é válido. Se quiser parar de receber e-mails, responda a mensagem pedindo o descadastro.' });
+      // GET só mostra a confirmação (leitores de e-mail abrem links sozinhos); o descadastro é feito no POST
+      if (req.method === 'GET') return html(200, { titulo: 'Parar de receber e-mails', texto: 'Confirme abaixo para não receber mais e-mails sobre esta cobrança. Os outros meios de contato combinados podem continuar.', botao: 'Não quero mais receber e-mails' });
+      await lerCorpo(req, 4096).catch(() => null);
+      await transacao(async (pos) => {
+        const ctx = ctxSistema(pos);
+        const d = await getById(ctx, 'Devedor', id);
+        if (d && !d.nao_contatar_email) {
+          await alterar(ctx, 'Devedor', d, { nao_contatar_email: true, email_descadastrado_em: new Date().toISOString() }, 'DESCADASTRO_EMAIL');
+          await notificar(ctx, d.empresa_id, { perfis: ['ADMIN_EMPRESA'], tipo: 'DESCADASTRO_EMAIL', titulo: 'Devedor pediu para não receber e-mails', mensagem: d.nome, link: `/devedores/${d.id}` });
+        }
+      });
+      return html(200, { titulo: 'Pronto', texto: 'Você não receberá mais e-mails sobre esta cobrança.' });
+    }
     if (rota === 'POST /api/rpc') {
       const b = await lerJSON(req);
       const r = await transacao(async (pos) => {
@@ -370,6 +391,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
       let u = (await db.UsuarioPlataforma.filter({ email: emailAdm }))[0];
       if (u && u.perfil !== 'SUPERADMIN_HS') return null;
       if (!u) u = await db.UsuarioPlataforma.create({ nome: env.SUPERADMIN_NOME || 'Administrador Acorly', email: emailAdm, perfil: 'SUPERADMIN_HS', empresa_id: null, status: 'ATIVO', data_criacao: new Date().toISOString() });
+      await garantirModelosPadrao(db);
       const planos = await db.Plano.filter({});
       for (const pl of planos) {
         const novo = PLANOS_NOMES_ANTERIORES[pl.nome];
