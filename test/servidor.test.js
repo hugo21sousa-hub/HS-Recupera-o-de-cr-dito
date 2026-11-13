@@ -171,7 +171,7 @@ test('planos padrão: nomes antigos (HS) viram Acorly; valores antigos não edit
   const a = criarApp({ dataDir: d, webDir: join(d, 'web'), env: { ...envBanco(), SUPERADMIN_EMAIL: 'planos@hs.com' } });
   await a.exclusivo(async () => {
     await a.db.Plano.create({ nome: 'HS ESSENCIAL', preco_mensal_centavos: 4990, limite_devedores: 200, limite_usuarios: 2, status: 'ATIVO', ordem: 1 });
-    await a.db.Plano.create({ nome: 'HS PROFISSIONAL', preco_mensal_centavos: 9990, limite_devedores: 1000, limite_usuarios: 5, status: 'ATIVO', ordem: 2 });
+    await a.db.Plano.create({ nome: 'HS PROFISSIONAL', preco_mensal_centavos: 9990, limite_devedores: 1000, limite_usuarios: 5, status: 'ATIVO', ordem: 2, funcionalidades: ['devedores', 'api_futura'] });
   });
   await a.primeiroAcesso(); await a.primeiroAcesso();
   const planos = await a.exclusivo(() => a.db.Plano.filter({}));
@@ -179,6 +179,8 @@ test('planos padrão: nomes antigos (HS) viram Acorly; valores antigos não edit
   assert.equal(por('ACORLY ESSENCIAL').length, 1);
   assert.deepEqual([por('ACORLY ESSENCIAL')[0].preco_mensal_centavos, por('ACORLY ESSENCIAL')[0].limite_devedores, por('ACORLY ESSENCIAL')[0].limite_usuarios], [4990, 100, 2]);
   assert.deepEqual([por('ACORLY PROFISSIONAL')[0].preco_mensal_centavos, por('ACORLY PROFISSIONAL')[0].limite_devedores], [9990, 1000], 'plano editado não muda');
+  assert.deepEqual(por('ACORLY PROFISSIONAL')[0].funcionalidades, ['devedores'], 'API (futura) removida');
+  assert.ok(planos.every((p) => !(p.funcionalidades || []).includes('api_futura')));
   assert.deepEqual([por('ACORLY EMPRESARIAL')[0].preco_mensal_centavos, por('ACORLY EMPRESARIAL')[0].limite_devedores, por('ACORLY EMPRESARIAL')[0].limite_usuarios], [15990, 1000, 15]);
   assert.deepEqual([por('ACORLY ILIMITADO')[0].preco_mensal_centavos, por('ACORLY ILIMITADO')[0].limite_devedores, por('ACORLY ILIMITADO')[0].limite_usuarios], [25990, null, null]);
   await a.banco.fechar(); rmSync(d, { recursive: true, force: true });

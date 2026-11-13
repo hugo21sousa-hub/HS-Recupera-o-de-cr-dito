@@ -369,6 +369,8 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
       for (const pl of planos) {
         const novo = PLANOS_NOMES_ANTERIORES[pl.nome];
         if (novo && !planos.some((x) => x.nome === novo)) { await db.Plano.update(pl.id, { nome: novo }); pl.nome = novo; }
+        // "API (futura)" deixou de ser anunciado nos planos
+        if ((pl.funcionalidades || []).includes('api_futura')) { pl.funcionalidades = pl.funcionalidades.filter((f) => f !== 'api_futura'); await db.Plano.update(pl.id, { funcionalidades: pl.funcionalidades }); }
       }
       for (const p of PLANOS_PADRAO) {
         const atual = planos.find((x) => x.nome === p.nome);
