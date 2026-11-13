@@ -39,6 +39,23 @@ export function criarAsaas({ config, fetchImpl = fetch } = {}) {
     criarAssinatura: ({ cliente, valorCentavos, vencimento, descricao, referencia }) => req('POST', '/subscriptions', { customer: cliente, billingType: 'UNDEFINED', value: reais(valorCentavos), nextDueDate: vencimento, cycle: 'MONTHLY', description: descricao, externalReference: referencia }),
     cobrancasDaAssinatura: (id) => req('GET', `/subscriptions/${encodeURIComponent(id)}/payments`),
     cancelarAssinatura: (id) => req('DELETE', `/subscriptions/${encodeURIComponent(id)}`),
+    /**
+     * Avisos automáticos do Asaas ao cliente: fatura criada, lembrete antes do vencimento, vencimento,
+     * atraso e pagamento recebido, só por e-mail (SMS, ligação e WhatsApp desligados para não gerar custo).
+     */
+    async configurarNotificacoes(clienteId) {
+      const lista = (await req('GET', `/customers/${encodeURIComponent(clienteId)}/notifications`)).data || [];
+      const desejados = new Set(['PAYMENT_CREATED', 'PAYMENT_DUEDATE_WARNING', 'PAYMENT_OVERDUE', 'PAYMENT_RECEIVED']);
+      const notifications = lista.map((n) => ({
+        id: n.id, enabled: desejados.has(n.event) ? true : n.enabled,
+        emailEnabledForCustomer: desejados.has(n.event) ? true : n.emailEnabledForCustomer,
+        smsEnabledForCustomer: false, phoneCallEnabledForCustomer: false, whatsappEnabledForCustomer: false,
+        emailEnabledForProvider: n.emailEnabledForProvider, smsEnabledForProvider: false,
+        ...(n.scheduleOffset !== undefined ? { scheduleOffset: n.scheduleOffset } : {}),
+      }));
+      if (notifications.length) await req('POST', '/notifications/batch', { customer: clienteId, notifications });
+      return notifications.length;
+    },
     webhookValido: (token) => !!config?.webhookToken && token === config.webhookToken,
   };
 }

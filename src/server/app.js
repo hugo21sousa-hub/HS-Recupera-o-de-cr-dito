@@ -3,6 +3,7 @@ import { createServer } from 'node:http';
 import { DIAS_TESTE } from '../app/acesso.js';
 import { confirmarPorDecursoDePrazo } from '../app/actions/pagamentos.js';
 import { garantirModelosPadrao } from '../app/actions/mensagens.js';
+import { rodarLembretes } from '../app/lembretes.js';
 import { readFileSync, existsSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, extname, resolve, sep } from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -370,13 +371,19 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
 
   // Retenção LGPD e limpeza: ao iniciar e a cada 24 h
   let timer = null;
+  let timerLembretes = null;
   const agendarRetencao = () => {
     const rodar = () => rodarRetencao().then((r) => { if (r.titulares_anonimizados || r.pagamentos_confirmados_por_decurso) console.log('[retencao]', r); }).catch((e) => console.error('[retencao]', e.code ? `${e.code} (ver mensagem do banco acima)` : e));
     rodar();
     timer = setInterval(rodar, 24 * 3600e3);
     timer.unref();
+    // Lembretes (mensalidade, fim do teste, parcelas de acordo): de hora em hora, só em horário comercial
+    const lembrar = () => transacao((pos) => rodarLembretes(ctxSistema(pos))).then((r) => { if (r && (r.mensalidade || r.teste || r.parcelas)) console.log('[lembretes]', r); }).catch((e) => console.error('[lembretes]', e.message));
+    setTimeout(lembrar, 60e3).unref();
+    timerLembretes = setInterval(lembrar, 3600e3);
+    timerLembretes.unref();
   };
-  server.on('close', () => timer && clearInterval(timer));
+  server.on('close', () => { if (timer) clearInterval(timer); if (timerLembretes) clearInterval(timerLembretes); });
 
   /**
    * Primeiro acesso sem terminal (ex.: Render grátis): com SUPERADMIN_EMAIL definido, cria o superadmin,

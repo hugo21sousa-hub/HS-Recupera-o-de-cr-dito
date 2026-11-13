@@ -24,7 +24,7 @@ export const ENTITIES = {
       contato_nome: s('Contato'), contato_telefone: s('Telefone do contato'), contato_email: s('E-mail do contato'),
       status: e(['CADASTRO_INCOMPLETO', 'AGUARDANDO_VALIDACAO', 'ATIVA', 'SUSPENSA', 'CANCELADA'], 'Status', 'CADASTRO_INCOMPLETO'),
       motivo_status: s('Motivo da última mudança de status'), modalidade_servico: e(['PLATAFORMA', 'HS_GERENCIADA', 'AMBOS'], 'Serviço escolhido no onboarding'),
-      data_cadastro: ts('Data de cadastro'), aceite_termos_em: ts('Aceite dos termos'), asaas_cliente_id: s('Cliente no gateway de assinatura'), asaas_ambiente: s('Ambiente do gateway (sandbox/producao)'), aceite_privacidade_em: ts('Aceite da política de privacidade'), versao_termos: s('Versão aceita'),
+      data_cadastro: ts('Data de cadastro'), aceite_termos_em: ts('Aceite dos termos'), asaas_cliente_id: s('Cliente no gateway de assinatura'), asaas_ambiente: s('Ambiente do gateway (sandbox/producao)'), asaas_notificacoes_em: ts('Avisos de cobrança configurados no Asaas'), avisos_teste: arr('Avisos de fim do teste já enviados'), aviso_bloqueio_para: dt('Aviso de último dia da tolerância enviado'), aceite_privacidade_em: ts('Aceite da política de privacidade'), versao_termos: s('Versão aceita'),
     },
     required: ['razao_social', 'cnpj', 'email', 'status'],
   },
@@ -44,7 +44,7 @@ export const ENTITIES = {
   },
   Assinatura: {
     description: 'Assinatura da plataforma (faturamento separado das dívidas)',
-    properties: { ...EMP, plano_id: ref('Plano'), data_inicio: dt('Início'), data_vencimento: dt('Vencimento'), status: e(['AGUARDANDO_PAGAMENTO', 'ATIVA', 'INADIMPLENTE', 'CANCELADA', 'SUBSTITUIDA', 'TRIAL'], 'Status', 'ATIVA'), valor_contratado_centavos: c('Valor contratado'), gateway: s('Gateway (ASAAS ou vazio = manual)'), gateway_assinatura_id: s('ID da assinatura no gateway'), fatura_url: s('Link da fatura em aberto'), ultimo_pagamento_em: ts('Último pagamento confirmado pelo gateway'), inadimplente_desde: dt('Em atraso desde (vencimento da fatura não paga)') },
+    properties: { ...EMP, plano_id: ref('Plano'), data_inicio: dt('Início'), data_vencimento: dt('Vencimento'), status: e(['AGUARDANDO_PAGAMENTO', 'ATIVA', 'INADIMPLENTE', 'CANCELADA', 'SUBSTITUIDA', 'TRIAL'], 'Status', 'ATIVA'), valor_contratado_centavos: c('Valor contratado'), gateway: s('Gateway (ASAAS ou vazio = manual)'), gateway_assinatura_id: s('ID da assinatura no gateway'), fatura_url: s('Link da fatura em aberto'), ultimo_pagamento_em: ts('Último pagamento confirmado pelo gateway'), inadimplente_desde: dt('Em atraso desde (vencimento da fatura não paga)'), lembrete_vencimento_para: dt('Vencimento já lembrado à empresa') },
     required: ['empresa_id', 'plano_id', 'status'],
   },
   EventoAssinatura: {
@@ -91,7 +91,7 @@ export const ENTITIES = {
   },
   Parcela: {
     description: 'Parcela original da dívida ou de acordo (acordo_id preenchido)',
-    properties: { ...EMP, divida_id: ref('Divida'), acordo_id: ref('Acordo (opcional)'), numero: n('Número (0 = entrada)'), valor_original_centavos: c('Valor'), vencimento: dt('Vencimento'), saldo_centavos: c('Saldo'), status: e(['EM_ABERTO', 'PARCIALMENTE_PAGA', 'PAGA', 'CANCELADA', 'SUBSTITUIDA'], 'Status', 'EM_ABERTO') },
+    properties: { ...EMP, divida_id: ref('Divida'), acordo_id: ref('Acordo (opcional)'), numero: n('Número (0 = entrada)'), valor_original_centavos: c('Valor'), vencimento: dt('Vencimento'), saldo_centavos: c('Saldo'), status: e(['EM_ABERTO', 'PARCIALMENTE_PAGA', 'PAGA', 'CANCELADA', 'SUBSTITUIDA'], 'Status', 'EM_ABERTO'), lembretes_enviados: arr('Lembretes ao devedor já enviados (D-3, D0)') },
     required: ['empresa_id', 'divida_id', 'valor_original_centavos', 'vencimento'],
   },
   DocumentoDivida: {

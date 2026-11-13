@@ -174,6 +174,29 @@ Os valores podem ser ajustados a qualquer momento em **Superadmin › Planos e a
 
 O Asaas só recebe a **assinatura da plataforma**. Os devedores continuam pagando direto às empresas credoras.
 
+## Avisos automáticos
+
+**Mensalidade (Asaas):** quando uma empresa assina, o sistema configura no Asaas os avisos por **e-mail**:
+- fatura criada;
+- lembrete antes do vencimento;
+- aviso no dia do vencimento;
+- aviso de atraso;
+- confirmação de pagamento.
+
+SMS, ligação e WhatsApp do Asaas ficam desligados, porque podem ter custo por envio. Se quiser ligar algum, use o painel do Asaas, em **Clientes › Notificações**.
+
+**No próprio Acorly** (aviso dentro do sistema e por e-mail ao administrador da empresa), uma vez cada, das 9h às 18h:
+- a mensalidade vence em 3 dias;
+- último dia da tolerância de atraso;
+- o teste grátis termina em 2 dias e no último dia.
+
+**Parcelas de acordos:** o devedor recebe um e-mail 3 dias antes e no dia do vencimento de cada parcela.
+- Só funciona com o envio de cobrança por e-mail ligado (`EMAIL_COBRANCA_REMETENTE`).
+- Na cobrança gerenciada, o e-mail precisa estar entre os canais autorizados.
+- Respeita o descadastro e o limite de contatos.
+- Cada lembrete fica registrado no histórico do caso.
+- Os lembretes por WhatsApp aparecem na **Fila do dia** da Central de mensagens.
+
 ## Contato no site
 
 O endereço principal mostra o site de apresentação da HS, com os planos atualizados automaticamente. Para exibir o seu e-mail e WhatsApp no rodapé, adicione no Render (**Environment**) as variáveis `CONTATO_EMAIL` e `CONTATO_WHATSAPP` (ex.: `5511999999999`).

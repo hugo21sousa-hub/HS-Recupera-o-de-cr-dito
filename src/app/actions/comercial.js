@@ -224,7 +224,12 @@ export const actions = {
       let cliente = (empresa.asaas_ambiente || 'sandbox') === (ambiente || 'sandbox') ? empresa.asaas_cliente_id : null;
       if (!cliente) {
         cliente = (await ctx.asaas.criarCliente({ nome: empresa.razao_social, cpfCnpj: empresa.cnpj, email: empresa.email, telefone: empresa.telefone, referencia: empresa.id })).id;
-        await ctx.db.Empresa.update(empresa.id, { asaas_cliente_id: cliente, asaas_ambiente: ambiente });
+        await ctx.db.Empresa.update(empresa.id, { asaas_cliente_id: cliente, asaas_ambiente: ambiente, asaas_notificacoes_em: null });
+        empresa.asaas_notificacoes_em = null;
+      }
+      // Lembretes do Asaas por e-mail (antes do vencimento, no vencimento e em atraso); falha aqui não impede a assinatura
+      if (!empresa.asaas_notificacoes_em && ctx.asaas.configurarNotificacoes) {
+        try { await ctx.asaas.configurarNotificacoes(cliente); await ctx.db.Empresa.update(empresa.id, { asaas_notificacoes_em: ctx.now().toISOString() }); } catch (e) { console.error('[asaas] avisos do cliente não configurados:', e.message); }
       }
       const hoje = ctx.now().toISOString().slice(0, 10);
       const sub = await ctx.asaas.criarAssinatura({ cliente, valorCentavos: plano.preco_mensal_centavos, vencimento: hoje, descricao: `Assinatura ${plano.nome} — Acorly (HS Recuperação de Crédito)`, referencia: empresa.id });
