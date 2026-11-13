@@ -129,6 +129,7 @@ Planos padrão:
 | HS Essencial | R$ 49,90 | até 100 | 2 |
 | HS Profissional | R$ 89,90 | até 500 | 5 |
 | HS Empresarial | R$ 159,90 | até 1.000 | 15 |
+| HS Ilimitado | R$ 259,90 | ilimitados | ilimitados |
 
 Os valores podem ser ajustados a qualquer momento em **Superadmin › Planos e assinaturas**.
 

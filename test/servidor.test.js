@@ -180,5 +180,6 @@ test('planos padrão: valores antigos não editados são atualizados; planos edi
   assert.deepEqual([por('HS ESSENCIAL')[0].preco_mensal_centavos, por('HS ESSENCIAL')[0].limite_devedores, por('HS ESSENCIAL')[0].limite_usuarios], [4990, 100, 2]);
   assert.deepEqual([por('HS PROFISSIONAL')[0].preco_mensal_centavos, por('HS PROFISSIONAL')[0].limite_devedores], [9990, 1000], 'plano editado não muda');
   assert.deepEqual([por('HS EMPRESARIAL')[0].preco_mensal_centavos, por('HS EMPRESARIAL')[0].limite_devedores, por('HS EMPRESARIAL')[0].limite_usuarios], [15990, 1000, 15]);
+  assert.deepEqual([por('HS ILIMITADO')[0].preco_mensal_centavos, por('HS ILIMITADO')[0].limite_devedores, por('HS ILIMITADO')[0].limite_usuarios], [25990, null, null]);
   await a.banco.fechar(); rmSync(d, { recursive: true, force: true });
 });

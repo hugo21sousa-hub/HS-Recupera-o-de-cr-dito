@@ -240,7 +240,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 .site-check { list-style: none; padding: 0; margin: 4px 0 8px; display: grid; gap: 8px; }
 .site-check li { padding-left: 24px; position: relative; line-height: 1.45; }
 .site-check li::before { content: '✓'; position: absolute; left: 0; color: var(--ok); font-weight: 800; }
-.site-planos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: stretch; }
+.site-planos { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 20px; align-items: stretch; }
 .site-plano { position: relative; }
 .site-plano .btn { margin-top: auto; }
 .site-plano.recomendado { border: 2px solid var(--azul); box-shadow: 0 12px 30px rgba(29, 95, 167, .15); }

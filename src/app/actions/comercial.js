@@ -21,6 +21,7 @@ export const PLANOS_PADRAO = [
   { nome: 'HS ESSENCIAL', preco_mensal_centavos: 4990, limite_devedores: 100, limite_usuarios: 2, funcionalidades: ['devedores', 'dividas', 'pagamentos', 'dashboard_basico'], status: 'ATIVO', ordem: 1 },
   { nome: 'HS PROFISSIONAL', preco_mensal_centavos: 8990, limite_devedores: 500, limite_usuarios: 5, funcionalidades: ['devedores', 'dividas', 'pagamentos', 'dashboard_basico', 'carteiras', 'importacao', 'negociacao', 'relatorios'], status: 'ATIVO', ordem: 2 },
   { nome: 'HS EMPRESARIAL', preco_mensal_centavos: 15990, limite_devedores: 1000, limite_usuarios: 15, funcionalidades: ['devedores', 'dividas', 'pagamentos', 'dashboard_basico', 'carteiras', 'importacao', 'negociacao', 'relatorios', 'exportacao', 'api_futura'], status: 'ATIVO', ordem: 3 },
+  { nome: 'HS ILIMITADO', preco_mensal_centavos: 25990, limite_devedores: null, limite_usuarios: null, funcionalidades: ['devedores', 'dividas', 'pagamentos', 'dashboard_basico', 'carteiras', 'importacao', 'negociacao', 'relatorios', 'exportacao', 'api_futura'], status: 'ATIVO', ordem: 4 },
 ];
 
 /** Tabela de comissão vigente: a do contrato, senão a padrão configurada pela HS, senão a de fábrica. */
