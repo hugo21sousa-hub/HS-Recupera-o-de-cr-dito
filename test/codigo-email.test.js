@@ -92,3 +92,24 @@ test('Brevo: envia pela API HTTPS com remetente e destinatário corretos', async
   const falha = transporteBrevo({ chave: 'x', fetchImpl: async () => new Response('{"message":"sender not verified"}', { status: 400 }) });
   await assert.rejects(falha.sendMail({ from: 'a@b.com', to: 'c@d.com', subject: 's', text: 't', html: 'h' }), /sender not verified/);
 });
+
+test('se o e-mail falhar, quem tem aplicativo autenticador entra por ele; quem não tem recebe aviso', async () => {
+  const d2 = mkdtempSync(join(tmpdir(), 'hs-cod2-'));
+  const quebrado = { sendMail: async () => { throw new Error('Brevo fora do ar'); } };
+  const a = criarApp({ dataDir: d2, webDir: join(d2, 'web'), transporteEmail: quebrado, env: envBanco() });
+  const { codigo } = await import('../src/server/totp.js');
+  let segredo;
+  await a.exclusivo(async () => {
+    await a.auth.cadastrar({ email: 'com-app@x.com', senha: 'SenhaForte1' });
+    const ini = await a.auth.iniciar2fa('com-app@x.com');
+    segredo = ini.segredo.replace(/\s/g, '');
+    await a.auth.ativar2fa('com-app@x.com', codigo(segredo, Math.floor(Date.now() / 30000)));
+    await a.auth.cadastrar({ email: 'sem-app@x.com', senha: 'SenhaForte1' });
+  });
+  const r1 = await a.exclusivo(() => a.auth.login('com-app@x.com', 'SenhaForte1'));
+  assert.equal(r1.metodo, 'app');
+  assert.match(r1.aviso, /aplicativo/);
+  const r2 = await a.exclusivo(() => a.auth.login('sem-app@x.com', 'SenhaForte1'));
+  assert.match(r2.erro, /Não foi possível enviar/);
+  await a.banco.fechar(); rmSync(d2, { recursive: true, force: true });
+});

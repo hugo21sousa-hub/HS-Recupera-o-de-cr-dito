@@ -214,7 +214,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
       const b = await lerJSON(req);
       const r = await exclusivo(() => (rota.endsWith('login') ? auth.login(b.email, b.senha) : auth.cadastrar(b)));
       if (r.erro) return json(res, rota.endsWith('login') ? 401 : 422, { ok: false, error: r.erro });
-      if (r.precisa_2fa) return json(res, 200, { ok: true, data: { precisa_2fa: true, desafio: r.desafio, metodo: r.metodo, destino: r.destino } });
+      if (r.precisa_2fa) return json(res, 200, { ok: true, data: { precisa_2fa: true, desafio: r.desafio, metodo: r.metodo, destino: r.destino, aviso: r.aviso } });
       return json(res, 200, { ok: true }, { 'Set-Cookie': cookieSessao(r.token, r.expira) });
     }
 

@@ -78,7 +78,15 @@ export function criarAuth({ db, agora = () => new Date(), urlBase = '', segredo 
         const desafio = randomBytes(24).toString('base64url');
         const codigo = novoCodigo();
         await db.Desafio2FA.create({ token_hash: hashToken(desafio), email: c.email, metodo: 'email', codigo_hash: hashToken(`${desafio}:${codigo}`), expira_em: new Date(agora().getTime() + 10 * 60e3).toISOString(), tentativas: 0, envios: 1, ultimo_envio: agora().toISOString() });
-        if (!(await codigoPorEmail(c.email, codigo))) return { erro: 'Não foi possível enviar o código para o seu e-mail agora. Tente novamente em instantes.' };
+        if (!(await codigoPorEmail(c.email, codigo))) {
+          // Falha no envio: quem tem aplicativo autenticador continua podendo entrar por ele
+          if (c.totp_ativo) {
+            const d = (await db.Desafio2FA.filter({ token_hash: hashToken(desafio) }))[0];
+            await db.Desafio2FA.update(d.id, { metodo: 'app', codigo_hash: null });
+            return { precisa_2fa: true, desafio, metodo: 'app', aviso: 'Não conseguimos enviar o código por e-mail. Use o aplicativo autenticador.' };
+          }
+          return { erro: 'Não foi possível enviar o código para o seu e-mail agora. Tente novamente em instantes ou fale com o administrador.' };
+        }
         return { precisa_2fa: true, desafio, metodo: 'email', destino: mascarar(c.email) };
       }
       if (c.totp_ativo) {

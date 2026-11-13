@@ -85,6 +85,7 @@ export function Entrar() {
         ) : (
           <>
             <h1 style={{ marginTop: 12 }}>Verificação em duas etapas</h1>
+            {desafio.aviso && <div className="aviso alerta small">{desafio.aviso}</div>}
             <p className="muted">Digite o código de 6 dígitos do seu aplicativo autenticador. Sem o celular? Use um dos códigos de recuperação.</p>
             <FormSimples botao="Verificar"
               campos={[{ nome: 'codigo', rotulo: 'Código', obrigatorio: true, autoComplete: 'one-time-code', placeholder: '123456' }]}
