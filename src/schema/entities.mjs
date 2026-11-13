@@ -24,7 +24,7 @@ export const ENTITIES = {
       contato_nome: s('Contato'), contato_telefone: s('Telefone do contato'), contato_email: s('E-mail do contato'),
       status: e(['CADASTRO_INCOMPLETO', 'AGUARDANDO_VALIDACAO', 'ATIVA', 'SUSPENSA', 'CANCELADA'], 'Status', 'CADASTRO_INCOMPLETO'),
       motivo_status: s('Motivo da última mudança de status'), modalidade_servico: e(['PLATAFORMA', 'HS_GERENCIADA', 'AMBOS'], 'Serviço escolhido no onboarding'),
-      data_cadastro: ts('Data de cadastro'), aceite_termos_em: ts('Aceite dos termos'), asaas_cliente_id: s('Cliente no gateway de assinatura'), aceite_privacidade_em: ts('Aceite da política de privacidade'), versao_termos: s('Versão aceita'),
+      data_cadastro: ts('Data de cadastro'), aceite_termos_em: ts('Aceite dos termos'), asaas_cliente_id: s('Cliente no gateway de assinatura'), asaas_ambiente: s('Ambiente do gateway (sandbox/producao)'), aceite_privacidade_em: ts('Aceite da política de privacidade'), versao_termos: s('Versão aceita'),
     },
     required: ['razao_social', 'cnpj', 'email', 'status'],
   },

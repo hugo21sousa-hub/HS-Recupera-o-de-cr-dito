@@ -209,6 +209,12 @@ test('Assinatura online: fatura, confirmação pelo webhook, idempotência e ina
   assert.equal(ass.atual.status, 'INADIMPLENTE');
   // valores das dívidas nunca passam pelo gateway
   assert.ok(chamadas.every((c) => c[0] !== 'assinatura' || c[1].descricao.includes('Assinatura')));
+  // mesmo ambiente: reaproveita o cliente; trocou do sandbox para a conta real: cria o cliente de novo
+  await t.ok(A.adm, 'assinarPlano', { plano_id: planos[0].id });
+  assert.equal(chamadas.filter((c) => c[0] === 'cliente').length, 1);
+  t.estado.extras.asaas.ambiente = 'producao';
+  await t.ok(A.adm, 'assinarPlano', { plano_id: planos[2].id });
+  assert.equal(chamadas.filter((c) => c[0] === 'cliente').length, 2);
 });
 
 test('falha de rede no WhatsApp vira mensagem clara (502), não erro interno', async () => {

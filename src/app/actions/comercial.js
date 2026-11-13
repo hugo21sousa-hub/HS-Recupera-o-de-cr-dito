@@ -193,10 +193,12 @@ export const actions = {
         if (p.gateway_assinatura_id) await ctx.asaas.cancelarAssinatura(p.gateway_assinatura_id).catch(() => {});
         await alterar(ctx, 'Assinatura', p, { status: 'CANCELADA' }, 'CANCELAR_ASSINATURA_PENDENTE');
       }
-      let cliente = empresa.asaas_cliente_id;
+      // O cliente criado no sandbox não existe na conta real (e vice-versa): ao trocar de ambiente, cria de novo
+      const ambiente = ctx.asaas.ambiente || null;
+      let cliente = (empresa.asaas_ambiente || 'sandbox') === (ambiente || 'sandbox') ? empresa.asaas_cliente_id : null;
       if (!cliente) {
         cliente = (await ctx.asaas.criarCliente({ nome: empresa.razao_social, cpfCnpj: empresa.cnpj, email: empresa.email, telefone: empresa.telefone, referencia: empresa.id })).id;
-        await ctx.db.Empresa.update(empresa.id, { asaas_cliente_id: cliente });
+        await ctx.db.Empresa.update(empresa.id, { asaas_cliente_id: cliente, asaas_ambiente: ambiente });
       }
       const hoje = ctx.now().toISOString().slice(0, 10);
       const sub = await ctx.asaas.criarAssinatura({ cliente, valorCentavos: plano.preco_mensal_centavos, vencimento: hoje, descricao: `Assinatura ${plano.nome} — HS Recuperação de Crédito`, referencia: empresa.id });

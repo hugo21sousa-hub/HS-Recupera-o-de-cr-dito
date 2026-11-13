@@ -6,6 +6,7 @@ export function configAsaas(env = process.env) {
     chave: env.ASAAS_API_KEY,
     base: env.ASAAS_BASE_URL || (env.ASAAS_AMBIENTE === 'producao' ? 'https://api.asaas.com/v3' : 'https://api-sandbox.asaas.com/v3'),
     webhookToken: env.ASAAS_WEBHOOK_TOKEN || '',
+    ambiente: env.ASAAS_BASE_URL ? 'personalizado' : (env.ASAAS_AMBIENTE === 'producao' ? 'producao' : 'sandbox'),
   };
 }
 
@@ -33,6 +34,7 @@ export function criarAsaas({ config, fetchImpl = fetch } = {}) {
   const reais = (c) => Number((c / 100).toFixed(2));
   return {
     disponivel: !!config,
+    ambiente: config?.ambiente || null,
     criarCliente: ({ nome, cpfCnpj, email, telefone, referencia }) => req('POST', '/customers', { name: nome, cpfCnpj, email, mobilePhone: telefone, externalReference: referencia, notificationDisabled: false }),
     criarAssinatura: ({ cliente, valorCentavos, vencimento, descricao, referencia }) => req('POST', '/subscriptions', { customer: cliente, billingType: 'UNDEFINED', value: reais(valorCentavos), nextDueDate: vencimento, cycle: 'MONTHLY', description: descricao, externalReference: referencia }),
     cobrancasDaAssinatura: (id) => req('GET', `/subscriptions/${encodeURIComponent(id)}/payments`),
