@@ -185,3 +185,27 @@ test('planos padrão: nomes antigos (HS) viram Acorly; valores antigos não edit
   assert.deepEqual([por('ACORLY ILIMITADO')[0].preco_mensal_centavos, por('ACORLY ILIMITADO')[0].limite_devedores, por('ACORLY ILIMITADO')[0].limite_usuarios], [25990, null, null]);
   await a.banco.fechar(); rmSync(d, { recursive: true, force: true });
 });
+
+test('domínio oficial: páginas pelo www ou pelo Render vão para acorly.com.br; API e webhooks não', async () => {
+  const d = mkdtempSync(join(tmpdir(), 'hs-dom-'));
+  const a = criarApp({ dataDir: d, webDir: join(d, 'web'), env: envBanco(), urlBase: 'https://acorly.com.br' });
+  await new Promise((ok) => a.server.listen(0, ok));
+  const porta = a.server.address().port;
+  const { request } = await import('node:http');
+  const pedir = (caminho, host, method = 'GET') => new Promise((ok, falha) => {
+    const q = request({ host: '127.0.0.1', port: porta, path: caminho, method, headers: { Host: host, 'Content-Length': 0 } }, (r) => { r.resume(); ok({ status: r.statusCode, location: r.headers.location }); });
+    q.on('error', falha); q.end();
+  });
+  try {
+    let r = await pedir('/entrar?x=1', 'www.acorly.com.br');
+    assert.equal(r.status, 301);
+    assert.equal(r.location, 'https://acorly.com.br/entrar?x=1');
+    r = await pedir('/', 'hs-recuperacao.onrender.com');
+    assert.equal(r.location, 'https://acorly.com.br/');
+    assert.notEqual((await pedir('/api/saude', 'hs-recuperacao.onrender.com')).status, 301, 'monitoramento continua no Render');
+    assert.notEqual((await pedir('/webhooks/asaas', 'hs-recuperacao.onrender.com', 'POST')).status, 301);
+    assert.notEqual((await pedir('/', 'acorly.com.br')).status, 301, 'endereço oficial não redireciona');
+  } finally {
+    a.server.closeAllConnections?.(); a.server.close(); await a.banco.fechar(); rmSync(d, { recursive: true, force: true });
+  }
+});

@@ -1,13 +1,13 @@
 // Contrato de prestação de serviços de cobrança extrajudicial (cobrança gerenciada).
 // O texto é montado com os dados da empresa e guardado exatamente como foi aceito.
 
-export const VERSAO_CONTRATO = 'cobranca-v1';
+export const VERSAO_CONTRATO = 'cobranca-v2'; // v2: e-mail da contratada passou a ser contato@acorly.com.br
 
 export const CONTRATADA = {
   nome: 'HS RECUPERAÇÃO DE CRÉDITO',
   cnpj: '37.573.934/0001-22',
   endereco: 'Rua Júlia Fetal, 05, casa 02, Nazaré, Salvador/BA, CEP 40040-350',
-  email: 'hsrecupera@gmail.com',
+  email: 'contato@acorly.com.br',
   foro: 'Salvador/BA',
 };
 

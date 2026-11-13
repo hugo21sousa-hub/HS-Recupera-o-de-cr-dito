@@ -25,7 +25,7 @@ import { executarRetencao } from '../app/retencao.js';
 import { PERFIS_HS } from '../core/permissions.js';
 import { TABELA_PADRAO, rotuloFaixa } from '../core/comissao.js';
 
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8', '.xml': 'application/xml; charset=utf-8', '.webp': 'image/webp' };
 const COOKIE = 'hs_sessao';
 
 const SISTEMA = { id: 'sistema', nome: 'Sistema', email: 'sistema', perfil: 'SISTEMA', status: 'ATIVO' };
@@ -163,9 +163,20 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
     res.end(readFileSync(p));
   }
 
+  // Endereço oficial (ex.: https://acorly.com.br): páginas abertas pelo www ou pelo endereço do Render
+  // são redirecionadas para ele. API, webhooks, arquivos e descadastro continuam respondendo em qualquer endereço.
+  const hostOficial = (() => { try { const u = new URL(urlBase); return /\.onrender\.com$|^localhost$|^127\./.test(u.hostname) ? null : u; } catch { return null; } })();
+  const LIVRES = /^\/(api|webhooks|arquivos|descadastrar)(\/|$)/;
+
   async function rotear(req, res) {
     headersSeguranca(res);
     const url = new URL(req.url, 'http://local');
+    const hostPedido = String(req.headers.host || '').toLowerCase().replace(/:\d+$/, '');
+    if (hostOficial && (req.method === 'GET' || req.method === 'HEAD') && !LIVRES.test(url.pathname)
+      && (hostPedido === `www.${hostOficial.hostname}` || hostPedido.endsWith('.onrender.com'))) {
+      res.writeHead(301, { Location: `${hostOficial.origin}${url.pathname}${url.search}` });
+      return res.end();
+    }
     // Atrás do proxy (Caddy), o IP real é o último item de X-Forwarded-For, acrescentado pelo próprio proxy
     const xff = confiarProxy ? String(req.headers['x-forwarded-for'] || '').split(',').map((x) => x.trim()).filter(Boolean) : [];
     const ip = xff.length ? xff[xff.length - 1] : req.socket.remoteAddress || '?';
@@ -186,7 +197,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
       const planos = await exclusivo(() => db.Plano.filter({ status: 'ATIVO' }));
       return json(res, 200, { ok: true, data: {
         planos: planos.sort((a, b) => (a.ordem || 0) - (b.ordem || 0)).map((p) => ({ nome: p.nome, preco_mensal_centavos: p.preco_mensal_centavos, limite_devedores: p.limite_devedores, limite_usuarios: p.limite_usuarios, funcionalidades: p.funcionalidades || [] })),
-        contato: { email: env.CONTATO_EMAIL || null, whatsapp: env.CONTATO_WHATSAPP || null },
+        contato: { email: env.CONTATO_EMAIL || 'contato@acorly.com.br', whatsapp: env.CONTATO_WHATSAPP || null },
         dias_teste: DIAS_TESTE,
         comissao: await exclusivo(async () => { const cfg = (await db.ConfiguracaoHS.filter({}))[0]; const f = cfg?.comissao_faixas?.length ? cfg.comissao_faixas : TABELA_PADRAO; return f.map((x, i) => ({ ...x, faixa: rotuloFaixa(f, i) })); }),
       } });

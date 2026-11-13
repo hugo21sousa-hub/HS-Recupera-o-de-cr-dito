@@ -109,14 +109,14 @@ Com o envio de e-mail ligado, toda entrada no sistema pede um **código de 6 dí
 O Render grátis **bloqueia o envio por SMTP**, por isso o sistema usa a API do **Brevo**: são 300 e-mails por dia de graça, sem cartão.
 
 1. Crie a conta em **brevo.com** (plano Free).
-2. Cadastre o remetente: menu **Senders, Domains & Dedicated IPs › Senders › Add a sender**, com nome `Acorly` e o e-mail da HS (ex.: `hsrecupera@gmail.com`). Confirme pelo e-mail que o Brevo enviar.
+2. Cadastre o remetente: menu **Senders, Domains & Dedicated IPs › Senders › Add a sender**, com nome `Acorly` e o e-mail `contato@acorly.com.br`. Confirme pelo e-mail que o Brevo enviar.
 3. Gere a chave: menu **SMTP & API › API Keys › Generate a new API key** (nome `render`). Copie a chave, que começa com `xkeysib-`.
 4. No Render, em **hs-recuperacao › Environment**, adicione:
 
 | Variável | Valor |
 |---|---|
 | `BREVO_API_KEY` | a chave `xkeysib-…` |
-| `EMAIL_REMETENTE` | `Acorly <hsrecupera@gmail.com>` (o mesmo e-mail confirmado no passo 2) |
+| `EMAIL_REMETENTE` | `Acorly <contato@acorly.com.br>` (o mesmo e-mail confirmado no passo 2) |
 
 5. Salve (**Save, rebuild, and deploy**).
 
@@ -201,39 +201,40 @@ SMS, ligação e WhatsApp do Asaas ficam desligados, porque podem ter custo por 
 
 O endereço principal mostra o site de apresentação da HS, com os planos atualizados automaticamente. Para exibir o seu e-mail e WhatsApp no rodapé, adicione no Render (**Environment**) as variáveis `CONTATO_EMAIL` e `CONTATO_WHATSAPP` (ex.: `5511999999999`).
 
-## Domínio próprio (ex.: acorly.com.br)
+## Domínio próprio: acorly.com.br
 
-**1. No Render**
+**1. Render (endereço do sistema)**
 1. Abra **hs-recuperacao › Settings › Custom Domains › Add Custom Domain**.
-2. Adicione o domínio principal (`acorly.com.br`) e também o `www.acorly.com.br`.
-3. O Render mostra os registros de DNS que você precisa criar. Normalmente são um registro **A** para o domínio principal e um **CNAME** para o `www`.
+2. Adicione `acorly.com.br`, depois `www.acorly.com.br`.
+3. Na zona de DNS do domínio, crie os registros que o Render mostrar (um **A** para `acorly.com.br` e um **CNAME** para `www`). Não apague os registros do e-mail (MX, SPF).
+4. Aguarde o Render mostrar **Verified** e o certificado HTTPS emitido.
+5. Em **Environment**, adicione `URL_BASE` = `https://acorly.com.br` e clique em **Save, rebuild, and deploy**.
 
-**2. Onde você comprou o domínio** (Registro.br, Hostinger, GoDaddy...)
-1. Abra a zona de DNS (**DNS › Editar zona**) e crie exatamente os registros que o Render mostrou.
-2. Aguarde de alguns minutos a algumas horas. O Render confirma o domínio e emite o certificado HTTPS sozinho.
+A partir daí, quem abrir `www.acorly.com.br` ou `hs-recuperacao.onrender.com` é levado para `https://acorly.com.br`. A API, os webhooks e o monitoramento continuam funcionando também pelo endereço antigo.
 
-**3. No Render (Environment)**
-1. Adicione a variável `URL_BASE` = `https://acorly.com.br`. É ela que monta os links dos e-mails, dos convites e da logo.
-2. Clique em **Save, rebuild, and deploy**.
-
-**4. Atualize os endereços nos serviços externos**
-- **Asaas:** no webhook, troque a URL para `https://acorly.com.br/webhooks/asaas`.
-- **cron-job.org:** troque a URL para `https://acorly.com.br/api/saude`.
-
-**5. E-mails com o domínio (Brevo)**
+**2. Brevo (e-mails do sistema e de cobrança)**
 1. No Brevo, abra **Senders, Domains & Dedicated IPs › Domains › Add a domain** e informe `acorly.com.br`.
-2. O Brevo mostra registros de DNS (código Brevo, **DKIM** e **DMARC**). Crie todos na zona de DNS do domínio.
-3. Clique em **Verify** (Verificar) no Brevo.
-4. Cadastre o remetente `nao-responda@acorly.com.br`.
-5. No Render, troque `EMAIL_REMETENTE` para `Acorly <nao-responda@acorly.com.br>`.
-6. Cadastre também o remetente `cobranca@acorly.com.br` no Brevo e adicione no Render a variável `EMAIL_COBRANCA_REMETENTE` = `cobranca@acorly.com.br`. Ela libera o **envio de e-mails aos devedores** pela Central de mensagens:
-   - o nome que aparece é o do credor, por exemplo "Loja X via Acorly", ou "HS Recuperação de Crédito" na cobrança gerenciada;
-   - as respostas do devedor vão para o e-mail de quem enviou;
-   - cada e-mail traz um link para o devedor deixar de receber e-mails.
+2. Crie na zona de DNS os registros que o Brevo mostrar: o código de verificação (TXT `brevo-code`), o **DKIM** e o **DMARC**.
+   - Se já existir um registro `_dmarc`, mantenha só um.
+   - Se o Brevo pedir SPF e já houver um TXT `v=spf1` do seu e-mail, acrescente `include:spf.brevo.com` nele em vez de criar outro.
+3. Clique em **Authenticate this email domain** (Verificar) até tudo aparecer verificado.
+4. Em **Senders**, adicione o remetente `contato@acorly.com.br` (nome `Acorly`) e confirme.
+5. No Render (**Environment**):
 
-Com o domínio verificado, os e-mails param de cair no spam.
+| Variável | Valor |
+|---|---|
+| `EMAIL_REMETENTE` | `Acorly <contato@acorly.com.br>` |
+| `EMAIL_COBRANCA_REMETENTE` | `contato@acorly.com.br` |
+| `CONTATO_EMAIL` | `contato@acorly.com.br` |
 
-O endereço `hs-recuperacao.onrender.com` continua funcionando.
+6. Clique em **Save, rebuild, and deploy**.
+
+`EMAIL_COBRANCA_REMETENTE` libera o envio de e-mails aos devedores e os lembretes de parcela. Nesses e-mails, o nome que aparece é o do credor ("Loja X via Acorly") ou "HS Recuperação de Crédito", e a resposta do devedor vai para quem enviou. Se quiser separar as caixas depois, crie `cobranca@acorly.com.br` e troque só essa variável.
+
+**3. Atualize os endereços nos serviços externos**
+- **Asaas:** em **Integrações › Webhooks**, troque a URL para `https://acorly.com.br/webhooks/asaas`.
+- **cron-job.org:** pode trocar a URL para `https://acorly.com.br/api/saude`. O endereço antigo também funciona.
+- **Google:** opcionalmente, cadastre o site no Google Search Console (`https://acorly.com.br/sitemap.xml` já existe).
 
 ## Limites do plano grátis
 

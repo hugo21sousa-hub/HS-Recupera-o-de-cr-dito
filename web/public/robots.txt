@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /$
+Disallow: /api/
+Disallow: /arquivos/
+Disallow: /convite/
+Disallow: /descadastrar/
+Sitemap: https://acorly.com.br/sitemap.xml

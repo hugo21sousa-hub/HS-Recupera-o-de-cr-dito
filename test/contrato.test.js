@@ -27,7 +27,8 @@ test('contrato de cobrança: minuta com os dados da empresa, aceite guarda texto
   assert.equal(aceito.aceito, true);
   assert.match(aceito.texto, /Admin A \(admin@a\.com\), em nome de Empresa A Ltda, em .*IP 203\.0\.113\.7/);
   assert.equal(aceito.hash, await hashTexto(aceito.texto));
-  assert.equal(aceito.versao, 'cobranca-v1');
+  assert.equal(aceito.versao, 'cobranca-v2');
+  assert.match(aceito.texto, /e-mail contato@acorly\.com\.br, responsável pela plataforma Acorly/);
   // o texto aceito não muda se os dados da empresa mudarem depois
   await t.db.Empresa.update(A.empresa.id, { endereco: 'Outro endereço' });
   assert.equal((await t.ok(A.adm, 'textoContrato', { contrato_id: novo.id })).texto, aceito.texto);
