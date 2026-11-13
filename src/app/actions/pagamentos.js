@@ -2,6 +2,8 @@ import { detectarDuplicidade, validarPagamentoInformado, calcularConfirmacao, st
 import { transicao, podeTransitar, casoAtivo } from '../../core/caseStatus.js';
 import { isHS } from '../../core/permissions.js';
 import { calcularComissao } from '../../core/comissao.js';
+import { somarDiasUteis } from '../../core/dates.js';
+import { DIAS_UTEIS_CONFIRMAR_PAGAMENTO } from '../../core/contrato.js';
 import {
   AccessError, ValidationError, requirePerm, getById, find, criar, alterar, auditar, carregarCaso, carregarDaEmpresa,
   exigir, notificar, paginar, filtrosPermitidos, comNomes,
@@ -16,6 +18,103 @@ async function casoDaDivida(ctx, divida_id) {
 async function moverCaso(ctx, caso, para, motivo) {
   if (!caso || caso.status_operacional === para || !podeTransitar(caso.status_operacional, para)) return caso;
   return alterar(ctx, 'CasoCobranca', caso, transicao(caso, para, { motivo, agora: ctx.now().toISOString() }), 'ALTERAR_STATUS_CASO');
+}
+
+/**
+ * Efetiva a confirmação de um pagamento (baixa de saldo, comissão, acordo e caso).
+ * Usada pelo credor e, na cobrança gerenciada, pela confirmação por decurso de prazo (contrato, cláusula 3.3).
+ */
+async function efetivarConfirmacao(ctx, pag, input = {}) {
+  const divida = await getById(ctx, 'Divida', pag.divida_id);
+  const parcela = pag.parcela_id ? await getById(ctx, 'Parcela', pag.parcela_id) : null;
+  const efeitos = calcularConfirmacao({ pagamento: pag, divida, parcela, valor_confirmado_centavos: input.valor_confirmado_centavos });
+  const agora = ctx.now().toISOString();
+
+  // Trava otimista: grava a confirmação e verifica se é a primeira para este pagamento
+  const conf = await ctx.db.ConfirmacaoPagamento.create({ empresa_id: pag.empresa_id, pagamento_id: pag.id, confirmado_por: ctx.user.id, data_confirmacao: agora, evidencia: input.evidencia || null, observacao: input.observacao || '', valor_confirmado_centavos: efeitos.pagamento.valor_confirmado_centavos, status: 'VALIDA' });
+  const confs = (await find(ctx, 'ConfirmacaoPagamento', { pagamento_id: pag.id })).filter((c) => c.status === 'VALIDA')
+    .sort((a, b) => (a.created_date === b.created_date ? (a.id < b.id ? -1 : 1) : a.created_date < b.created_date ? -1 : 1));
+  if (confs[0].id !== conf.id) {
+    await ctx.db.ConfirmacaoPagamento.update(conf.id, { status: 'DESCARTADA_DUPLICIDADE' });
+    throw new ValidationError('Pagamento já confirmado (duplicidade bloqueada)');
+  }
+  // Releitura do saldo imediatamente antes de gravar (reduz janela de corrida)
+  const divAtual = await getById(ctx, 'Divida', divida.id);
+  if (divAtual.saldo_atual_centavos !== divida.saldo_atual_centavos) {
+    await ctx.db.ConfirmacaoPagamento.update(conf.id, { status: 'DESCARTADA_CONCORRENCIA' });
+    throw new ValidationError('Saldo alterado durante a confirmação; tente novamente');
+  }
+  // Comissão do Acorly: só em casos de cobrança gerenciada e só sobre o valor confirmado
+  const casoPag = pag.caso_id ? await getById(ctx, 'CasoCobranca', pag.caso_id) : await casoDaDivida(ctx, divida.id);
+  const cm = await comissaoDoCaso(ctx, casoPag, divida);
+  const comissao = cm ? { comissao_bps: cm.bps, comissao_hs_centavos: calcularComissao(efeitos.pagamento.valor_confirmado_centavos, cm.bps) } : { comissao_bps: 0, comissao_hs_centavos: 0 };
+  await alterar(ctx, 'Pagamento', pag, { ...efeitos.pagamento, ...comissao, data_confirmacao: agora, confirmado_por: ctx.user.id }, 'CONFIRMAR_PAGAMENTO');
+  await ctx.db.LancamentoFinanceiro.create({ empresa_id: pag.empresa_id, divida_id: divida.id, tipo: 'PAGAMENTO_CONFIRMADO', valor_centavos: -efeitos.pagamento.valor_confirmado_centavos, saldo_anterior_centavos: divida.saldo_atual_centavos, saldo_posterior_centavos: efeitos.divida.saldo_atual_centavos, referencia_id: pag.id, usuario_id: ctx.user.id, data_hora: agora });
+  let divPatch = { ...efeitos.divida };
+  if (parcela) await alterar(ctx, 'Parcela', parcela, efeitos.parcela, 'BAIXAR_PARCELA');
+
+  // Acordo cumprido: baixa o desconto concedido para quitar a dívida (rastreável)
+  let quitada = efeitos.quitada;
+  if (pag.acordo_id) {
+    const acordo = await getById(ctx, 'Acordo', pag.acordo_id);
+    const parcs = await find(ctx, 'Parcela', { acordo_id: acordo.id });
+    const todasPagas = parcs.every((p) => (p.id === parcela?.id ? efeitos.parcela.saldo_centavos : p.saldo_centavos) === 0);
+    if (todasPagas && acordo.status === 'ATIVO') {
+      await alterar(ctx, 'Acordo', acordo, { status: 'CUMPRIDO', data_cumprimento: agora }, 'ACORDO_CUMPRIDO');
+      const residual = divPatch.saldo_atual_centavos;
+      if (residual > 0) {
+        await ctx.db.LancamentoFinanceiro.create({ empresa_id: pag.empresa_id, divida_id: divida.id, tipo: 'DESCONTO_ACORDO', valor_centavos: -residual, saldo_anterior_centavos: residual, saldo_posterior_centavos: 0, referencia_id: acordo.id, usuario_id: ctx.user.id, data_hora: agora, observacao: 'Desconto concedido no acordo cumprido' });
+      }
+      divPatch = { saldo_atual_centavos: 0, status_financeiro: 'QUITADA' };
+      quitada = true;
+    } else if (!quitada) divPatch.status_financeiro = 'EM_ACORDO';
+  }
+  await alterar(ctx, 'Divida', divida, divPatch, 'ATUALIZAR_SALDO');
+
+  const caso = pag.caso_id ? await getById(ctx, 'CasoCobranca', pag.caso_id) : await casoDaDivida(ctx, divida.id);
+  if (caso && casoAtivo(caso)) {
+    const alvo = quitada ? 'RECUPERADO_INTEGRALMENTE' : (pag.acordo_id ? 'ACORDO_AGUARDANDO_PAGAMENTO' : statusCasoAposConfirmacao(false));
+    const atual = caso;
+    if (podeTransitar(atual.status_operacional, alvo)) await alterar(ctx, 'CasoCobranca', atual, transicao(atual, alvo, { agora }), 'ALTERAR_STATUS_CASO');
+    else if (quitada) await alterar(ctx, 'CasoCobranca', atual, { status_operacional: 'RECUPERADO_INTEGRALMENTE', data_encerramento: agora, motivo_status: 'Quitação confirmada pelo credor' }, 'ENCERRAR_CASO_QUITACAO');
+    if (caso.operador_id) await ctx.db.Notificacao.create({ empresa_id: null, usuario_id: caso.operador_id, tipo: 'PAGAMENTO_CONFIRMADO', titulo: 'Pagamento confirmado pelo credor', mensagem: quitada ? 'Dívida quitada; caso encerrado.' : 'Pagamento parcial confirmado.', lida: false, data_criacao: agora, link: `/casos/${caso.id}` });
+  }
+  return { pagamento_id: pag.id, valor_confirmado_centavos: efeitos.pagamento.valor_confirmado_centavos, saldo_atual_centavos: divPatch.saldo_atual_centavos, quitada, ...comissao };
+}
+
+/** Prazo para o credor conferir um pagamento informado num caso de cobrança gerenciada (contrato, cláusula 3.2). */
+export function prazoConfirmacao(pag) {
+  if (!pag.comprovante || !['INFORMADO', 'EM_CONFIRMACAO'].includes(pag.status_confirmacao)) return null;
+  return somarDiasUteis(pag.informado_em || pag.created_date, DIAS_UTEIS_CONFIRMAR_PAGAMENTO);
+}
+
+async function ehCasoGerenciado(ctx, pag) {
+  if (!pag.caso_id) return false;
+  const caso = await getById(ctx, 'CasoCobranca', pag.caso_id);
+  return caso?.modalidade_cobranca === 'HS_GERENCIADA';
+}
+
+/**
+ * Contrato, cláusula 3.3: pagamento informado com comprovante num caso de cobrança gerenciada e não recusado
+ * pelo credor em até 5 dias úteis é considerado confirmado. Rodado uma vez por dia (ctx de sistema).
+ */
+export async function confirmarPorDecursoDePrazo(ctx) {
+  const agora = ctx.now().toISOString();
+  const pendentes = [...await find(ctx, 'Pagamento', { status_confirmacao: 'INFORMADO' }), ...await find(ctx, 'Pagamento', { status_confirmacao: 'EM_CONFIRMACAO' })];
+  let confirmados = 0;
+  for (const pag of pendentes) {
+    const prazo = prazoConfirmacao(pag);
+    if (!prazo || prazo > agora || !(await ehCasoGerenciado(ctx, pag))) continue;
+    try {
+      await efetivarConfirmacao(ctx, pag, { observacao: 'Confirmado por decurso de prazo: não recusado pelo credor em 5 dias úteis (contrato, cláusula 3.3).' });
+      await ctx.db.Pagamento.update(pag.id, { confirmado_por_decurso: true });
+      await notificar(ctx, pag.empresa_id, { perfis: ['ADMIN_EMPRESA', 'FINANCEIRO_EMPRESA'], tipo: 'PAGAMENTO_CONFIRMADO', titulo: 'Pagamento confirmado por decurso de prazo', mensagem: 'O pagamento informado não foi conferido em 5 dias úteis e foi considerado confirmado, conforme o contrato de cobrança.', link: '/pagamentos' });
+      confirmados++;
+    } catch (e) {
+      console.error('[decurso]', pag.id, e.message);
+    }
+  }
+  return { confirmados };
 }
 
 export const actions = {
@@ -62,7 +161,7 @@ export const actions = {
         empresa_id: divida.empresa_id, divida_id: divida.id, caso_id: caso?.id || null, parcela_id: novo.parcela_id, acordo_id,
         valor_centavos: novo.valor_centavos, data_informada: novo.data_informada, forma_pagamento: input.forma_pagamento || 'PIX',
         identificador_transacao: novo.identificador_transacao, comprovante: input.comprovante_file_uri || null,
-        status_confirmacao: 'INFORMADO', informado_por: ctx.user.id, informado_por_perfil: ctx.user.perfil,
+        status_confirmacao: 'INFORMADO', informado_em: ctx.now().toISOString(), informado_por: ctx.user.id, informado_por_perfil: ctx.user.perfil,
         data_confirmacao: null, confirmado_por: null, valor_confirmado_centavos: null,
       }, 'INFORMAR_PAGAMENTO');
       if (caso) await moverCaso(ctx, caso, 'PAGAMENTO_INFORMADO');
@@ -94,61 +193,7 @@ export const actions = {
     async run(ctx, input) {
       exigir(!isHS(ctx.user), 'Somente o credor confirma pagamentos');
       const pag = await carregarDaEmpresa(ctx, 'Pagamento', input.pagamento_id);
-      const divida = await getById(ctx, 'Divida', pag.divida_id);
-      const parcela = pag.parcela_id ? await getById(ctx, 'Parcela', pag.parcela_id) : null;
-      const efeitos = calcularConfirmacao({ pagamento: pag, divida, parcela, valor_confirmado_centavos: input.valor_confirmado_centavos });
-      const agora = ctx.now().toISOString();
-
-      // Trava otimista: grava a confirmação e verifica se é a primeira para este pagamento
-      const conf = await ctx.db.ConfirmacaoPagamento.create({ empresa_id: pag.empresa_id, pagamento_id: pag.id, confirmado_por: ctx.user.id, data_confirmacao: agora, evidencia: input.evidencia || null, observacao: input.observacao || '', valor_confirmado_centavos: efeitos.pagamento.valor_confirmado_centavos, status: 'VALIDA' });
-      const confs = (await find(ctx, 'ConfirmacaoPagamento', { pagamento_id: pag.id })).filter((c) => c.status === 'VALIDA')
-        .sort((a, b) => (a.created_date === b.created_date ? (a.id < b.id ? -1 : 1) : a.created_date < b.created_date ? -1 : 1));
-      if (confs[0].id !== conf.id) {
-        await ctx.db.ConfirmacaoPagamento.update(conf.id, { status: 'DESCARTADA_DUPLICIDADE' });
-        throw new ValidationError('Pagamento já confirmado (duplicidade bloqueada)');
-      }
-      // Releitura do saldo imediatamente antes de gravar (reduz janela de corrida)
-      const divAtual = await getById(ctx, 'Divida', divida.id);
-      if (divAtual.saldo_atual_centavos !== divida.saldo_atual_centavos) {
-        await ctx.db.ConfirmacaoPagamento.update(conf.id, { status: 'DESCARTADA_CONCORRENCIA' });
-        throw new ValidationError('Saldo alterado durante a confirmação; tente novamente');
-      }
-      // Comissão do Acorly: só em casos de cobrança gerenciada e só sobre o valor confirmado
-      const casoPag = pag.caso_id ? await getById(ctx, 'CasoCobranca', pag.caso_id) : await casoDaDivida(ctx, divida.id);
-      const cm = await comissaoDoCaso(ctx, casoPag, divida);
-      const comissao = cm ? { comissao_bps: cm.bps, comissao_hs_centavos: calcularComissao(efeitos.pagamento.valor_confirmado_centavos, cm.bps) } : { comissao_bps: 0, comissao_hs_centavos: 0 };
-      await alterar(ctx, 'Pagamento', pag, { ...efeitos.pagamento, ...comissao, data_confirmacao: agora, confirmado_por: ctx.user.id }, 'CONFIRMAR_PAGAMENTO');
-      await ctx.db.LancamentoFinanceiro.create({ empresa_id: pag.empresa_id, divida_id: divida.id, tipo: 'PAGAMENTO_CONFIRMADO', valor_centavos: -efeitos.pagamento.valor_confirmado_centavos, saldo_anterior_centavos: divida.saldo_atual_centavos, saldo_posterior_centavos: efeitos.divida.saldo_atual_centavos, referencia_id: pag.id, usuario_id: ctx.user.id, data_hora: agora });
-      let divPatch = { ...efeitos.divida };
-      if (parcela) await alterar(ctx, 'Parcela', parcela, efeitos.parcela, 'BAIXAR_PARCELA');
-
-      // Acordo cumprido: baixa o desconto concedido para quitar a dívida (rastreável)
-      let quitada = efeitos.quitada;
-      if (pag.acordo_id) {
-        const acordo = await getById(ctx, 'Acordo', pag.acordo_id);
-        const parcs = await find(ctx, 'Parcela', { acordo_id: acordo.id });
-        const todasPagas = parcs.every((p) => (p.id === parcela?.id ? efeitos.parcela.saldo_centavos : p.saldo_centavos) === 0);
-        if (todasPagas && acordo.status === 'ATIVO') {
-          await alterar(ctx, 'Acordo', acordo, { status: 'CUMPRIDO', data_cumprimento: agora }, 'ACORDO_CUMPRIDO');
-          const residual = divPatch.saldo_atual_centavos;
-          if (residual > 0) {
-            await ctx.db.LancamentoFinanceiro.create({ empresa_id: pag.empresa_id, divida_id: divida.id, tipo: 'DESCONTO_ACORDO', valor_centavos: -residual, saldo_anterior_centavos: residual, saldo_posterior_centavos: 0, referencia_id: acordo.id, usuario_id: ctx.user.id, data_hora: agora, observacao: 'Desconto concedido no acordo cumprido' });
-          }
-          divPatch = { saldo_atual_centavos: 0, status_financeiro: 'QUITADA' };
-          quitada = true;
-        } else if (!quitada) divPatch.status_financeiro = 'EM_ACORDO';
-      }
-      await alterar(ctx, 'Divida', divida, divPatch, 'ATUALIZAR_SALDO');
-
-      const caso = pag.caso_id ? await getById(ctx, 'CasoCobranca', pag.caso_id) : await casoDaDivida(ctx, divida.id);
-      if (caso && casoAtivo(caso)) {
-        const alvo = quitada ? 'RECUPERADO_INTEGRALMENTE' : (pag.acordo_id ? 'ACORDO_AGUARDANDO_PAGAMENTO' : statusCasoAposConfirmacao(false));
-        const atual = caso;
-        if (podeTransitar(atual.status_operacional, alvo)) await alterar(ctx, 'CasoCobranca', atual, transicao(atual, alvo, { agora }), 'ALTERAR_STATUS_CASO');
-        else if (quitada) await alterar(ctx, 'CasoCobranca', atual, { status_operacional: 'RECUPERADO_INTEGRALMENTE', data_encerramento: agora, motivo_status: 'Quitação confirmada pelo credor' }, 'ENCERRAR_CASO_QUITACAO');
-        if (caso.operador_id) await ctx.db.Notificacao.create({ empresa_id: null, usuario_id: caso.operador_id, tipo: 'PAGAMENTO_CONFIRMADO', titulo: 'Pagamento confirmado pelo credor', mensagem: quitada ? 'Dívida quitada; caso encerrado.' : 'Pagamento parcial confirmado.', lida: false, data_criacao: agora, link: `/casos/${caso.id}` });
-      }
-      return { pagamento_id: pag.id, valor_confirmado_centavos: efeitos.pagamento.valor_confirmado_centavos, saldo_atual_centavos: divPatch.saldo_atual_centavos, quitada, ...comissao };
+      return efetivarConfirmacao(ctx, pag, input);
     },
   },
 
@@ -179,7 +224,9 @@ export const actions = {
       if (!isHS(ctx.user)) {
         requirePerm(ctx.user, 'pagamento.ler');
         const rows = await find(ctx, 'Pagamento', { empresa_id: ctx.user.empresa_id, ...filtrosPermitidos(input.filtros, ['status_confirmacao', 'divida_id', 'acordo_id', 'caso_id']) });
-        return comNomes(ctx, paginar(rows, input));
+        const pagina = await comNomes(ctx, paginar(rows, input));
+        for (const p of pagina.itens || []) { const prazo = prazoConfirmacao(p); if (prazo && await ehCasoGerenciado(ctx, p)) p.confirmar_ate = prazo; }
+        return pagina;
       }
       return listarPorCaso(ctx, 'Pagamento', input, ['status_confirmacao', 'divida_id', 'acordo_id', 'caso_id']);
     },

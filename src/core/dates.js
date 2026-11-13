@@ -30,3 +30,15 @@ export function addMeses(iso, meses) {
   alvo.setUTCDate(Math.min(d, ultimo));
   return alvo.toISOString().slice(0, 10);
 }
+
+/** Soma dias úteis (segunda a sexta; feriados não são considerados) a uma data/hora ISO. Retorna ISO. */
+export function somarDiasUteis(iso, n) {
+  const d = new Date(iso);
+  let restantes = n;
+  while (restantes > 0) {
+    d.setUTCDate(d.getUTCDate() + 1);
+    const dia = d.getUTCDay();
+    if (dia !== 0 && dia !== 6) restantes--;
+  }
+  return d.toISOString();
+}

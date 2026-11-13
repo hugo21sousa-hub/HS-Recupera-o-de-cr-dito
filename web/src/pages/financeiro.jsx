@@ -111,7 +111,7 @@ export function Pagamentos() {
         { titulo: 'Comissão Acorly', num: true, render: (p) => (p.comissao_hs_centavos ? <span title={pct(p.comissao_bps)}>{brl(p.comissao_hs_centavos)}</span> : '—') },
         { titulo: 'Forma', render: (p) => rotulo(p.forma_pagamento) },
         { titulo: 'Transação', render: (p) => p.identificador_transacao || '—' },
-        { titulo: 'Status', render: (p) => <><Badge status={p.status_confirmacao} />{p.motivo_rejeicao && <div className="small muted">{p.motivo_rejeicao}</div>}</> },
+        { titulo: 'Status', render: (p) => <><Badge status={p.status_confirmacao} />{p.motivo_rejeicao && <div className="small muted">{p.motivo_rejeicao}</div>}{p.confirmar_ate && <div className="small" style={{ color: 'var(--alerta)' }} title="Contrato de cobrança, cláusula 3.3: sem recusa até essa data, o pagamento é considerado confirmado.">Conferir até {dataHora(p.confirmar_ate)}</div>}{p.confirmado_por_decurso && <div className="small muted">Confirmado por decurso de prazo</div>}</> },
         { titulo: '', render: (p) => <div className="row" style={{ justifyContent: 'flex-end' }}>
           {p.comprovante && <button className="btn sm" onClick={() => abrirLink(hs('urlComprovante', { pagamento_id: p.id })).catch(toast.erro)}>Comprovante</button>}
           {!s.ehHS && s.pode('pagamento.confirmar') && <AcoesPagamento pagamento={p} onFeito={() => setR(r + 1)} />}

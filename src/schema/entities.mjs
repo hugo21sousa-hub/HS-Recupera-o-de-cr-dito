@@ -61,6 +61,9 @@ export const ENTITIES = {
       status: e(['SOLICITADO', 'PROPOSTO', 'ATIVO', 'ENCERRADO', 'CANCELADO'], 'Status', 'SOLICITADO'), aceite: b('Aceito pela empresa'), data_aceite: ts('Data do aceite'),
       responsavel_autorizacao: ref('UsuarioPlataforma que aceitou'), observacoes: s('Observações'), motivo_encerramento: s('Motivo do encerramento'),
       comissao_faixas: arr('Comissão do Acorly por faixa de atraso [{ate_dias, bps}] sobre valores recebidos', { type: 'object' }),
+      versao_contrato: s('Versão do modelo de contrato aceito'), texto_aceito: s('Texto integral do contrato no momento do aceite'),
+      contrato_secoes: arr('Seções do contrato aceito [{titulo, paragrafos}]', { type: 'object' }), hash_texto: s('SHA-256 do texto aceito'),
+      aceite_nome: s('Nome de quem aceitou'), aceite_email: s('E-mail de quem aceitou'), aceite_ip: s('IP do aceite'),
     },
     required: ['empresa_id', 'modalidade', 'status'],
   },
@@ -187,7 +190,7 @@ export const ENTITIES = {
     properties: {
       ...EMP, divida_id: ref('Divida'), caso_id: ref('CasoCobranca'), parcela_id: ref('Parcela'), acordo_id: ref('Acordo'), valor_centavos: c('Valor informado'),
       data_informada: dt('Data do pagamento informada'), forma_pagamento: e(['PIX', 'BOLETO', 'TRANSFERENCIA', 'CARTAO', 'DINHEIRO', 'OUTRO'], 'Forma', 'PIX'),
-      identificador_transacao: s('ID da transação (evita duplicidade)'), comprovante: s('file_uri do comprovante (não é prova definitiva)'),
+      identificador_transacao: s('ID da transação (evita duplicidade)'), comprovante: s('file_uri do comprovante (não é prova definitiva)'), informado_em: ts('Quando o pagamento foi informado'), confirmado_por_decurso: b('Confirmado por decurso de prazo (contrato, cláusula 3.3)'),
       status_confirmacao: e(['INFORMADO', 'EM_CONFIRMACAO', 'CONFIRMADO', 'REJEITADO'], 'Status', 'INFORMADO'), informado_por: ref('Quem informou'), informado_por_perfil: s('Perfil de quem informou'),
       valor_confirmado_centavos: c('Valor confirmado'), data_confirmacao: ts('Data da confirmação/rejeição'), confirmado_por: ref('Usuário do credor'), motivo_rejeicao: s('Motivo da rejeição'),
       comissao_bps: n('Comissão Acorly aplicada (bps)'), comissao_hs_centavos: c('Comissão devida ao Acorly sobre este pagamento'),

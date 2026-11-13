@@ -6,6 +6,7 @@ import { Tabela, Badge, Cabecalho, FormModal, Modal, useApi, useToast, useConfir
 import { brl, data, dataHora, rotulo, mascaraDoc, pct, hojeISO } from '../format.js';
 import { colunasCaso, ListaCasos } from './cobranca.jsx';
 import { EditorFaixas, TabelaComissao } from './comissao.jsx';
+import { JanelaContrato } from '../contrato.jsx';
 
 const STATUS_EMPRESA = ['CADASTRO_INCOMPLETO', 'AGUARDANDO_VALIDACAO', 'ATIVA', 'SUSPENSA', 'CANCELADA'];
 
@@ -212,6 +213,7 @@ export function ContratosHS() {
   const [editar, setEditar] = useState(null);
   const [faixasContrato, setFaixasContrato] = useState(null);
   const tabela = useApi('obterTabelaComissao', {});
+  const [verContrato, setVerContrato] = useState(null);
   const [r, setR] = useState(0);
   const confirmar = useConfirm();
   const { executar } = useExecutar();
@@ -235,6 +237,7 @@ export function ContratosHS() {
         { titulo: 'Vigência', render: (c) => (c.data_inicio ? `${data(c.data_inicio)} a ${data(c.data_fim)}` : '—') }, { titulo: 'Status', render: (c) => <Badge status={c.status} /> },
         { titulo: '', render: (c) => <div className="row" style={{ justifyContent: 'flex-end' }}>
           {['SOLICITADO', 'PROPOSTO'].includes(c.status) && <button className="btn sm" onClick={() => setEditar(c)}>{c.status === 'SOLICITADO' ? 'Elaborar proposta' : 'Editar proposta'}</button>}
+          {!['SOLICITADO'].includes(c.status) && <button className="btn sm" onClick={() => setVerContrato(c)}>{c.texto_aceito ? 'Ver contrato' : 'Ver minuta'}</button>}
           {c.status === 'ATIVO' && <button className="btn sm perigo" onClick={async () => { const ok = await confirmar({ titulo: 'Encerrar contrato', perigo: true, pedirMotivo: true, mensagem: 'Casos em andamento serão suspensos.' }); if (ok) { await executar('encerrarContrato', { contrato_id: c.id, motivo: ok.motivo }, 'Contrato encerrado'); setR(r + 1); } }}>Encerrar</button>}
         </div> },
       ]} vazio={<Vazio titulo="Nenhum contrato" />} />
@@ -242,6 +245,7 @@ export function ContratosHS() {
         onSubmit={async (v) => { await hs('salvarContrato', { ...v, id: editar.id, comissao_faixas: faixasContrato || undefined }); setR(r + 1); }}>
         {tabela.data && <ComissaoContrato inicial={editar.comissao_faixas && editar.status !== 'SOLICITADO' ? editar.comissao_faixas : null} padrao={tabela.data.padrao} onChange={setFaixasContrato} />}
       </FormModal>}
+      {verContrato && <JanelaContrato contrato={verContrato} onClose={() => setVerContrato(null)} />}
     </div>
   );
 }

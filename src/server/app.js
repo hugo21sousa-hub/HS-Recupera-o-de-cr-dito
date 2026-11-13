@@ -1,6 +1,7 @@
 // Servidor HTTP (sem framework): API, autenticação, arquivos e frontend estático.
 import { createServer } from 'node:http';
 import { DIAS_TESTE } from '../app/acesso.js';
+import { confirmarPorDecursoDePrazo } from '../app/actions/pagamentos.js';
 import { readFileSync, existsSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, extname, resolve, sep } from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -75,6 +76,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
     await backupNaNuvem().catch((e) => console.error('[backup]', e.message));
     return transacao(async (pos) => {
       const r = await executarRetencao(ctxSistema(pos));
+      r.pagamentos_confirmados_por_decurso = (await confirmarPorDecursoDePrazo(ctxSistema(pos))).confirmados;
       const agoraISO = new Date().toISOString();
       for (const ent of ['Sessao', 'Convite', 'Desafio2FA']) for (const x of await db[ent].filter({})) if (x.expira_em < agoraISO) await db[ent].delete(x.id);
       return r;
@@ -299,6 +301,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
       const r = await transacao(async (pos) => {
         const ctx = await contexto(req, pos);
         if (!ctx) return { status: 401, body: { ok: false, error: 'Sessão expirada. Entre novamente.' }, __rollback: true };
+        ctx.ip = ip;
         if (ctx.seguranca.exige_2fa && !ctx.seguranca.dois_fatores_ativo && !LIBERADAS_SEM_2FA.has(b.action)) {
           return { status: 403, body: { ok: false, error: 'Ative a verificação em duas etapas para continuar.', details: { codigo: 'EXIGE_2FA' } }, __rollback: true };
         }
@@ -347,7 +350,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
   // Retenção LGPD e limpeza: ao iniciar e a cada 24 h
   let timer = null;
   const agendarRetencao = () => {
-    const rodar = () => rodarRetencao().then((r) => { if (r.titulares_anonimizados) console.log('[retencao]', r); }).catch((e) => console.error('[retencao]', e.code ? `${e.code} (ver mensagem do banco acima)` : e));
+    const rodar = () => rodarRetencao().then((r) => { if (r.titulares_anonimizados || r.pagamentos_confirmados_por_decurso) console.log('[retencao]', r); }).catch((e) => console.error('[retencao]', e.code ? `${e.code} (ver mensagem do banco acima)` : e));
     rodar();
     timer = setInterval(rodar, 24 * 3600e3);
     timer.unref();

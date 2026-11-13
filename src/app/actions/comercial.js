@@ -4,6 +4,7 @@ import { verificarMensagem } from '../../core/compliance.js';
 import { TABELA_PADRAO, validarFaixas, rotuloFaixa, faixaPara } from '../../core/comissao.js';
 import { diasAtraso, parseDataISO } from '../../core/dates.js';
 import { situacaoAcesso, resumoAcesso } from '../acesso.js';
+import { montarContrato, hashTexto, VERSAO_CONTRATO } from '../../core/contrato.js';
 import {
   AccessError, ValidationError, requirePerm, getById, find, criar, alterar, empresaAlvo, paginar, filtrosPermitidos, exigir, notificar, carregarCaso,
 } from '../context.js';
@@ -50,6 +51,26 @@ export async function comissaoDoCaso(ctx, caso, divida) {
   await ctx.db.CasoCobranca.update(caso.id, { comissao_bps: f.bps, comissao_faixa: f.faixa, dias_atraso_no_envio: dias });
   Object.assign(caso, { comissao_bps: f.bps, comissao_faixa: f.faixa, dias_atraso_no_envio: dias });
   return { bps: f.bps, faixa: f.faixa, dias };
+}
+
+async function faixasDoContrato(ctx, c) {
+  const f = c.comissao_faixas?.length ? c.comissao_faixas : await tabelaComissao(ctx);
+  return f.map((x, i) => ({ ...x, faixa: rotuloFaixa(f, i) }));
+}
+
+async function minutaDoContrato(ctx, c) {
+  const empresa = await getById(ctx, 'Empresa', c.empresa_id);
+  return { ...montarContrato({ contrato: c, empresa, faixas: await faixasDoContrato(ctx, c) }), empresa };
+}
+
+/** Dados da empresa que precisam constar no contrato. */
+function pendenciasEmpresa(e) {
+  const f = [];
+  if (!e?.razao_social) f.push('razão social');
+  if (!e?.endereco) f.push('endereço');
+  if (!e?.responsavel_legal) f.push('responsável legal');
+  if (!e?.email) f.push('e-mail');
+  return f;
 }
 
 /** Contrato ativo e vigente da empresa (o mais recente). */
@@ -248,15 +269,39 @@ export const actions = {
     },
   },
 
-  /** Aceite do contrato pelo admin da empresa (registra responsável e data). */
+  /** Texto do contrato: o aceito (guardado) ou, se ainda não aceito, a minuta com os dados atuais da empresa. */
+  textoContrato: {
+    perm: null,
+    async run(ctx, { contrato_id }) {
+      const c = await getById(ctx, 'ContratoServico', contrato_id);
+      if (!c) throw new AccessError('Contrato não encontrado', 404);
+      if (isHS(ctx.user)) requirePerm(ctx.user, 'contrato.gerenciar');
+      else { requirePerm(ctx.user, 'contrato.ler'); if (c.empresa_id !== ctx.user.empresa_id) throw new AccessError('Contrato não encontrado', 404); }
+      if (c.texto_aceito) return { aceito: true, titulo: 'CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE COBRANÇA EXTRAJUDICIAL', numero: String(c.id).toUpperCase(), secoes: c.contrato_secoes || [], texto: c.texto_aceito, hash: c.hash_texto, versao: c.versao_contrato, data_aceite: c.data_aceite };
+      const m = await minutaDoContrato(ctx, c);
+      return { aceito: false, ...m, pendencias: pendenciasEmpresa(m.empresa), empresa: undefined };
+    },
+  },
+
+  /** Aceite eletrônico do contrato pelo admin da empresa: guarda o texto integral, o hash, quem aceitou, quando e o IP. */
   aceitarContrato: {
     perm: 'contrato.contratar',
     async run(ctx, { contrato_id, aceite }) {
       const c = await getById(ctx, 'ContratoServico', contrato_id);
       if (!c || c.empresa_id !== ctx.user.empresa_id) throw new AccessError('Contrato não encontrado', 404);
       exigir(c.status === 'PROPOSTO', 'Contrato não está aguardando aceite');
-      exigir(aceite === true, 'Confirme o aceite do contrato');
-      const r = await alterar(ctx, 'ContratoServico', c, { aceite: true, status: 'ATIVO', responsavel_autorizacao: ctx.user.id, data_aceite: ctx.now().toISOString() }, 'ACEITAR_CONTRATO');
+      exigir(aceite === true, 'Confirme que leu e aceita o contrato');
+      const agora = ctx.now().toISOString();
+      const empresa = await getById(ctx, 'Empresa', c.empresa_id);
+      const falta = pendenciasEmpresa(empresa);
+      exigir(!falta.length, `Complete os dados da empresa em Configurações antes de aceitar: ${falta.join(', ')}.`);
+      const dadosAceite = { nome: ctx.user.nome, email: ctx.user.email, data_hora: agora, ip: ctx.ip || null };
+      const m = montarContrato({ contrato: c, empresa, faixas: await faixasDoContrato(ctx, c), aceite: dadosAceite });
+      const r = await alterar(ctx, 'ContratoServico', c, {
+        aceite: true, status: 'ATIVO', responsavel_autorizacao: ctx.user.id, data_aceite: agora,
+        versao_contrato: VERSAO_CONTRATO, texto_aceito: m.texto, contrato_secoes: m.secoes, hash_texto: await hashTexto(m.texto),
+        aceite_nome: dadosAceite.nome, aceite_email: dadosAceite.email, aceite_ip: dadosAceite.ip,
+      }, 'ACEITAR_CONTRATO');
       await notificar(ctx, null, { perfis: ['SUPERADMIN_HS', 'GESTOR_OPERACOES_HS'], tipo: 'CONTRATO_ACEITO', titulo: 'Contrato de cobrança aceito', mensagem: `Contrato ${c.id}` });
       return r;
     },

@@ -3,6 +3,7 @@ import { hs, auth } from '../api.js';
 import { useSessao } from '../sessao.jsx';
 import { Tabela, Badge, Cabecalho, FormModal, Modal, useApi, useToast, useConfirm, Carregando, ErroCarga, Vazio, Dl, Abas, useExecutar, Campos, useFormulario, Spinner } from '../ui.jsx';
 import { brl, data, dataHora, rotulo, mascaraDoc, pct } from '../format.js';
+import { JanelaContrato } from '../contrato.jsx';
 import { CAMPOS_EMPRESA } from './acesso.jsx';
 import { Seguranca2FA } from './seguranca.jsx';
 import { TabelaComissao, EditorFaixas } from './comissao.jsx';
@@ -74,10 +75,7 @@ export function Contratos() {
   const confirmar = useConfirm();
   const { executar } = useExecutar();
   const [r, setR] = useState(0);
-  const aceitar = async (c) => {
-    const ok = await confirmar({ titulo: 'Aceitar contrato de cobrança gerenciada', botao: 'Aceitar contrato', mensagem: <div className="stack"><Dl itens={[['Modalidade', rotulo(c.modalidade)], ['Valor do serviço', brl(c.valor_contratado_centavos)], ['Forma de cobrança', c.forma_cobranca_servico], ['Vigência', `${data(c.data_inicio)} a ${data(c.data_fim)}`], ['Limite de casos', c.quantidade_casos_contratada || 'Sem limite'], ['Escopo', c.escopo || '—'], ['Limites', c.limites || '—']]} />{c.comissao_faixas?.length > 0 && <><h3>Comissão do Acorly sobre valores recebidos</h3><TabelaComissao faixas={c.comissao_faixas.map((f, i, a) => ({ ...f, faixa: rotuloFaixa(a, i) }))} /></>}<p className="small">Ao aceitar, você contrata o Acorly para cobrança extrajudicial administrativa, conforme os Termos de Uso. O valor do serviço é cobrado separadamente da assinatura e não incide sobre os valores pagos pelos devedores, que vão direto à sua empresa.</p></div> });
-    if (ok) { await executar('aceitarContrato', { contrato_id: c.id, aceite: true }, 'Contrato aceito'); setR(r + 1); }
-  };
+  const [ver, setVer] = useState(null);
   const encerrar = async (c) => {
     const ok = await confirmar({ titulo: 'Encerrar contrato', perigo: true, pedirMotivo: true, botao: 'Encerrar', mensagem: 'Os casos em andamento neste contrato serão suspensos.' });
     if (ok) { await executar('encerrarContrato', { contrato_id: c.id, motivo: ok.motivo }, 'Contrato encerrado'); setR(r + 1); }
@@ -92,11 +90,13 @@ export function Contratos() {
         { titulo: 'Comissão', render: (c) => (c.comissao_faixas?.length ? c.comissao_faixas.map((f) => pct(f.bps)).join(' / ') : 'Tabela padrão') },
         { titulo: 'Vigência', render: (c) => (c.data_inicio ? `${data(c.data_inicio)} a ${data(c.data_fim)}` : '—') },
         { titulo: 'Aceite', render: (c) => (c.aceite ? dataHora(c.data_aceite) : '—') }, { titulo: 'Status', render: (c) => <Badge status={c.status} /> },
-        { titulo: '', render: (c) => s.pode('contrato.contratar') && <div className="row" style={{ justifyContent: 'flex-end' }}>
-          {c.status === 'PROPOSTO' && <button className="btn sm prim" onClick={() => aceitar(c)}>Revisar e aceitar</button>}
-          {c.status === 'ATIVO' && <button className="btn sm perigo" onClick={() => encerrar(c)}>Encerrar</button>}
+        { titulo: '', render: (c) => <div className="row" style={{ justifyContent: 'flex-end' }}>
+          {c.status === 'PROPOSTO' && s.pode('contrato.contratar') && <button className="btn sm prim" onClick={() => setVer({ c, aceitar: true })}>Ler e aceitar</button>}
+          {c.status !== 'SOLICITADO' && c.status !== 'PROPOSTO' && <button className="btn sm" onClick={() => setVer({ c })}>Ver contrato</button>}
+          {c.status === 'ATIVO' && s.pode('contrato.contratar') && <button className="btn sm perigo" onClick={() => encerrar(c)}>Encerrar</button>}
         </div> },
       ]} vazio={<Vazio titulo="Nenhum contrato">Para contratar a cobrança do Acorly, escolha essa opção em Configurações › Serviço, ou fale com o Acorly.</Vazio>} />
+      {ver && <JanelaContrato contrato={ver.c} aceitar={ver.aceitar && s.pode('contrato.contratar')} onClose={() => setVer(null)} onAceito={() => { setR(r + 1); s.recarregar(); }} />}
     </div>
   );
 }
