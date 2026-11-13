@@ -123,7 +123,7 @@ export function Assinatura() {
         {d.atual ? <Dl itens={[['Plano', d.plano?.nome], ['Valor mensal', brl(d.atual.valor_contratado_centavos)], ['Início', data(d.atual.data_inicio)], ['Vencimento', data(d.atual.data_vencimento)], ['Limites', `${d.plano?.limite_devedores || '∞'} devedores · ${d.plano?.limite_usuarios || '∞'} usuários`], ['Status', <Badge key="s" status={d.atual.status} />]]} />
           : <Vazio titulo="Nenhuma assinatura ativa">Fale com a HS para ativar o seu plano.</Vazio>}
       </div>
-      <div className="grid g3">
+      <div className="grid g4">
         {(planos.data || []).map((p) => (
           <div key={p.id} className="card stack" style={d.plano?.id === p.id ? { borderColor: 'var(--azul)', borderWidth: 2 } : undefined}>
             <div className="row between"><h2 style={{ margin: 0 }}>{p.nome}</h2>{d.plano?.id === p.id && <Badge status="ATIVO">Seu plano</Badge>}</div>
