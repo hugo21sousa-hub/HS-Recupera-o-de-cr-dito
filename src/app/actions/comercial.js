@@ -12,16 +12,19 @@ const MODALIDADES_CONTRATO = ['PACOTE_CASOS', 'CARTEIRA_ESPECIFICA', 'CARTEIRA_C
 // Valores padrão anteriores: planos ainda com estes números são atualizados para os novos na inicialização.
 // Planos que a HS já editou no painel ficam como estão.
 export const PLANOS_PADRAO_ANTERIORES = {
-  'HS ESSENCIAL': { preco_mensal_centavos: 4990, limite_devedores: 200 },
-  'HS PROFISSIONAL': { preco_mensal_centavos: 7990, limite_devedores: 1000 },
-  'HS EMPRESARIAL': { preco_mensal_centavos: 12990, limite_devedores: 5000 },
+  'ACORLY ESSENCIAL': { preco_mensal_centavos: 4990, limite_devedores: 200 },
+  'ACORLY PROFISSIONAL': { preco_mensal_centavos: 7990, limite_devedores: 1000 },
+  'ACORLY EMPRESARIAL': { preco_mensal_centavos: 12990, limite_devedores: 5000 },
 };
 
+// Nomes antigos dos planos (antes da marca Acorly): renomeados na inicialização.
+export const PLANOS_NOMES_ANTERIORES = { 'HS ESSENCIAL': 'ACORLY ESSENCIAL', 'HS PROFISSIONAL': 'ACORLY PROFISSIONAL', 'HS EMPRESARIAL': 'ACORLY EMPRESARIAL', 'HS ILIMITADO': 'ACORLY ILIMITADO' };
+
 export const PLANOS_PADRAO = [
-  { nome: 'HS ESSENCIAL', preco_mensal_centavos: 4990, limite_devedores: 100, limite_usuarios: 2, funcionalidades: ['devedores', 'dividas', 'pagamentos', 'dashboard_basico'], status: 'ATIVO', ordem: 1 },
-  { nome: 'HS PROFISSIONAL', preco_mensal_centavos: 8990, limite_devedores: 500, limite_usuarios: 5, funcionalidades: ['devedores', 'dividas', 'pagamentos', 'dashboard_basico', 'carteiras', 'importacao', 'negociacao', 'relatorios'], status: 'ATIVO', ordem: 2 },
-  { nome: 'HS EMPRESARIAL', preco_mensal_centavos: 15990, limite_devedores: 1000, limite_usuarios: 15, funcionalidades: ['devedores', 'dividas', 'pagamentos', 'dashboard_basico', 'carteiras', 'importacao', 'negociacao', 'relatorios', 'exportacao', 'api_futura'], status: 'ATIVO', ordem: 3 },
-  { nome: 'HS ILIMITADO', preco_mensal_centavos: 25990, limite_devedores: null, limite_usuarios: null, funcionalidades: ['devedores', 'dividas', 'pagamentos', 'dashboard_basico', 'carteiras', 'importacao', 'negociacao', 'relatorios', 'exportacao', 'api_futura'], status: 'ATIVO', ordem: 4 },
+  { nome: 'ACORLY ESSENCIAL', preco_mensal_centavos: 4990, limite_devedores: 100, limite_usuarios: 2, funcionalidades: ['devedores', 'dividas', 'pagamentos', 'dashboard_basico'], status: 'ATIVO', ordem: 1 },
+  { nome: 'ACORLY PROFISSIONAL', preco_mensal_centavos: 8990, limite_devedores: 500, limite_usuarios: 5, funcionalidades: ['devedores', 'dividas', 'pagamentos', 'dashboard_basico', 'carteiras', 'importacao', 'negociacao', 'relatorios'], status: 'ATIVO', ordem: 2 },
+  { nome: 'ACORLY EMPRESARIAL', preco_mensal_centavos: 15990, limite_devedores: 1000, limite_usuarios: 15, funcionalidades: ['devedores', 'dividas', 'pagamentos', 'dashboard_basico', 'carteiras', 'importacao', 'negociacao', 'relatorios', 'exportacao', 'api_futura'], status: 'ATIVO', ordem: 3 },
+  { nome: 'ACORLY ILIMITADO', preco_mensal_centavos: 25990, limite_devedores: null, limite_usuarios: null, funcionalidades: ['devedores', 'dividas', 'pagamentos', 'dashboard_basico', 'carteiras', 'importacao', 'negociacao', 'relatorios', 'exportacao', 'api_futura'], status: 'ATIVO', ordem: 4 },
 ];
 
 /** Tabela de comissão vigente: a do contrato, senão a padrão configurada pela HS, senão a de fábrica. */
@@ -201,7 +204,7 @@ export const actions = {
         await ctx.db.Empresa.update(empresa.id, { asaas_cliente_id: cliente, asaas_ambiente: ambiente });
       }
       const hoje = ctx.now().toISOString().slice(0, 10);
-      const sub = await ctx.asaas.criarAssinatura({ cliente, valorCentavos: plano.preco_mensal_centavos, vencimento: hoje, descricao: `Assinatura ${plano.nome} — HS Recuperação de Crédito`, referencia: empresa.id });
+      const sub = await ctx.asaas.criarAssinatura({ cliente, valorCentavos: plano.preco_mensal_centavos, vencimento: hoje, descricao: `Assinatura ${plano.nome} — Acorly (HS Recuperação de Crédito)`, referencia: empresa.id });
       const cobr = await ctx.asaas.cobrancasDaAssinatura(sub.id).catch(() => ({ data: [] }));
       const fatura = cobr.data?.[0]?.invoiceUrl || null;
       const a = await criar(ctx, 'Assinatura', { empresa_id: empresa.id, plano_id: plano.id, data_inicio: hoje, data_vencimento: hoje, status: 'AGUARDANDO_PAGAMENTO', valor_contratado_centavos: plano.preco_mensal_centavos, gateway: 'ASAAS', gateway_assinatura_id: sub.id, fatura_url: fatura });

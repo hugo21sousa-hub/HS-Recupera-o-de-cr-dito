@@ -48,7 +48,7 @@ export function verificar(segredo, informado, agoraMs = Date.now()) {
 }
 
 export function otpauth(segredo, email) {
-  const emissor = 'HS Recuperação de Crédito';
+  const emissor = 'Acorly';
   return `otpauth://totp/${encodeURIComponent(`${emissor}:${email}`)}?secret=${segredo}&issuer=${encodeURIComponent(emissor)}&algorithm=SHA1&digits=6&period=30`;
 }
 

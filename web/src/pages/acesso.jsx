@@ -21,7 +21,7 @@ function TelaAcesso({ children }) {
             <li>O devedor paga direto à sua empresa. Só você confirma o recebimento.</li>
           </ul>
         </div>
-        <div className="small">© HS Recuperação de Crédito</div>
+        <div className="small">© Acorly · uma plataforma da HS Recuperação de Crédito</div>
       </div>
       <div className="form"><div className="card">{children}</div></div>
     </div>
@@ -261,7 +261,7 @@ export function Onboarding() {
           </form>
         ) : (
           <div className="card stack">
-            <h1>Como você quer usar a HS?</h1>
+            <h1>Como você quer usar o Acorly?</h1>
             <div className="escolha" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
               {SERVICOS.map((o) => (
                 <button key={o.id} type="button" className={`opcao ${servico === o.id ? 'sel' : ''}`} onClick={() => setServico(o.id)} aria-pressed={servico === o.id}>
@@ -296,7 +296,7 @@ export function Documento({ tipo }) {
         <div className="aviso alerta">Modelo-base. O texto definitivo deve ser revisado pelo jurídico da HS antes da comercialização.</div>
         {termos ? (
           <>
-            <p>1. A HS Recuperação de Crédito fornece (a) uma plataforma para a empresa gerir as próprias cobranças e (b), mediante contrato específico, um serviço de cobrança extrajudicial administrativa executado pela equipe HS.</p>
+            <p>1. A HS Recuperação de Crédito fornece (a) o Acorly, plataforma para a empresa gerir as próprias cobranças e (b), mediante contrato específico, um serviço de cobrança extrajudicial administrativa executado pela equipe HS.</p>
             <p>2. A HS não é titular dos créditos, não recebe valores em nome das empresas, não mantém saldo de devedores e não faz repasses. Os pagamentos são feitos diretamente à empresa credora, que é a única responsável por confirmá-los.</p>
             <p>3. A empresa declara que os créditos cadastrados são legítimos, exigíveis e documentados, e que tem base legal para tratar os dados dos devedores.</p>
             <p>4. É proibido usar a plataforma para ameaçar, constranger, expor ou cobrar de forma abusiva, conforme o Código de Defesa do Consumidor (arts. 42 e 71).</p>

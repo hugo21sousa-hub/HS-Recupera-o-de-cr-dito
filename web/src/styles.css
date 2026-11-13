@@ -33,11 +33,9 @@ p { margin: 0 0 8px; }
 
 /* Marca */
 .marca { display: flex; align-items: center; gap: 10px; color: #fff; }
-.marca .logo { width: 36px; height: 36px; border-radius: 8px; background: #fff; color: var(--navy); display: grid; place-items: center; font-weight: 800; font-size: 15px; letter-spacing: -.02em; flex: none; }
-.marca .nome { font-weight: 700; font-size: 14px; line-height: 1.15; }
-.marca .nome small { display: block; font-weight: 400; opacity: .75; font-size: 11px; }
+.marca img { height: 34px; width: auto; display: block; }
+.lateral .marca img { height: 30px; margin: 4px 6px; }
 .marca.escura { color: var(--navy); }
-.marca.escura .logo { background: var(--navy); color: #fff; }
 
 /* Layout */
 .app { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100%; }

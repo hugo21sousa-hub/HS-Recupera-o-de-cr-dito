@@ -6,7 +6,7 @@ import { brl, rotulo, mascaraFone, pct } from '../format.js';
 
 const SERVICOS = [
   {
-    nome: 'HS Plataforma',
+    nome: 'Acorly Plataforma',
     resumo: 'Sua equipe cobra pelo sistema.',
     preco: 'Assinatura mensal, sem comissão sobre o que você recuperar.',
     itens: [
@@ -39,7 +39,7 @@ const PASSOS = [
 ];
 
 const GARANTIAS = [
-  ['O dinheiro vai direto para você', 'A HS não recebe valores de devedores, não guarda saldo e não faz repasses.'],
+  ['O dinheiro vai direto para você', 'O Acorly e a HS não recebem valores de devedores, não guardam saldo e não fazem repasses.'],
   ['Números reais', 'Só pagamentos confirmados por você contam como recuperados. Propostas e acordos aparecem separados.'],
   ['Cobrança respeitosa', 'O sistema bloqueia mensagens com ameaça ou exposição, limita tentativas diárias e respeita quem pede para não ser contatado (CDC).'],
   ['Dados protegidos (LGPD)', 'Cada empresa enxerga só os próprios dados. Há registro de autorizações, atendimento ao titular e retenção configurável.'],
@@ -49,7 +49,7 @@ const GARANTIAS = [
 
 const DUVIDAS = [
   ['A HS recebe o dinheiro das dívidas?', 'Não. O devedor paga diretamente para a sua empresa, pelos meios que você já usa (Pix, boleto, transferência). Você confirma o recebimento no sistema.'],
-  ['Preciso contratar a cobrança da HS para usar a plataforma?', 'Não. Você pode usar só a plataforma e cobrar com a sua equipe, contratar a cobrança gerenciada ou usar as duas formas ao mesmo tempo.'],
+  ['Preciso contratar a cobrança da HS para usar o Acorly?', 'Não. Você pode usar só a plataforma e cobrar com a sua equipe, contratar a cobrança gerenciada ou usar as duas formas ao mesmo tempo.'],
   ['Quanto custa a cobrança gerenciada?', 'Você paga uma comissão apenas sobre o que for efetivamente recebido, com percentual conforme o tempo de atraso da dívida (veja a tabela de referência em Planos). Se nada for recebido, não há comissão. Os percentuais finais são combinados com cada empresa e ficam no contrato. A contratação é feita por contrato próprio, por carteira específica, pacote de casos ou carteira completa.'],
   ['Outras empresas podem ver os meus dados?', 'Não. Cada empresa tem um ambiente isolado. A equipe HS só acessa os casos que você encaminhar e autorizar.'],
   ['Como a equipe HS negocia em meu nome?', 'Dentro dos limites que você define: desconto máximo, número de parcelas, entrada mínima, canais e horários de contato. Fora disso, a proposta vai para a sua aprovação.'],
@@ -86,7 +86,7 @@ export function Site() {
           <div className="site-hero-texto">
             <span className="site-selo">Recuperação de crédito para empresas</span>
             <h1>Recupere o que é seu, com organização e respeito ao seu cliente.</h1>
-            <p>A HS reúne em um só lugar o cadastro de dívidas, a cobrança, as negociações e a confirmação de pagamentos. Use a plataforma com a sua equipe ou deixe a cobrança com a equipe HS, acompanhando tudo pelo seu painel.</p>
+            <p>O Acorly reúne em um só lugar o cadastro de dívidas, a cobrança, as negociações e a confirmação de pagamentos. Use a plataforma com a sua equipe ou deixe a cobrança com a equipe HS, acompanhando tudo pelo seu painel.</p>
             <div className="row">
               <Link className="btn prim site-btn-grande" to="/cadastro">Criar conta da empresa</Link>
               <Link className="btn site-btn-grande site-btn-claro" to="/entrar">Acessar o sistema</Link>
@@ -201,7 +201,7 @@ export function Site() {
         <div className="site-largura site-rodape-in">
           <div className="stack" style={{ gap: 6 }}>
             <Marca escura />
-            <span className="small muted">© {ano} HS Recuperação de Crédito</span>
+            <span className="small muted">© {ano} Acorly · uma plataforma da HS Recuperação de Crédito</span>
           </div>
           <div className="stack small" style={{ gap: 6 }}>
             <Link to="/termos">Termos de Uso</Link>

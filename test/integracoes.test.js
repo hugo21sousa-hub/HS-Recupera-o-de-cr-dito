@@ -203,7 +203,7 @@ test('Assinatura online: fatura, confirmação pelo webhook, idempotência e ina
   ass = await t.ok(A.adm, 'minhaAssinatura');
   assert.equal(ass.atual.status, 'ATIVA');
   assert.equal(ass.atual.data_vencimento, '2026-12-11');
-  assert.equal(ass.plano.nome, 'HS PROFISSIONAL');
+  assert.equal(ass.plano.nome, 'ACORLY PROFISSIONAL');
   await processarWebhookAsaas(sys, { id: 'evt_2', event: 'PAYMENT_OVERDUE', payment: { id: 'pay_2', subscription: 'sub_1', invoiceUrl: 'https://asaas/fatura/2' } });
   ass = await t.ok(A.adm, 'minhaAssinatura');
   assert.equal(ass.atual.status, 'INADIMPLENTE');

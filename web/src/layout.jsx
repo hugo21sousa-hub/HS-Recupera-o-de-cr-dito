@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import logoAzul from './assets/acorly-logo.png';
+import logoBranco from './assets/acorly-logo-branco.png';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { hs, sair as sairDoSistema, DEMO, restaurarDemo } from './api.js';
 import { useSessao } from './sessao.jsx';
@@ -59,7 +61,7 @@ export const MENU_HS = [
 ];
 
 export function Marca({ escura }) {
-  return <div className={`marca ${escura ? 'escura' : ''}`}><div className="logo" aria-hidden>HS</div><div className="nome">HS Recuperação<small>de Crédito</small></div></div>;
+  return <div className={`marca ${escura ? 'escura' : ''}`}><img src={escura ? logoAzul : logoBranco} alt="Acorly" /></div>;
 }
 
 function Notificacoes() {

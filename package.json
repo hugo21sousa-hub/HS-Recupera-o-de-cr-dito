@@ -2,7 +2,7 @@
   "name": "hs-recuperacao-credito",
   "version": "1.0.0",
   "private": true,
-  "description": "HS Recuperação de Crédito — plataforma SaaS de recuperação de crédito (servidor Node + SQLite + frontend React)",
+  "description": "Acorly (HS Recuperação de Crédito) — plataforma SaaS de recuperação de crédito (servidor Node + SQLite + frontend React)",
   "type": "module",
   "scripts": {
     "dev": "node --disable-warning=ExperimentalWarning --watch src/server/index.js",

@@ -52,7 +52,7 @@ export function Configurar2FA({ aoConcluir }) {
       <p><strong>Guarde estes códigos de recuperação</strong> em local seguro. Cada um funciona uma única vez, caso você perca o celular.</p>
       <div className="card" style={{ fontFamily: 'ui-monospace, Menlo, monospace', display: 'grid', gridTemplateColumns: 'repeat(2, max-content)', gap: '6px 24px' }}>{codigos.map((c) => <span key={c}>{c}</span>)}</div>
       <div className="row">
-        <button className="btn" onClick={() => baixarArquivo('codigos-recuperacao-hs.txt', `HS Recuperação de Crédito - códigos de recuperação\n\n${codigos.join('\n')}\n`, 'text/plain')}>Baixar códigos</button>
+        <button className="btn" onClick={() => baixarArquivo('codigos-recuperacao-acorly.txt', `Acorly - códigos de recuperação\n\n${codigos.join('\n')}\n`, 'text/plain')}>Baixar códigos</button>
         <button className="btn prim" onClick={aoConcluir}>Já guardei, continuar</button>
       </div>
     </div>

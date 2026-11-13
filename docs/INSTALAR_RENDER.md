@@ -105,14 +105,14 @@ Com o envio de e-mail ligado, toda entrada no sistema pede um **código de 6 dí
 O Render grátis **bloqueia o envio por SMTP**, por isso o sistema usa a API do **Brevo**: são 300 e-mails por dia de graça, sem cartão.
 
 1. Crie a conta em **brevo.com** (plano Free).
-2. Cadastre o remetente: menu **Senders, Domains & Dedicated IPs › Senders › Add a sender**, com nome `HS Recuperação de Crédito` e o e-mail da HS (ex.: `hsrecupera@gmail.com`). Confirme pelo e-mail que o Brevo enviar.
+2. Cadastre o remetente: menu **Senders, Domains & Dedicated IPs › Senders › Add a sender**, com nome `Acorly` e o e-mail da HS (ex.: `hsrecupera@gmail.com`). Confirme pelo e-mail que o Brevo enviar.
 3. Gere a chave: menu **SMTP & API › API Keys › Generate a new API key** (nome `render`). Copie a chave, que começa com `xkeysib-`.
 4. No Render, em **hs-recuperacao › Environment**, adicione:
 
 | Variável | Valor |
 |---|---|
 | `BREVO_API_KEY` | a chave `xkeysib-…` |
-| `EMAIL_REMETENTE` | `HS Recuperação de Crédito <hsrecupera@gmail.com>` (o mesmo e-mail confirmado no passo 2) |
+| `EMAIL_REMETENTE` | `Acorly <hsrecupera@gmail.com>` (o mesmo e-mail confirmado no passo 2) |
 
 5. Salve (**Save, rebuild, and deploy**).
 
@@ -126,10 +126,10 @@ Planos padrão:
 
 | Plano | Mensalidade | Devedores | Usuários |
 |---|---|---|---|
-| HS Essencial | R$ 49,90 | até 100 | 2 |
-| HS Profissional | R$ 89,90 | até 500 | 5 |
-| HS Empresarial | R$ 159,90 | até 1.000 | 15 |
-| HS Ilimitado | R$ 259,90 | ilimitados | ilimitados |
+| Acorly Essencial | R$ 49,90 | até 100 | 2 |
+| Acorly Profissional | R$ 89,90 | até 500 | 5 |
+| Acorly Empresarial | R$ 159,90 | até 1.000 | 15 |
+| Acorly Ilimitado | R$ 259,90 | ilimitados | ilimitados |
 
 Os valores podem ser ajustados a qualquer momento em **Superadmin › Planos e assinaturas**.
 

@@ -360,12 +360,16 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
   async function primeiroAcesso() {
     const emailAdm = String(env.SUPERADMIN_EMAIL || '').trim().toLowerCase();
     if (!emailAdm) return null;
-    const { PLANOS_PADRAO, PLANOS_PADRAO_ANTERIORES } = await import('../app/actions/comercial.js');
+    const { PLANOS_PADRAO, PLANOS_PADRAO_ANTERIORES, PLANOS_NOMES_ANTERIORES } = await import('../app/actions/comercial.js');
     return exclusivo(async () => {
       let u = (await db.UsuarioPlataforma.filter({ email: emailAdm }))[0];
       if (u && u.perfil !== 'SUPERADMIN_HS') return null;
       if (!u) u = await db.UsuarioPlataforma.create({ nome: env.SUPERADMIN_NOME || 'Administrador HS', email: emailAdm, perfil: 'SUPERADMIN_HS', empresa_id: null, status: 'ATIVO', data_criacao: new Date().toISOString() });
       const planos = await db.Plano.filter({});
+      for (const pl of planos) {
+        const novo = PLANOS_NOMES_ANTERIORES[pl.nome];
+        if (novo && !planos.some((x) => x.nome === novo)) { await db.Plano.update(pl.id, { nome: novo }); pl.nome = novo; }
+      }
       for (const p of PLANOS_PADRAO) {
         const atual = planos.find((x) => x.nome === p.nome);
         if (!atual) { await db.Plano.create(p); continue; }

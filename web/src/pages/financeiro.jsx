@@ -126,7 +126,7 @@ function gerarPDF(p) {
   const rel = JSON.parse(p.relatorio);
   const doc = new jsPDF();
   doc.setFillColor(11, 37, 69); doc.rect(0, 0, 210, 28, 'F');
-  doc.setTextColor(255); doc.setFontSize(16); doc.setFont('helvetica', 'bold'); doc.text('HS Recuperação de Crédito', 14, 13);
+  doc.setTextColor(255); doc.setFontSize(16); doc.setFont('helvetica', 'bold'); doc.text('Acorly', 14, 13);
   doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.text('Prestação de contas — cobrança gerenciada', 14, 21);
   doc.setTextColor(31, 41, 55); doc.setFontSize(11);
   doc.text(`Credor: ${rel.credor}  ·  CNPJ ${mascaraDoc(rel.cnpj)}`, 14, 38);

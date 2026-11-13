@@ -166,7 +166,7 @@ test('primeiro acesso com código escolhido no ambiente (PRIMEIRO_ACESSO_CODIGO)
   a.server.close(); await a.banco.fechar(); rmSync(d, { recursive: true, force: true });
 });
 
-test('planos padrão: valores antigos não editados são atualizados; planos editados pela HS ficam como estão', async () => {
+test('planos padrão: nomes antigos (HS) viram Acorly; valores antigos não editados são atualizados; planos editados pela HS ficam como estão', async () => {
   const d = mkdtempSync(join(tmpdir(), 'hs-pl-'));
   const a = criarApp({ dataDir: d, webDir: join(d, 'web'), env: { ...envBanco(), SUPERADMIN_EMAIL: 'planos@hs.com' } });
   await a.exclusivo(async () => {
@@ -176,10 +176,10 @@ test('planos padrão: valores antigos não editados são atualizados; planos edi
   await a.primeiroAcesso(); await a.primeiroAcesso();
   const planos = await a.exclusivo(() => a.db.Plano.filter({}));
   const por = (n) => planos.filter((p) => p.nome === n);
-  assert.equal(por('HS ESSENCIAL').length, 1);
-  assert.deepEqual([por('HS ESSENCIAL')[0].preco_mensal_centavos, por('HS ESSENCIAL')[0].limite_devedores, por('HS ESSENCIAL')[0].limite_usuarios], [4990, 100, 2]);
-  assert.deepEqual([por('HS PROFISSIONAL')[0].preco_mensal_centavos, por('HS PROFISSIONAL')[0].limite_devedores], [9990, 1000], 'plano editado não muda');
-  assert.deepEqual([por('HS EMPRESARIAL')[0].preco_mensal_centavos, por('HS EMPRESARIAL')[0].limite_devedores, por('HS EMPRESARIAL')[0].limite_usuarios], [15990, 1000, 15]);
-  assert.deepEqual([por('HS ILIMITADO')[0].preco_mensal_centavos, por('HS ILIMITADO')[0].limite_devedores, por('HS ILIMITADO')[0].limite_usuarios], [25990, null, null]);
+  assert.equal(por('ACORLY ESSENCIAL').length, 1);
+  assert.deepEqual([por('ACORLY ESSENCIAL')[0].preco_mensal_centavos, por('ACORLY ESSENCIAL')[0].limite_devedores, por('ACORLY ESSENCIAL')[0].limite_usuarios], [4990, 100, 2]);
+  assert.deepEqual([por('ACORLY PROFISSIONAL')[0].preco_mensal_centavos, por('ACORLY PROFISSIONAL')[0].limite_devedores], [9990, 1000], 'plano editado não muda');
+  assert.deepEqual([por('ACORLY EMPRESARIAL')[0].preco_mensal_centavos, por('ACORLY EMPRESARIAL')[0].limite_devedores, por('ACORLY EMPRESARIAL')[0].limite_usuarios], [15990, 1000, 15]);
+  assert.deepEqual([por('ACORLY ILIMITADO')[0].preco_mensal_centavos, por('ACORLY ILIMITADO')[0].limite_devedores, por('ACORLY ILIMITADO')[0].limite_usuarios], [25990, null, null]);
   await a.banco.fechar(); rmSync(d, { recursive: true, force: true });
 });

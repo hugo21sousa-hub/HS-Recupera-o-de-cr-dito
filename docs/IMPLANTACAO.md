@@ -29,7 +29,7 @@ O sistema é um único processo Node.js que guarda tudo numa pasta de dados (`DA
 | `SMTP_HOST` | `smtp-relay.brevo.com` |
 | `SMTP_PORT` | `587` (ou `465` com SSL) |
 | `SMTP_USER` / `SMTP_PASS` | credenciais do provedor |
-| `SMTP_FROM` | `HS Recuperação <nao-responda@seudominio.com.br>` |
+| `SMTP_FROM` | `Acorly <nao-responda@seudominio.com.br>` |
 
 **WhatsApp Business Platform (Cloud API da Meta)**: envio pela API oficial e recebimento automático das respostas nos casos HS.
 
