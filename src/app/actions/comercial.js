@@ -3,6 +3,7 @@ import { isHS, can } from '../../core/permissions.js';
 import { verificarMensagem } from '../../core/compliance.js';
 import { TABELA_PADRAO, validarFaixas, rotuloFaixa, faixaPara } from '../../core/comissao.js';
 import { diasAtraso, parseDataISO } from '../../core/dates.js';
+import { situacaoAcesso, resumoAcesso } from '../acesso.js';
 import {
   AccessError, ValidationError, requirePerm, getById, find, criar, alterar, empresaAlvo, paginar, filtrosPermitidos, exigir, notificar, carregarCaso,
 } from '../context.js';
@@ -73,15 +74,15 @@ export async function processarWebhookAsaas(ctx, ev) {
     case 'PAYMENT_CONFIRMED': case 'PAYMENT_RECEIVED': {
       const venc = new Date((ev.payment?.dueDate || agora.slice(0, 10)) + 'T00:00:00Z');
       venc.setUTCMonth(venc.getUTCMonth() + 1);
-      patch = { status: 'ATIVA', ultimo_pagamento_em: agora, data_vencimento: venc.toISOString().slice(0, 10), fatura_url: null };
+      patch = { status: 'ATIVA', ultimo_pagamento_em: agora, data_vencimento: venc.toISOString().slice(0, 10), fatura_url: null, inadimplente_desde: null };
       for (const outra of (await find(ctx, 'Assinatura', { empresa_id: a.empresa_id })).filter((x) => x.id !== a.id && x.status === 'ATIVA')) {
         await ctx.db.Assinatura.update(outra.id, { status: 'SUBSTITUIDA' });
         if (outra.gateway_assinatura_id && ctx.asaas?.disponivel) await ctx.asaas.cancelarAssinatura(outra.gateway_assinatura_id).catch(() => {});
       }
       break;
     }
-    case 'PAYMENT_OVERDUE': patch = { status: 'INADIMPLENTE', fatura_url: ev.payment?.invoiceUrl || a.fatura_url }; break;
-    case 'PAYMENT_REFUNDED': case 'PAYMENT_CHARGEBACK_REQUESTED': patch = { status: 'INADIMPLENTE' }; break;
+    case 'PAYMENT_OVERDUE': patch = { status: 'INADIMPLENTE', inadimplente_desde: a.status === 'INADIMPLENTE' && a.inadimplente_desde ? a.inadimplente_desde : (ev.payment?.dueDate || agora.slice(0, 10)), fatura_url: ev.payment?.invoiceUrl || a.fatura_url }; break;
+    case 'PAYMENT_REFUNDED': case 'PAYMENT_CHARGEBACK_REQUESTED': patch = { status: 'INADIMPLENTE', inadimplente_desde: agora.slice(0, 10) }; break;
     case 'SUBSCRIPTION_DELETED': case 'SUBSCRIPTION_INACTIVATED': patch = { status: 'CANCELADA' }; break;
     default: break;
   }
@@ -178,7 +179,8 @@ export const actions = {
       const ass = (await find(ctx, 'Assinatura', { empresa_id })).sort((a, b) => ((a.data_inicio || '') < (b.data_inicio || '') ? 1 : -1));
       const atual = ass.find((a) => a.status === 'ATIVA') || ass.find((a) => a.status === 'INADIMPLENTE') || null;
       const pendente = ass.find((a) => a.status === 'AGUARDANDO_PAGAMENTO') || null;
-      return { atual, plano: atual ? await getById(ctx, 'Plano', atual.plano_id) : null, pendente, plano_pendente: pendente ? await getById(ctx, 'Plano', pendente.plano_id) : null, historico: ass, gateway: ctx.asaas?.disponivel ? 'ASAAS' : 'NAO_CONFIGURADO' };
+      const acesso = await situacaoAcesso(ctx, empresa_id);
+      return { acesso: resumoAcesso(acesso), atual, plano: atual ? await getById(ctx, 'Plano', atual.plano_id) : null, pendente, plano_pendente: pendente ? await getById(ctx, 'Plano', pendente.plano_id) : null, historico: ass, gateway: ctx.asaas?.disponivel ? 'ASAAS' : 'NAO_CONFIGURADO' };
     },
   },
 

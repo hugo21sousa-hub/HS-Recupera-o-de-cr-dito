@@ -1,6 +1,7 @@
 import { requirePerm, isHS, AccessError } from '../core/permissions.js';
 import { ValidationError } from '../core/money.js';
 import { getById } from './context.js';
+import { verificarAcessoDaAcao } from './acesso.js';
 import { actions as empresa } from './actions/empresa.js';
 import { actions as devedores } from './actions/devedores.js';
 import { actions as carteiras } from './actions/carteiras.js';
@@ -39,6 +40,7 @@ export async function handle(ctx, action, payload = {}) {
         }
       }
       if (def.perm) requirePerm(ctx.user, def.perm);
+      if (!isHS(ctx.user)) await verificarAcessoDaAcao(ctx, ctx.user.empresa_id, action);
     }
     const data = await def.run(ctx, payload);
     return { status: 200, body: { ok: true, data } };

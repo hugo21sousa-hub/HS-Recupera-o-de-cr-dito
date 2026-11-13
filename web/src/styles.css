@@ -36,6 +36,8 @@ p { margin: 0 0 8px; }
 .marca img { height: 34px; width: auto; display: block; }
 .lateral .marca img { height: 30px; margin: 4px 6px; }
 .marca.escura { color: var(--navy); }
+.lateral .cadeado { font-size: 11px; margin-left: auto; opacity: .8; }
+.aviso-assinatura { margin-bottom: 16px; }
 
 /* Layout */
 .app { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100%; }

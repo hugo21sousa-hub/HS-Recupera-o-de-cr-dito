@@ -44,7 +44,7 @@ export const ENTITIES = {
   },
   Assinatura: {
     description: 'Assinatura da plataforma (faturamento separado das dívidas)',
-    properties: { ...EMP, plano_id: ref('Plano'), data_inicio: dt('Início'), data_vencimento: dt('Vencimento'), status: e(['AGUARDANDO_PAGAMENTO', 'ATIVA', 'INADIMPLENTE', 'CANCELADA', 'SUBSTITUIDA', 'TRIAL'], 'Status', 'ATIVA'), valor_contratado_centavos: c('Valor contratado'), gateway: s('Gateway (ASAAS ou vazio = manual)'), gateway_assinatura_id: s('ID da assinatura no gateway'), fatura_url: s('Link da fatura em aberto'), ultimo_pagamento_em: ts('Último pagamento confirmado pelo gateway') },
+    properties: { ...EMP, plano_id: ref('Plano'), data_inicio: dt('Início'), data_vencimento: dt('Vencimento'), status: e(['AGUARDANDO_PAGAMENTO', 'ATIVA', 'INADIMPLENTE', 'CANCELADA', 'SUBSTITUIDA', 'TRIAL'], 'Status', 'ATIVA'), valor_contratado_centavos: c('Valor contratado'), gateway: s('Gateway (ASAAS ou vazio = manual)'), gateway_assinatura_id: s('ID da assinatura no gateway'), fatura_url: s('Link da fatura em aberto'), ultimo_pagamento_em: ts('Último pagamento confirmado pelo gateway'), inadimplente_desde: dt('Em atraso desde (vencimento da fatura não paga)') },
     required: ['empresa_id', 'plano_id', 'status'],
   },
   EventoAssinatura: {

@@ -29,6 +29,7 @@ export function SessaoProvider({ children }) {
     recarregar: carregar,
     usuario: estado.perfil?.usuario,
     empresa: estado.perfil?.empresa,
+    acesso: estado.perfil?.acesso || null,
     ehHS: PERFIS_HS.includes(estado.perfil?.usuario?.perfil),
     pode: (p) => permissoes.includes(p),
     podeAlgum: (...ps) => ps.some((p) => permissoes.includes(p)),

@@ -4,6 +4,7 @@ import {
   AccessError, ValidationError, requirePerm, isHS, getById, find, criar, alterar, auditar,
   empresaAlvo, paginar, filtrosPermitidos, exigir, notificar,
 } from '../context.js';
+import { situacaoAcesso, resumoAcesso } from '../acesso.js';
 
 const STATUS_EMPRESA = ['CADASTRO_INCOMPLETO', 'AGUARDANDO_VALIDACAO', 'ATIVA', 'SUSPENSA', 'CANCELADA'];
 const CAMPOS_EMPRESA = ['razao_social', 'nome_fantasia', 'email', 'telefone', 'endereco', 'responsavel_legal', 'contato_nome', 'contato_telefone', 'contato_email'];
@@ -30,6 +31,7 @@ export const actions = {
         usuario: { id: ctx.user.id, nome: ctx.user.nome, email: ctx.user.email, perfil: ctx.user.perfil, status: ctx.user.status },
         permissoes: ctx.user.status === 'ATIVO' ? MATRIZ[ctx.user.perfil] || [] : [],
         empresa,
+        acesso: empresa && !isHS(ctx.user) ? resumoAcesso(await situacaoAcesso(ctx, empresa.id)) : null,
         precisa_onboarding: !isHS(ctx.user) && (!empresa || !empresa.modalidade_servico),
       };
     },
@@ -254,22 +256,22 @@ export const actions = {
   },
 };
 
+const nomeDoLimite = (s) => (s.modo === 'TESTE' ? 'do teste grátis' : s.plano ? `do plano ${s.plano.nome}` : 'do seu acesso');
+
 async function verificarLimiteUsuarios(ctx, empresa_id) {
-  const ass = (await find(ctx, 'Assinatura', { empresa_id, status: 'ATIVA' }))[0];
-  if (!ass) return;
-  const plano = await getById(ctx, 'Plano', ass.plano_id);
-  if (!plano?.limite_usuarios) return;
+  const s = await situacaoAcesso(ctx, empresa_id);
+  const limite = s.limites.usuarios;
+  if (!limite) return;
   const usuarios = (await find(ctx, 'UsuarioPlataforma', { empresa_id })).filter((u) => u.status === 'ATIVO');
-  if (usuarios.length >= plano.limite_usuarios) throw new ValidationError(`Limite de ${plano.limite_usuarios} usuários do plano ${plano.nome} atingido`);
+  if (usuarios.length >= limite) throw new ValidationError(`Limite de ${limite} usuários ${nomeDoLimite(s)} atingido. Mude de plano em Assinatura para incluir mais pessoas.`);
 }
 
 export async function verificarLimiteDevedores(ctx, empresa_id, novos = 1) {
-  const ass = (await find(ctx, 'Assinatura', { empresa_id, status: 'ATIVA' }))[0];
-  if (!ass) return;
-  const plano = await getById(ctx, 'Plano', ass.plano_id);
-  if (!plano?.limite_devedores) return;
+  const s = await situacaoAcesso(ctx, empresa_id);
+  const limite = s.limites.devedores;
+  if (!limite) return;
   const atuais = (await find(ctx, 'Devedor', { empresa_id })).filter((d) => d.status !== 'ANONIMIZADO').length;
-  if (atuais + novos > plano.limite_devedores) throw new ValidationError(`Limite de ${plano.limite_devedores} devedores do plano ${plano.nome} atingido`);
+  if (atuais + novos > limite) throw new ValidationError(`Limite de ${limite} devedores ${nomeDoLimite(s)} atingido. Mude de plano em Assinatura para cadastrar mais.`);
 }
 
 export { PERFIS_EMPRESA };

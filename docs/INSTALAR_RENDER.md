@@ -133,6 +133,15 @@ Planos padrão:
 
 Os valores podem ser ajustados a qualquer momento em **Superadmin › Planos e assinaturas**.
 
+**Teste grátis e bloqueio:**
+
+- Toda empresa nova tem **7 dias grátis**, com todos os recursos, até 20 devedores e 3 usuários. Não precisa de cartão.
+- Quando o teste termina sem assinatura, o acesso fica **somente para consulta**. A empresa vê e exporta os dados, mas não cadastra nem edita até assinar.
+- Com a mensalidade em atraso, a empresa tem **5 dias de tolerância** com acesso normal. Depois disso, o acesso também fica somente para consulta, até o pagamento.
+- Cada plano libera os recursos listados nele. Por exemplo, importação de planilhas, carteiras, negociação e relatórios ficam a partir do Profissional, e exportação a partir do Empresarial.
+- Empresas com contrato de cobrança gerenciada ativo continuam cadastrando e encaminhando dívidas ao Acorly mesmo sem assinatura.
+- Para liberar uma empresa manualmente (parceiro, cortesia), crie a assinatura em **Superadmin › Planos e assinaturas**.
+
 ### 1. Testar no ambiente de testes (sandbox), sem dinheiro de verdade
 
 1. Crie uma conta em **sandbox.asaas.com**.

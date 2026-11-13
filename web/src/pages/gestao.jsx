@@ -121,7 +121,9 @@ export function Assinatura() {
       <Cabecalho titulo="Assinatura" sub="Plano da plataforma. Não há comissão sobre valores recuperados." />
       <div className="card">
         {d.atual ? <Dl itens={[['Plano', d.plano?.nome], ['Valor mensal', brl(d.atual.valor_contratado_centavos)], ['Início', data(d.atual.data_inicio)], ['Vencimento', data(d.atual.data_vencimento)], ['Limites', `${d.plano?.limite_devedores || '∞'} devedores · ${d.plano?.limite_usuarios || '∞'} usuários`], ['Status', <Badge key="s" status={d.atual.status} />]]} />
-          : <Vazio titulo="Nenhuma assinatura ativa">Fale com o Acorly para ativar o seu plano.</Vazio>}
+          : d.acesso?.modo === 'TESTE'
+            ? <Vazio titulo={`Teste grátis até ${data(d.acesso.teste_ate)}`}>Você está usando o Acorly de graça por {d.acesso.dias_teste} dias, com todos os recursos{d.acesso.limites?.devedores ? ` e até ${d.acesso.limites.devedores} devedores` : ''}. Escolha um plano abaixo para continuar depois do teste.</Vazio>
+            : <Vazio titulo="Nenhuma assinatura ativa">{d.acesso?.modo === 'SOMENTE_LEITURA' ? 'O teste grátis terminou e o acesso está somente para consulta. Escolha um plano abaixo para voltar a cadastrar e editar.' : 'Escolha um plano abaixo para ativar.'}</Vazio>}
       </div>
       <div className="grid g4">
         {(planos.data || []).map((p) => (

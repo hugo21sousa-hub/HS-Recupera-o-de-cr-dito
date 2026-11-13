@@ -91,7 +91,7 @@ export function Site() {
               <Link className="btn prim site-btn-grande" to="/cadastro">Criar conta da empresa</Link>
               <Link className="btn site-btn-grande site-btn-claro" to="/entrar">Acessar o sistema</Link>
             </div>
-            <p className="site-nota">O devedor paga direto para a sua empresa. Sem comissão no uso da plataforma.</p>
+            <p className="site-nota">Teste grátis por {dados?.dias_teste || 7} dias, sem cartão. O devedor paga direto para a sua empresa. Sem comissão no uso da plataforma.</p>
           </div>
           <div className="site-previa" aria-label="Exemplo de painel do sistema">
             <div className="site-previa-barra"><span /><span /><span /><em>Painel da empresa (exemplo)</em></div>
@@ -138,7 +138,7 @@ export function Site() {
       <section id="planos" className="site-secao">
         <div className="site-largura">
           <h2 className="site-titulo">Planos da plataforma</h2>
-          <p className="site-sub">Preço mensal fixo. Não cobramos porcentagem sobre o que você recuperar.</p>
+          <p className="site-sub">Comece com {dados?.dias_teste || 7} dias grátis, sem cartão. Depois, preço mensal fixo: não cobramos porcentagem sobre o que você recuperar.</p>
           <div className="site-planos">
             {!dados ? <p className="muted">Carregando planos…</p> : dados.planos.length ? dados.planos.map((p, i) => (
               <article key={p.nome} className={`site-cartao site-plano ${i === 1 ? 'recomendado' : ''}`}>
@@ -147,7 +147,7 @@ export function Site() {
                 <div className="site-valor">{brl(p.preco_mensal_centavos)}<small>/mês</small></div>
                 <p className="small muted">{p.limite_devedores ? `Até ${p.limite_devedores.toLocaleString('pt-BR')} devedores` : 'Devedores ilimitados'} · {p.limite_usuarios ? `${p.limite_usuarios} usuários` : 'usuários ilimitados'}</p>
                 <ul className="site-check">{p.funcionalidades.map((f) => <li key={f}>{rotulo(f)}</li>)}</ul>
-                <Link className={`btn ${i === 1 ? 'prim' : ''}`} to="/cadastro">Começar com este plano</Link>
+                <Link className={`btn ${i === 1 ? 'prim' : ''}`} to="/cadastro">Testar grátis por {dados?.dias_teste || 7} dias</Link>
               </article>
             )) : <p className="muted">Fale conosco para conhecer os planos.</p>}
           </div>

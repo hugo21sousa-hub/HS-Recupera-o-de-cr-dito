@@ -4,7 +4,7 @@ import logoBranco from './assets/acorly-logo-branco.png';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { hs, sair as sairDoSistema, DEMO, restaurarDemo } from './api.js';
 import { useSessao } from './sessao.jsx';
-import { rotulo, dataHora } from './format.js';
+import { rotulo, dataHora, data } from './format.js';
 
 export const MENU_EMPRESA = [
   { secao: 'Visão geral', itens: [{ to: '/painel', r: 'Dashboard', p: 'relatorio.empresa' }] },
@@ -12,18 +12,18 @@ export const MENU_EMPRESA = [
     { to: '/devedores', r: 'Clientes e devedores', p: 'devedor.ler' },
     { to: '/dividas', r: 'Dívidas', p: 'divida.ler' },
     { to: '/parcelas', r: 'Parcelas', p: 'divida.ler' },
-    { to: '/importar', r: 'Importar planilha', p: 'divida.editar' },
+    { to: '/importar', r: 'Importar planilha', p: 'divida.editar', recurso: 'importacao' },
   ] },
   { secao: 'Cobrança', itens: [
     { to: '/cobrancas', r: 'Minhas cobranças', p: 'caso.ler_empresa' },
     { to: '/cobranca-hs', r: 'Cobranças Acorly', p: 'caso.ler_empresa' },
-    { to: '/carteiras', r: 'Carteiras', p: 'carteira.ler' },
+    { to: '/carteiras', r: 'Carteiras', p: 'carteira.ler', recurso: 'carteiras' },
     { to: '/negociacoes', r: 'Negociações', p: 'negociacao.ler', contador: 'aprovacoes' },
     { to: '/acordos', r: 'Acordos', p: 'acordo.ler' },
     { to: '/pagamentos', r: 'Pagamentos', p: 'pagamento.ler', contador: 'pagamentos' },
   ] },
   { secao: 'Gestão', itens: [
-    { to: '/relatorios', r: 'Relatórios', p: 'relatorio.empresa' },
+    { to: '/relatorios', r: 'Relatórios', p: 'relatorio.empresa', recurso: 'relatorios' },
     { to: '/usuarios', r: 'Usuários', p: 'usuario.gerenciar_empresa' },
     { to: '/contratos', r: 'Contratos', p: 'contrato.ler' },
     { to: '/assinatura', r: 'Assinatura', p: 'assinatura.ler' },
@@ -107,6 +107,42 @@ function Notificacoes() {
   );
 }
 
+/** Aviso do teste grátis, de mensalidade em atraso ou de acesso somente para consulta. */
+function AvisoAssinatura() {
+  const s = useSessao();
+  const a = s.acesso;
+  if (!a || a.modo === 'ATIVO') return null;
+  const podeAssinar = s.pode('assinatura.ler');
+  const botao = (texto) => (podeAssinar ? (a.fatura_url && a.modo !== 'TESTE'
+    ? <a className="btn sm prim" href={a.fatura_url} target="_blank" rel="noreferrer">{texto}</a>
+    : <NavLink className="btn sm prim" to="/assinatura">{texto}</NavLink>) : null);
+  if (a.modo === 'TESTE') {
+    return (
+      <div className="aviso info row between aviso-assinatura">
+        <span><strong>Teste grátis:</strong> {a.dias_restantes === 1 ? 'último dia' : `faltam ${a.dias_restantes} dias`} (até {data(a.teste_ate)}). Até lá, você usa todos os recursos{a.limites?.devedores ? `, com até ${a.limites.devedores} devedores` : ''}.</span>
+        {botao('Ver planos')}
+      </div>
+    );
+  }
+  if (a.modo === 'TOLERANCIA') {
+    return (
+      <div className="aviso alerta row between aviso-assinatura">
+        <span><strong>Mensalidade em atraso.</strong> Pague até {data(a.pagar_ate)} para não perder o acesso de edição.</span>
+        {botao('Pagar fatura')}
+      </div>
+    );
+  }
+  return (
+    <div className="aviso critico row between aviso-assinatura">
+      <span>
+        <strong>Acesso somente para consulta.</strong> {a.motivo === 'ATRASO' ? 'A mensalidade está em atraso.' : `O teste grátis de ${a.dias_teste} dias terminou.`} Seus dados continuam guardados e disponíveis para consulta e exportação.
+        {a.com_contrato && ' O cadastro e o encaminhamento de dívidas ao Acorly continuam liberados.'}
+      </span>
+      {botao(a.motivo === 'ATRASO' ? 'Pagar fatura' : 'Assinar um plano')}
+    </div>
+  );
+}
+
 export function Layout() {
   const s = useSessao();
   const [aberta, setAberta] = useState(false);
@@ -135,7 +171,7 @@ export function Layout() {
             if (!itens.length) return null;
             return [<div key={g.secao} className="secao">{g.secao}</div>, ...itens.map((i) => (
               <NavLink key={i.to} to={i.to} end={i.fim} className={({ isActive }) => (isActive ? 'ativo' : '')}>
-                <span>{i.r}</span>{i.contador && contadores[i.contador] > 0 && <span className="contador">{contadores[i.contador]}</span>}
+                <span>{i.r}</span>{i.recurso && s.acesso && !s.acesso.recursos?.includes(i.recurso) && <span className="cadeado" title="Disponível em um plano superior">🔒</span>}{i.contador && contadores[i.contador] > 0 && <span className="contador">{contadores[i.contador]}</span>}
               </NavLink>
             ))];
           })}
@@ -167,6 +203,7 @@ export function Layout() {
               <button className="btn sm" onClick={() => restaurarDemo()}>Restaurar dados de exemplo</button>
             </div>
           )}
+          {!s.ehHS && <AvisoAssinatura />}
           <Outlet />
         </main>
       </div>
