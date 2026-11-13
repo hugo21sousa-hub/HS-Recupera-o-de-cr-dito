@@ -9,10 +9,18 @@ import {
 
 const MODALIDADES_CONTRATO = ['PACOTE_CASOS', 'CARTEIRA_ESPECIFICA', 'CARTEIRA_COMPLETA', 'PERSONALIZADA'];
 
+// Valores padrão anteriores: planos ainda com estes números são atualizados para os novos na inicialização.
+// Planos que a HS já editou no painel ficam como estão.
+export const PLANOS_PADRAO_ANTERIORES = {
+  'HS ESSENCIAL': { preco_mensal_centavos: 4990, limite_devedores: 200 },
+  'HS PROFISSIONAL': { preco_mensal_centavos: 7990, limite_devedores: 1000 },
+  'HS EMPRESARIAL': { preco_mensal_centavos: 12990, limite_devedores: 5000 },
+};
+
 export const PLANOS_PADRAO = [
-  { nome: 'HS ESSENCIAL', preco_mensal_centavos: 4990, limite_devedores: 200, limite_usuarios: 2, funcionalidades: ['devedores', 'dividas', 'pagamentos', 'dashboard_basico'], status: 'ATIVO', ordem: 1 },
-  { nome: 'HS PROFISSIONAL', preco_mensal_centavos: 7990, limite_devedores: 1000, limite_usuarios: 5, funcionalidades: ['devedores', 'dividas', 'pagamentos', 'dashboard_basico', 'carteiras', 'importacao', 'negociacao', 'relatorios'], status: 'ATIVO', ordem: 2 },
-  { nome: 'HS EMPRESARIAL', preco_mensal_centavos: 12990, limite_devedores: 5000, limite_usuarios: 15, funcionalidades: ['devedores', 'dividas', 'pagamentos', 'dashboard_basico', 'carteiras', 'importacao', 'negociacao', 'relatorios', 'exportacao', 'api_futura'], status: 'ATIVO', ordem: 3 },
+  { nome: 'HS ESSENCIAL', preco_mensal_centavos: 4990, limite_devedores: 100, limite_usuarios: 2, funcionalidades: ['devedores', 'dividas', 'pagamentos', 'dashboard_basico'], status: 'ATIVO', ordem: 1 },
+  { nome: 'HS PROFISSIONAL', preco_mensal_centavos: 8990, limite_devedores: 500, limite_usuarios: 5, funcionalidades: ['devedores', 'dividas', 'pagamentos', 'dashboard_basico', 'carteiras', 'importacao', 'negociacao', 'relatorios'], status: 'ATIVO', ordem: 2 },
+  { nome: 'HS EMPRESARIAL', preco_mensal_centavos: 15990, limite_devedores: 1000, limite_usuarios: 15, funcionalidades: ['devedores', 'dividas', 'pagamentos', 'dashboard_basico', 'carteiras', 'importacao', 'negociacao', 'relatorios', 'exportacao', 'api_futura'], status: 'ATIVO', ordem: 3 },
 ];
 
 /** Tabela de comissão vigente: a do contrato, senão a padrão configurada pela HS, senão a de fábrica. */

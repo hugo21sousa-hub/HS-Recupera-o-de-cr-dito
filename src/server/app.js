@@ -360,13 +360,20 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
   async function primeiroAcesso() {
     const emailAdm = String(env.SUPERADMIN_EMAIL || '').trim().toLowerCase();
     if (!emailAdm) return null;
-    const { PLANOS_PADRAO } = await import('../app/actions/comercial.js');
+    const { PLANOS_PADRAO, PLANOS_PADRAO_ANTERIORES } = await import('../app/actions/comercial.js');
     return exclusivo(async () => {
       let u = (await db.UsuarioPlataforma.filter({ email: emailAdm }))[0];
       if (u && u.perfil !== 'SUPERADMIN_HS') return null;
       if (!u) u = await db.UsuarioPlataforma.create({ nome: env.SUPERADMIN_NOME || 'Administrador HS', email: emailAdm, perfil: 'SUPERADMIN_HS', empresa_id: null, status: 'ATIVO', data_criacao: new Date().toISOString() });
       const planos = await db.Plano.filter({});
-      for (const p of PLANOS_PADRAO) if (!planos.some((x) => x.nome === p.nome)) await db.Plano.create(p);
+      for (const p of PLANOS_PADRAO) {
+        const atual = planos.find((x) => x.nome === p.nome);
+        if (!atual) { await db.Plano.create(p); continue; }
+        const antigo = PLANOS_PADRAO_ANTERIORES[p.nome];
+        if (antigo && atual.preco_mensal_centavos === antigo.preco_mensal_centavos && atual.limite_devedores === antigo.limite_devedores) {
+          await db.Plano.update(atual.id, { preco_mensal_centavos: p.preco_mensal_centavos, limite_devedores: p.limite_devedores });
+        }
+      }
       if ((await db.Conta.filter({ email: emailAdm })).length) return null; // já tem senha
       // Código escolhido pelo dono no ambiente (PRIMEIRO_ACESSO_CODIGO): link previsível, sem precisar dos logs
       const codigo = String(env.PRIMEIRO_ACESSO_CODIGO || '').trim();

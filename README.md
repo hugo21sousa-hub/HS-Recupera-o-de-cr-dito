@@ -59,7 +59,7 @@ Entre em `http://localhost:3000` com a senha `Demo2026hs` e um destes usuários:
 ## Primeiros passos dentro do sistema
 
 1. **Superadmin** › Equipe interna: convide gestores e operadores. O sistema gera um link de acesso para você enviar a cada pessoa.
-2. **Superadmin** › Planos e assinaturas: os 3 planos (Essencial R$ 49,90, Profissional R$ 79,90, Empresarial R$ 129,90) já vêm criados; ajuste limites e recursos.
+2. **Superadmin** › Planos e assinaturas: os 3 planos (Essencial R$ 49,90 até 100 devedores, Profissional R$ 89,90 até 500, Empresarial R$ 159,90 até 1.000) já vêm criados; ajuste limites e recursos.
 3. **Empresa** cadastra-se e escolhe o serviço.
 4. **Superadmin** › Empresas: valida e ativa a empresa.
 5. Se a empresa pediu cobrança gerenciada, **Superadmin** › Contratos de cobrança: elabora a proposta. A empresa aceita em Contratos.

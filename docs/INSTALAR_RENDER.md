@@ -118,6 +118,48 @@ O Render grátis **bloqueia o envio por SMTP**, por isso o sistema usa a API do 
 
 Para voltar a usar o aplicativo autenticador, defina `VERIFICACAO_LOGIN=app`. Com remetente `@gmail.com`, alguns e-mails podem cair no spam; com um domínio próprio verificado no Brevo, a entrega melhora.
 
+## Receber as assinaturas (Asaas: Pix, boleto e cartão)
+
+As empresas clientes contratam ou trocam de plano no próprio sistema (**Assinatura › Assinar**). O sistema cria a cobrança mensal no Asaas, e a empresa paga por **Pix, boleto ou cartão de crédito** na fatura do Asaas. Quando o pagamento é confirmado, o plano é ativado sozinho. Se uma mensalidade atrasar, a assinatura fica como inadimplente.
+
+Planos padrão:
+
+| Plano | Mensalidade | Devedores | Usuários |
+|---|---|---|---|
+| HS Essencial | R$ 49,90 | até 100 | 2 |
+| HS Profissional | R$ 89,90 | até 500 | 5 |
+| HS Empresarial | R$ 159,90 | até 1.000 | 15 |
+
+Os valores podem ser ajustados a qualquer momento em **Superadmin › Planos e assinaturas**.
+
+### 1. Testar no ambiente de testes (sandbox), sem dinheiro de verdade
+
+1. Crie uma conta em **sandbox.asaas.com**.
+2. Gere a chave: **Integrações › Chaves de API › Gerar chave**. Copie a chave e não a mande para ninguém.
+3. Cadastre o webhook em **Integrações › Webhooks › Adicionar**:
+   - **URL:** `https://hs-recuperacao.onrender.com/webhooks/asaas`
+   - **Token de autenticação:** invente um código longo, só letras e números (ex.: 32 caracteres)
+   - **Versão da API:** v3
+   - **Eventos:** marque os eventos de **Cobranças** (pagamento criado, confirmado, recebido, vencido, estornado, excluído)
+   - **Fila de sincronização:** ativada
+4. No Render (**Environment**), adicione:
+
+| Variável | Valor |
+|---|---|
+| `ASAAS_API_KEY` | a chave do passo 2 |
+| `ASAAS_AMBIENTE` | `sandbox` |
+| `ASAAS_WEBHOOK_TOKEN` | o mesmo token do passo 3 |
+
+5. Salve (**Save, rebuild, and deploy**). Entre como uma empresa de teste, assine um plano e pague a fatura pelo sandbox (há um botão para simular o pagamento). O plano deve ficar **Ativo**.
+
+### 2. Passar a receber de verdade
+
+1. Crie a conta em **asaas.com** com o CNPJ (ou CPF) da HS e envie os documentos pedidos. A aprovação pode levar alguns dias.
+2. Repita os passos 2 e 3 na conta de produção (chave e webhook novos).
+3. No Render, troque `ASAAS_API_KEY` e `ASAAS_WEBHOOK_TOKEN` pelos de produção e defina `ASAAS_AMBIENTE=producao`.
+
+O Asaas só recebe a **assinatura da plataforma**. Os devedores continuam pagando direto às empresas credoras.
+
 ## Contato no site
 
 O endereço principal mostra o site de apresentação da HS, com os planos atualizados automaticamente. Para exibir o seu e-mail e WhatsApp no rodapé, adicione no Render (**Environment**) as variáveis `CONTATO_EMAIL` e `CONTATO_WHATSAPP` (ex.: `5511999999999`).

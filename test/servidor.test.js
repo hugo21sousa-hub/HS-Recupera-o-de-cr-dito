@@ -165,3 +165,20 @@ test('primeiro acesso com código escolhido no ambiente (PRIMEIRO_ACESSO_CODIGO)
   assert.equal((await fetch(`${b}/api/auth/convite/MeuCodigoSecreto2026xyz`)).status, 404);
   a.server.close(); await a.banco.fechar(); rmSync(d, { recursive: true, force: true });
 });
+
+test('planos padrão: valores antigos não editados são atualizados; planos editados pela HS ficam como estão', async () => {
+  const d = mkdtempSync(join(tmpdir(), 'hs-pl-'));
+  const a = criarApp({ dataDir: d, webDir: join(d, 'web'), env: { ...envBanco(), SUPERADMIN_EMAIL: 'planos@hs.com' } });
+  await a.exclusivo(async () => {
+    await a.db.Plano.create({ nome: 'HS ESSENCIAL', preco_mensal_centavos: 4990, limite_devedores: 200, limite_usuarios: 2, status: 'ATIVO', ordem: 1 });
+    await a.db.Plano.create({ nome: 'HS PROFISSIONAL', preco_mensal_centavos: 9990, limite_devedores: 1000, limite_usuarios: 5, status: 'ATIVO', ordem: 2 });
+  });
+  await a.primeiroAcesso(); await a.primeiroAcesso();
+  const planos = await a.exclusivo(() => a.db.Plano.filter({}));
+  const por = (n) => planos.filter((p) => p.nome === n);
+  assert.equal(por('HS ESSENCIAL').length, 1);
+  assert.deepEqual([por('HS ESSENCIAL')[0].preco_mensal_centavos, por('HS ESSENCIAL')[0].limite_devedores, por('HS ESSENCIAL')[0].limite_usuarios], [4990, 100, 2]);
+  assert.deepEqual([por('HS PROFISSIONAL')[0].preco_mensal_centavos, por('HS PROFISSIONAL')[0].limite_devedores], [9990, 1000], 'plano editado não muda');
+  assert.deepEqual([por('HS EMPRESARIAL')[0].preco_mensal_centavos, por('HS EMPRESARIAL')[0].limite_devedores, por('HS EMPRESARIAL')[0].limite_usuarios], [15990, 1000, 15]);
+  await a.banco.fechar(); rmSync(d, { recursive: true, force: true });
+});

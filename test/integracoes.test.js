@@ -192,12 +192,12 @@ test('Assinatura online: fatura, confirmação pelo webhook, idempotência e ina
   await t.falha(A.fin, 'assinarPlano', { plano_id: planos[1].id }, 403);
   const r = await t.ok(A.adm, 'assinarPlano', { plano_id: planos[1].id });
   assert.equal(r.fatura_url, 'https://asaas/fatura/1');
-  assert.equal(chamadas.find((c) => c[0] === 'assinatura')[1].valorCentavos, 7990);
+  assert.equal(chamadas.find((c) => c[0] === 'assinatura')[1].valorCentavos, 8990);
   let ass = await t.ok(A.adm, 'minhaAssinatura');
   assert.equal(ass.pendente.status, 'AGUARDANDO_PAGAMENTO');
   assert.equal(ass.atual, null);
   const sys = { db: t.db, now: () => AGORA, user: { id: 'sistema', email: 'sistema', perfil: 'SISTEMA' } };
-  const ev = { id: 'evt_1', event: 'PAYMENT_CONFIRMED', payment: { id: 'pay_1', subscription: 'sub_1', value: 79.9, dueDate: '2026-11-11', status: 'CONFIRMED' } };
+  const ev = { id: 'evt_1', event: 'PAYMENT_CONFIRMED', payment: { id: 'pay_1', subscription: 'sub_1', value: 89.9, dueDate: '2026-11-11', status: 'CONFIRMED' } };
   assert.equal((await processarWebhookAsaas(sys, ev)).status, 'ATIVA');
   assert.equal((await processarWebhookAsaas(sys, ev)).duplicado, true);
   ass = await t.ok(A.adm, 'minhaAssinatura');
