@@ -77,21 +77,49 @@ export function Entrar() {
             )}
             <FormSimples botao="Entrar"
               campos={[{ nome: 'email', rotulo: 'E-mail', tipo: 'email', obrigatorio: true, autoComplete: 'username' }, { nome: 'senha', rotulo: 'Senha', tipo: 'senha', obrigatorio: true, autoComplete: 'current-password' }]}
-              onSubmit={async (d) => { const r = await auth.login(d.email, d.senha); if (r?.precisa_2fa) setDesafio(r.desafio); else await entrar(); }}
+              onSubmit={async (d) => { const r = await auth.login(d.email, d.senha); if (r?.precisa_2fa) setDesafio(r); else await entrar(); }}
               rodape={<p className="small muted"><Link to="/esqueci">Esqueci minha senha</Link> · Empresa nova? <Link to="/cadastro">Crie sua conta</Link></p>} />
           </>
+        ) : desafio.metodo === 'email' ? (
+          <CodigoPorEmail desafio={desafio} onVoltar={() => setDesafio(null)} onEntrar={entrar} />
         ) : (
           <>
             <h1 style={{ marginTop: 12 }}>Verificação em duas etapas</h1>
             <p className="muted">Digite o código de 6 dígitos do seu aplicativo autenticador. Sem o celular? Use um dos códigos de recuperação.</p>
             <FormSimples botao="Verificar"
               campos={[{ nome: 'codigo', rotulo: 'Código', obrigatorio: true, autoComplete: 'one-time-code', placeholder: '123456' }]}
-              onSubmit={async (d) => { await auth.verificar2fa(desafio, d.codigo); await entrar(); }}
+              onSubmit={async (d) => { await auth.verificar2fa(desafio.desafio, d.codigo); await entrar(); }}
               rodape={<button type="button" className="btn link small" onClick={() => setDesafio(null)}>Voltar</button>} />
           </>
         )}
       </div>
     </TelaAcesso>
+  );
+}
+
+function CodigoPorEmail({ desafio, onVoltar, onEntrar }) {
+  const [espera, setEspera] = useState(60);
+  const [aviso, setAviso] = useState(null);
+  useEffect(() => { const t = setInterval(() => setEspera((s) => (s > 0 ? s - 1 : 0)), 1000); return () => clearInterval(t); }, []);
+  const reenviar = async () => {
+    setAviso(null);
+    try { await auth.reenviarCodigo(desafio.desafio); setEspera(60); setAviso({ ok: true, msg: 'Enviamos um novo código. O anterior deixou de valer.' }); } catch (e) { setAviso({ ok: false, msg: e.message }); }
+  };
+  return (
+    <>
+      <h1 style={{ marginTop: 12 }}>Confirme que é você</h1>
+      <p className="muted">Enviamos um código de 6 dígitos para <strong>{desafio.destino}</strong>. Ele vale por 10 minutos. Confira também a caixa de spam.</p>
+      <FormSimples botao="Entrar"
+        campos={[{ nome: 'codigo', rotulo: 'Código recebido por e-mail', obrigatorio: true, autoComplete: 'one-time-code', placeholder: '123456', validar: (v) => (!/^\s*[A-Za-z0-9-]{6,11}\s*$/.test(v) ? 'Digite os 6 números do e-mail' : null) }]}
+        onSubmit={async (d) => { await auth.verificar2fa(desafio.desafio, d.codigo); await onEntrar(); }}
+        rodape={<div className="stack" style={{ gap: 6 }}>
+          {aviso && <div className={`aviso ${aviso.ok ? 'ok' : 'critico'} small`}>{aviso.msg}</div>}
+          <div className="row between small">
+            <button type="button" className="btn link" onClick={onVoltar}>Voltar</button>
+            <button type="button" className="btn link" disabled={espera > 0} onClick={reenviar}>{espera > 0 ? `Reenviar código em ${espera}s` : 'Reenviar código'}</button>
+          </div>
+        </div>} />
+    </>
   );
 }
 

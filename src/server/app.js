@@ -38,9 +38,12 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
   if (databaseUrl && !supa) console.warn('[hs] DATABASE_URL sem SUPABASE_URL/SUPABASE_SERVICE_KEY: anexos ficarão no disco local (podem se perder em hospedagens sem disco permanente).');
   if (databaseUrl && !env.SEGREDO) console.warn('[hs] Defina SEGREDO no ambiente: sem ele, links de arquivos e 2FA deixam de valer a cada reinício.');
   const { db, exclusivo } = banco;
-  const auth = criarAuth({ db, urlBase, segredo });
+  const email = criarEmail({ config: configSMTP(env), transporte: transporteEmail, urlBase, env, fetchImpl });
+  // Verificação do login: código por e-mail (padrão quando há envio de e-mail) ou aplicativo autenticador
+  let metodoVerificacao = env.VERIFICACAO_LOGIN || (email.disponivel ? 'email' : 'app');
+  if (metodoVerificacao === 'email' && !email.disponivel) { console.warn('[hs] VERIFICACAO_LOGIN=email sem envio de e-mail configurado (BREVO_API_KEY ou SMTP): usando o aplicativo autenticador.'); metodoVerificacao = 'app'; }
+  const auth = criarAuth({ db, urlBase, segredo, codigoPorEmail: metodoVerificacao === 'email' ? (para, codigo) => email.codigoAcesso(para, codigo) : null });
   const arquivos = criarArquivos({ db, dir: join(dataDir, 'arquivos'), segredo, armazenamento });
-  const email = criarEmail({ config: configSMTP(env), transporte: transporteEmail, urlBase });
   const whatsCfg = configWhatsApp(env);
   const whatsapp = criarWhatsApp({ config: whatsCfg, fetchImpl: fetchImpl || fetch });
   const asaas = criarAsaas({ config: configAsaas(env), fetchImpl: fetchImpl || fetch });
@@ -132,7 +135,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
     const dois = await auth.status2fa(s.email);
     return {
       db, user, authEmail: s.email, authName: s.nome, now: () => new Date(), files: arquivos, ...integracoes, aposConfirmar: posteriores,
-      seguranca: { dois_fatores_ativo: dois.ativo, codigos_recuperacao_restantes: dois.codigos_recuperacao_restantes, exige_2fa: !!(exigir2faHS && user && PERFIS_HS.includes(user.perfil)) },
+      seguranca: { metodo: metodoVerificacao, dois_fatores_ativo: dois.ativo, codigos_recuperacao_restantes: dois.codigos_recuperacao_restantes, exige_2fa: !!(exigir2faHS && metodoVerificacao === 'app' && user && PERFIS_HS.includes(user.perfil)) },
       invite: async (para) => {
         const c = await auth.gerarConvite(para);
         if (email.disponivel) posteriores.push(() => email.convite(para, c.link));
@@ -211,7 +214,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
       const b = await lerJSON(req);
       const r = await exclusivo(() => (rota.endsWith('login') ? auth.login(b.email, b.senha) : auth.cadastrar(b)));
       if (r.erro) return json(res, rota.endsWith('login') ? 401 : 422, { ok: false, error: r.erro });
-      if (r.precisa_2fa) return json(res, 200, { ok: true, data: { precisa_2fa: true, desafio: r.desafio } });
+      if (r.precisa_2fa) return json(res, 200, { ok: true, data: { precisa_2fa: true, desafio: r.desafio, metodo: r.metodo, destino: r.destino } });
       return json(res, 200, { ok: true }, { 'Set-Cookie': cookieSessao(r.token, r.expira) });
     }
 
@@ -221,6 +224,14 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
       const r = await exclusivo(() => auth.verificar2fa(b.desafio, b.codigo));
       if (r.erro) return json(res, 401, { ok: false, error: r.erro });
       return json(res, 200, { ok: true }, { 'Set-Cookie': cookieSessao(r.token, r.expira) });
+    }
+
+    if (rota === 'POST /api/auth/2fa/reenviar') {
+      if (limitar(ip, rota, 10)) return json(res, 429, { ok: false, error: 'Muitas solicitações. Aguarde alguns minutos.' });
+      const b = await lerJSON(req);
+      const r = await exclusivo(() => auth.reenviarCodigo(b.desafio));
+      if (r.erro) return json(res, 422, { ok: false, error: r.erro });
+      return json(res, 200, { ok: true, data: r });
     }
 
     if (['POST /api/auth/2fa/iniciar', 'POST /api/auth/2fa/ativar', 'POST /api/auth/2fa/desativar'].includes(rota)) {

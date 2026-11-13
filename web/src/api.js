@@ -45,6 +45,7 @@ const authServidor = {
   logout: () => req('/api/auth/logout', {}),
   sessao: () => req('/api/auth/sessao'),
   verificar2fa: (desafio, codigo) => req('/api/auth/2fa/verificar', { desafio, codigo }),
+  reenviarCodigo: (desafio) => req('/api/auth/2fa/reenviar', { desafio }),
   iniciar2fa: () => req('/api/auth/2fa/iniciar', {}),
   ativar2fa: (codigo) => req('/api/auth/2fa/ativar', { codigo }),
   desativar2fa: (senha, codigo) => req('/api/auth/2fa/desativar', { senha, codigo }),

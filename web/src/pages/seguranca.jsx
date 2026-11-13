@@ -82,6 +82,13 @@ export function Seguranca2FA() {
   const seg = s.perfil?.seguranca || {};
   const [configurando, setConfigurando] = useState(false);
   const [desativar, setDesativar] = useState({ senha: '', codigo: '' });
+  if (seg.metodo === 'email' && !seg.dois_fatores_ativo && !configurando) return (
+    <div className="card stack">
+      <div className="row between"><h2 style={{ margin: 0 }}>Verificação em duas etapas</h2><Badge status="ATIVA">Código por e-mail</Badge></div>
+      <p style={{ margin: 0 }}>A cada entrada no sistema, enviamos um código de 6 dígitos para o seu e-mail. Mantenha o acesso ao seu e-mail protegido.</p>
+      <p className="small muted" style={{ margin: 0 }}>Opcional: você também pode usar um aplicativo autenticador no celular. <button className="btn link small" onClick={() => setConfigurando(true)}>Configurar aplicativo</button></p>
+    </div>
+  );
   if (configurando) return <div className="card stack"><h2>Verificação em duas etapas</h2><Configurar2FA aoConcluir={() => { setConfigurando(false); s.recarregar(); }} /></div>;
   return (
     <div className="card stack">

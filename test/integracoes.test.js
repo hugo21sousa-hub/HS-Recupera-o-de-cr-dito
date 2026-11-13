@@ -27,7 +27,7 @@ let app, base, dir;
 const transporte = nodemailer.createTransport({ jsonTransport: true });
 before(async () => {
   dir = mkdtempSync(join(tmpdir(), 'hs-int-'));
-  app = criarApp({ dataDir: dir, urlBase: 'http://teste', webDir: join(dir, 'web'), transporteEmail: transporte, env: envBanco() });
+  app = criarApp({ dataDir: dir, urlBase: 'http://teste', webDir: join(dir, 'web'), transporteEmail: transporte, env: { ...envBanco(), VERIFICACAO_LOGIN: 'app' } });
   await new Promise((ok) => app.server.listen(0, ok));
   base = `http://127.0.0.1:${app.server.address().port}`;
 });

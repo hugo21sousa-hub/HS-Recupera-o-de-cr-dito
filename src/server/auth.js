@@ -33,7 +33,7 @@ export function validarSenha(senha) {
 const normEmail = (e) => String(e || '').trim().toLowerCase();
 const emailOk = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
 
-export function criarAuth({ db, agora = () => new Date(), urlBase = '', segredo = 'dev' }) {
+export function criarAuth({ db, agora = () => new Date(), urlBase = '', segredo = 'dev', codigoPorEmail = null }) {
   const cripto = cifrador(segredo);
   async function conta(email) { return (await db.Conta.filter({ email: normEmail(email) }))[0] || null; }
 
@@ -43,6 +43,9 @@ export function criarAuth({ db, agora = () => new Date(), urlBase = '', segredo 
     await db.Sessao.create({ token_hash: hashToken(token), email: normEmail(email), expira_em: expira });
     return { token, expira };
   }
+
+  const mascarar = (e) => { const [u, d] = String(e).split('@'); return `${u.slice(0, 1)}${'*'.repeat(Math.max(3, u.length - 2))}${u.length > 1 ? u.slice(-1) : ''}@${d}`; };
+  const novoCodigo = () => String(randomBytes(4).readUInt32BE(0) % 1_000_000).padStart(6, '0');
 
   async function encerrarSessoes(email) {
     for (const s of await db.Sessao.filter({ email: normEmail(email) })) await db.Sessao.delete(s.id);
@@ -70,11 +73,19 @@ export function criarAuth({ db, agora = () => new Date(), urlBase = '', segredo 
         return falha;
       }
       await db.Conta.update(c.id, { falhas: 0, bloqueado_ate: null, ultimo_login: agora().toISOString() });
+      if (codigoPorEmail) {
+        // Senha correta: envia um código de 6 dígitos para o e-mail da conta (vale 10 minutos)
+        const desafio = randomBytes(24).toString('base64url');
+        const codigo = novoCodigo();
+        await db.Desafio2FA.create({ token_hash: hashToken(desafio), email: c.email, metodo: 'email', codigo_hash: hashToken(`${desafio}:${codigo}`), expira_em: new Date(agora().getTime() + 10 * 60e3).toISOString(), tentativas: 0, envios: 1, ultimo_envio: agora().toISOString() });
+        if (!(await codigoPorEmail(c.email, codigo))) return { erro: 'Não foi possível enviar o código para o seu e-mail agora. Tente novamente em instantes.' };
+        return { precisa_2fa: true, desafio, metodo: 'email', destino: mascarar(c.email) };
+      }
       if (c.totp_ativo) {
         // Senha correta: falta o segundo fator. Emite um desafio curto (5 min).
         const desafio = randomBytes(24).toString('base64url');
         await db.Desafio2FA.create({ token_hash: hashToken(desafio), email: c.email, expira_em: new Date(agora().getTime() + 5 * 60e3).toISOString(), tentativas: 0 });
-        return { precisa_2fa: true, desafio };
+        return { precisa_2fa: true, desafio, metodo: 'app' };
       }
       return abrirSessao(c.email);
     },
@@ -84,6 +95,11 @@ export function criarAuth({ db, agora = () => new Date(), urlBase = '', segredo 
       const d = (await db.Desafio2FA.filter({ token_hash: hashToken(String(desafio || '')) }))[0];
       if (!d || d.expira_em < agora().toISOString() || d.tentativas >= 5) return { erro: 'Verificação expirada. Entre novamente.' };
       const c = await conta(d.email);
+      const informado = String(codigoInformado || '').replace(/\s/g, '');
+      if (d.codigo_hash && /^\d{6}$/.test(informado)) {
+        const a = Buffer.from(hashToken(`${desafio}:${informado}`)), b = Buffer.from(d.codigo_hash);
+        if (a.length === b.length && timingSafeEqual(a, b)) { await db.Desafio2FA.delete(d.id); return abrirSessao(c.email); }
+      }
       const passo = c?.totp_ativo ? verificar(cripto.decifrar(c.totp_segredo), codigoInformado, agora().getTime()) : null;
       if (passo !== null && passo > (c.totp_ultimo_passo ?? -1)) {
         await db.Conta.update(c.id, { totp_ultimo_passo: passo });
@@ -99,6 +115,19 @@ export function criarAuth({ db, agora = () => new Date(), urlBase = '', segredo 
       }
       await db.Desafio2FA.delete(d.id);
       return abrirSessao(c.email);
+    },
+
+    /** Reenvia o código por e-mail (no máximo 5 envios; intervalo mínimo de 60 segundos). */
+    async reenviarCodigo(desafio) {
+      if (!codigoPorEmail) return { erro: 'Envio por e-mail indisponível' };
+      const d = (await db.Desafio2FA.filter({ token_hash: hashToken(String(desafio || '')) }))[0];
+      if (!d || d.metodo !== 'email' || d.expira_em < agora().toISOString()) return { erro: 'Verificação expirada. Entre novamente.' };
+      if ((d.envios || 1) >= 5) return { erro: 'Limite de reenvios atingido. Entre novamente.' };
+      if (agora().getTime() - new Date(d.ultimo_envio).getTime() < 60e3) return { erro: 'Aguarde 1 minuto para pedir um novo código.' };
+      const codigo = novoCodigo();
+      await db.Desafio2FA.update(d.id, { codigo_hash: hashToken(`${desafio}:${codigo}`), tentativas: 0, envios: (d.envios || 1) + 1, ultimo_envio: agora().toISOString(), expira_em: new Date(agora().getTime() + 10 * 60e3).toISOString() });
+      if (!(await codigoPorEmail(d.email, codigo))) return { erro: 'Não foi possível enviar o código agora.' };
+      return { ok: true, destino: mascarar(d.email) };
     },
 
     async status2fa(email) {

@@ -4,6 +4,31 @@ import nodemailer from 'nodemailer';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+/** Remetente "Nome <email@dominio>" → { name, email } */
+function separarRemetente(s) {
+  const m = String(s || '').match(/^\s*(.*?)\s*<([^>]+)>\s*$/);
+  return m ? { name: m[1] || 'HS Recuperação de Crédito', email: m[2] } : { name: 'HS Recuperação de Crédito', email: String(s || '').trim() };
+}
+
+/**
+ * Envio pela API HTTPS do Brevo (plano grátis: 300 e-mails/dia). Funciona onde SMTP é bloqueado
+ * (ex.: Render grátis). Interface compatível com o nodemailer: sendMail({ from, to, subject, text, html }).
+ */
+export function transporteBrevo({ chave, fetchImpl = fetch }) {
+  return {
+    async sendMail({ from, to, subject, text, html }) {
+      const r = await fetchImpl('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST', signal: AbortSignal.timeout(15000),
+        headers: { 'api-key': chave, 'Content-Type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ sender: separarRemetente(from), to: [{ email: to }], subject, textContent: text, htmlContent: html }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(`Brevo recusou o envio (${r.status}): ${j.message || ''}`);
+      return { messageId: j.messageId };
+    },
+  };
+}
+
 export function configSMTP(env = process.env) {
   if (!env.SMTP_HOST) return null;
   return {
@@ -13,9 +38,10 @@ export function configSMTP(env = process.env) {
   };
 }
 
-export function criarEmail({ config, transporte, urlBase = '' } = {}) {
-  const t = transporte || (config ? nodemailer.createTransport({ host: config.host, port: config.port, secure: config.secure, auth: config.auth }) : null);
-  const remetente = config?.remetente || 'HS Recuperação de Crédito <nao-responda@localhost>';
+export function criarEmail({ config, transporte, urlBase = '', env = process.env, fetchImpl } = {}) {
+  const brevo = env.BREVO_API_KEY ? transporteBrevo({ chave: env.BREVO_API_KEY, fetchImpl: fetchImpl || fetch }) : null;
+  const t = transporte || brevo || (config ? nodemailer.createTransport({ host: config.host, port: config.port, secure: config.secure, auth: config.auth }) : null);
+  const remetente = env.EMAIL_REMETENTE || config?.remetente || 'HS Recuperação de Crédito <nao-responda@localhost>';
   const enviados = [];
 
   function modelo(titulo, paragrafos, botao) {
@@ -53,6 +79,11 @@ ${botao ? `<p style="margin:20px 0"><a href="${esc(botao.url)}" style="backgroun
       paragrafos: reset ? ['Recebemos um pedido para redefinir a sua senha.', 'O link vale por 7 dias e só pode ser usado uma vez. Se não foi você, ignore este e-mail.']
         : ['Você recebeu acesso à plataforma HS Recuperação de Crédito.', 'Clique no botão para definir a sua senha. O link vale por 7 dias e só pode ser usado uma vez.'],
       botao: { texto: reset ? 'Redefinir senha' : 'Definir minha senha', url: link },
+    }),
+    /** Código de verificação do login. */
+    codigoAcesso: (para, codigo) => enviar({
+      para, assunto: `${codigo} é o seu código de acesso — HS Recuperação de Crédito`, titulo: 'Seu código de acesso',
+      paragrafos: [`Use o código ${codigo} para concluir a entrada no sistema.`, 'Ele vale por 10 minutos e só pode ser usado uma vez.', 'Se você não tentou entrar agora, ignore este e-mail e troque a sua senha.'],
     }),
     notificacao: (para, n) => enviar({ para, assunto: `${n.titulo} — HS Recuperação de Crédito`, paragrafos: [n.mensagem || n.titulo], botao: { texto: 'Abrir na plataforma', url: `${urlBase}${n.link || '/'}` } }),
   };

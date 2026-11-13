@@ -98,6 +98,26 @@ Sempre que houver uma alteração no GitHub (branch `main`), o Render publica a 
 
 No Render, abra **hs-recuperacao › Environment**, clique em **Add Environment Variable**, preencha as variáveis descritas em `docs/IMPLANTACAO.md` e salve. O Render reinicia sozinho.
 
+## Código de acesso por e-mail (Brevo, grátis)
+
+Com o envio de e-mail ligado, toda entrada no sistema pede um **código de 6 dígitos enviado ao e-mail** da pessoa, no lugar do aplicativo autenticador. Os convites e o "esqueci minha senha" também passam a chegar por e-mail.
+
+O Render grátis **bloqueia o envio por SMTP**, por isso o sistema usa a API do **Brevo**: são 300 e-mails por dia de graça, sem cartão.
+
+1. Crie a conta em **brevo.com** (plano Free).
+2. Cadastre o remetente: menu **Senders, Domains & Dedicated IPs › Senders › Add a sender**, com nome `HS Recuperação de Crédito` e o e-mail da HS (ex.: `hsrecupera@gmail.com`). Confirme pelo e-mail que o Brevo enviar.
+3. Gere a chave: menu **SMTP & API › API Keys › Generate a new API key** (nome `render`). Copie a chave, que começa com `xkeysib-`.
+4. No Render, em **hs-recuperacao › Environment**, adicione:
+
+| Variável | Valor |
+|---|---|
+| `BREVO_API_KEY` | a chave `xkeysib-…` |
+| `EMAIL_REMETENTE` | `HS Recuperação de Crédito <hsrecupera@gmail.com>` (o mesmo e-mail confirmado no passo 2) |
+
+5. Salve (**Save, rebuild, and deploy**).
+
+Para voltar a usar o aplicativo autenticador, defina `VERIFICACAO_LOGIN=app`. Com remetente `@gmail.com`, alguns e-mails podem cair no spam; com um domínio próprio verificado no Brevo, a entrega melhora.
+
 ## Contato no site
 
 O endereço principal mostra o site de apresentação da HS, com os planos atualizados automaticamente. Para exibir o seu e-mail e WhatsApp no rodapé, adicione no Render (**Environment**) as variáveis `CONTATO_EMAIL` e `CONTATO_WHATSAPP` (ex.: `5511999999999`).

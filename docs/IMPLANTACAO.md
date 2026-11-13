@@ -16,6 +16,8 @@ O sistema é um único processo Node.js que guarda tudo numa pasta de dados (`DA
 | `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` | — | Anexos e backups diários no Supabase Storage (bucket privado `hs-arquivos`) |
 | `SUPERADMIN_EMAIL` / `SUPERADMIN_NOME` | — | Cria o primeiro superadmin ao iniciar e mostra o link de primeiro acesso nos logs |
 | `CONTATO_EMAIL` / `CONTATO_WHATSAPP` | — | Contato exibido no rodapé do site de apresentação (ex.: `contato@seudominio.com.br`, `5511999999999`) |
+| `BREVO_API_KEY` / `EMAIL_REMETENTE` | — | Envio de e-mail pela API do Brevo (funciona onde SMTP é bloqueado, como no Render grátis) |
+| `VERIFICACAO_LOGIN` | `email` se houver envio de e-mail; senão `app` | `email`: código de 6 dígitos por e-mail a cada login, para todos os usuários. `app`: aplicativo autenticador (obrigatório para a equipe HS) |
 | `EXIGIR_2FA_HS` | `true` | Verificação em duas etapas obrigatória para superadmin, gestores e operadores |
 
 ### Integrações (opcionais: cada uma só liga quando suas variáveis existem)
