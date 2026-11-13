@@ -78,9 +78,13 @@ No plano grátis, o Render desliga o sistema após 15 minutos sem acesso, e o pr
 
 1. Acesse **cron-job.org** e crie uma conta.
 2. Clique em **Create cronjob**:
+   - **Title:** `Acorly`
    - **URL:** `https://hs-recuperacao.onrender.com/api/saude` (com o seu endereço)
-   - **Execução:** a cada **10 minutos**
-3. Salve.
+   - **Execution schedule:** a cada **10 minutos**
+   - **Notifications:** marque **execution of the cronjob fails** e **cronjob will be disabled because of too many failures**. Assim você recebe um e-mail se o sistema ou o banco caírem.
+3. Salve (**Create**).
+
+Esse endereço também confere o banco de dados. Se ele responder com erro, o cron-job.org avisa você.
 
 Um único serviço ligado o mês inteiro cabe nas horas grátis do Render.
 
@@ -173,6 +177,36 @@ O Asaas só recebe a **assinatura da plataforma**. Os devedores continuam pagand
 ## Contato no site
 
 O endereço principal mostra o site de apresentação da HS, com os planos atualizados automaticamente. Para exibir o seu e-mail e WhatsApp no rodapé, adicione no Render (**Environment**) as variáveis `CONTATO_EMAIL` e `CONTATO_WHATSAPP` (ex.: `5511999999999`).
+
+## Domínio próprio (ex.: acorly.com.br)
+
+**1. No Render**
+1. Abra **hs-recuperacao › Settings › Custom Domains › Add Custom Domain**.
+2. Adicione o domínio principal (`acorly.com.br`) e também o `www.acorly.com.br`.
+3. O Render mostra os registros de DNS que você precisa criar. Normalmente são um registro **A** para o domínio principal e um **CNAME** para o `www`.
+
+**2. Onde você comprou o domínio** (Registro.br, Hostinger, GoDaddy...)
+1. Abra a zona de DNS (**DNS › Editar zona**) e crie exatamente os registros que o Render mostrou.
+2. Aguarde de alguns minutos a algumas horas. O Render confirma o domínio e emite o certificado HTTPS sozinho.
+
+**3. No Render (Environment)**
+1. Adicione a variável `URL_BASE` = `https://acorly.com.br`. É ela que monta os links dos e-mails, dos convites e da logo.
+2. Clique em **Save, rebuild, and deploy**.
+
+**4. Atualize os endereços nos serviços externos**
+- **Asaas:** no webhook, troque a URL para `https://acorly.com.br/webhooks/asaas`.
+- **cron-job.org:** troque a URL para `https://acorly.com.br/api/saude`.
+
+**5. E-mails com o domínio (Brevo)**
+1. No Brevo, abra **Senders, Domains & Dedicated IPs › Domains › Add a domain** e informe `acorly.com.br`.
+2. O Brevo mostra registros de DNS (código Brevo, **DKIM** e **DMARC**). Crie todos na zona de DNS do domínio.
+3. Clique em **Verify** (Verificar) no Brevo.
+4. Cadastre o remetente `nao-responda@acorly.com.br`.
+5. No Render, troque `EMAIL_REMETENTE` para `Acorly <nao-responda@acorly.com.br>`.
+
+Com o domínio verificado, os e-mails param de cair no spam.
+
+O endereço `hs-recuperacao.onrender.com` continua funcionando.
 
 ## Limites do plano grátis
 
