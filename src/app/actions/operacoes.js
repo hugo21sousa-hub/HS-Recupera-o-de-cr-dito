@@ -29,7 +29,7 @@ async function operadorValido(ctx, operador_id) {
 }
 
 async function atribuir(ctx, caso, op, { forcar = false } = {}) {
-  exigir(caso.modalidade_cobranca === 'HS_GERENCIADA', 'Somente casos HS podem ser atribuídos a operadores');
+  exigir(caso.modalidade_cobranca === 'HS_GERENCIADA', 'Somente casos Acorly podem ser atribuídos a operadores');
   exigir(casoAtivo(caso) && !['AGUARDANDO_VALIDACAO', 'AGUARDANDO_AUTORIZACAO', 'SUSPENSO'].includes(caso.status_operacional), 'Caso não está liberado para distribuição');
   const carga = await cargaOperador(ctx, op.id);
   if (!forcar && carga >= (op.capacidade_casos || 50)) throw new ValidationError(`Operador ${op.nome} atingiu a capacidade (${op.capacidade_casos})`);
@@ -234,7 +234,7 @@ export const actions = {
         requirePerm(u, 'interacao.registrar');
       } else {
         requirePerm(u, 'interacao.registrar');
-        exigir(caso.modalidade_cobranca === 'AUTOCONTRATADA', 'Casos HS são conduzidos pela equipe HS');
+        exigir(caso.modalidade_cobranca === 'AUTOCONTRATADA', 'Casos Acorly são conduzidos pela equipe Acorly');
       }
       const patch = transicao(caso, status, { motivo, agora: ctx.now().toISOString() });
       const r = await alterar(ctx, 'CasoCobranca', caso, patch, status === 'REATIVAR' ? 'REATIVAR_CASO' : 'ALTERAR_STATUS_CASO');
@@ -250,7 +250,7 @@ export const actions = {
     async run(ctx, input) {
       const caso = await carregarCaso(ctx, input.caso_id);
       exigir(casoAtivo(caso) && caso.status_operacional !== 'SUSPENSO', 'Caso encerrado ou suspenso');
-      if (!isHS(ctx.user)) exigir(caso.modalidade_cobranca === 'AUTOCONTRATADA', 'Casos HS são conduzidos pela equipe HS');
+      if (!isHS(ctx.user)) exigir(caso.modalidade_cobranca === 'AUTOCONTRATADA', 'Casos Acorly são conduzidos pela equipe Acorly');
       exigir(TIPOS_INTERACAO.includes(input.tipo_interacao), 'Tipo de interação inválido');
       exigir(CANAIS.includes(input.canal), 'Canal inválido');
       if (input.resultado) exigir(RESULTADOS.includes(input.resultado), 'Resultado inválido');

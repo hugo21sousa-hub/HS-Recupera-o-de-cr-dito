@@ -16,7 +16,7 @@ function DetalheEmpresa({ empresa: e, onClose, onFeito }) {
   const contratos = useApi('listarContratos', { filtros: { empresa_id: e.id } });
   const ass = useApi('minhaAssinatura', { empresa_id: e.id });
   const mudar = async (status) => {
-    const r = await confirmar({ titulo: `Alterar empresa para ${rotulo(status)}`, pedirMotivo: true, perigo: status !== 'ATIVA', mensagem: status === 'ATIVA' ? 'A empresa poderá encaminhar cobranças à HS.' : 'Os usuários da empresa terão o acesso limitado.' });
+    const r = await confirmar({ titulo: `Alterar empresa para ${rotulo(status)}`, pedirMotivo: true, perigo: status !== 'ATIVA', mensagem: status === 'ATIVA' ? 'A empresa poderá encaminhar cobranças ao Acorly.' : 'Os usuários da empresa terão o acesso limitado.' });
     if (r) { await executar('alterarStatusEmpresa', { empresa_id: e.id, status, motivo: r.motivo }, 'Status atualizado'); onFeito(); onClose(); }
   };
   return (
@@ -201,7 +201,7 @@ function ComissaoContrato({ inicial, padrao, onChange }) {
   useEffect(() => { onChange(propria ? faixas : null); }, [propria, faixas]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className="stack">
-      <h3 style={{ margin: 0 }}>Comissão da HS sobre valores recebidos</h3>
+      <h3 style={{ margin: 0 }}>Comissão do Acorly sobre valores recebidos</h3>
       <label className="check"><input type="checkbox" checked={propria} onChange={(e) => setPropria(e.target.checked)} />Usar tabela própria neste contrato</label>
       {propria ? <EditorFaixas faixas={faixas} onChange={setFaixas} /> : <><p className="small muted" style={{ margin: 0 }}>Sem tabela própria, o contrato usa a tabela padrão vigente (abaixo).</p><TabelaComissao faixas={padrao} /></>}
     </div>

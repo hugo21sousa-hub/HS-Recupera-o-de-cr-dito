@@ -113,7 +113,7 @@ export function PainelEmpresa() {
       <Cabecalho titulo="Dashboard" sub="Valores reais da sua carteira. Só pagamentos confirmados por você contam como recuperados.">
         {s.pode('divida.editar') && <Link className="btn prim" to="/dividas?nova=1">Nova dívida</Link>}
       </Cabecalho>
-      {s.empresa?.status !== 'ATIVA' && <div className="aviso alerta">Sua empresa está como <strong>{rotulo(s.empresa?.status)}</strong>. Você já pode cadastrar e cobrar por conta própria; o encaminhamento à HS é liberado após a validação.</div>}
+      {s.empresa?.status !== 'ATIVA' && <div className="aviso alerta">Sua empresa está como <strong>{rotulo(s.empresa?.status)}</strong>. Você já pode cadastrar e cobrar por conta própria; o encaminhamento ao Acorly é liberado após a validação.</div>}
       <Filtros valores={filtros} set={setFiltros} campos={[
         { nome: 'de', rotulo: 'De', tipo: 'data' }, { nome: 'ate', rotulo: 'Até', tipo: 'data' },
         { nome: 'modalidade', rotulo: 'Modalidade', opcoes: ['AUTOCONTRATADA', 'HS_GERENCIADA'] },
@@ -131,12 +131,12 @@ export function PainelEmpresa() {
             <Stat rotulo="Informado como pago (a conferir)" valor={brl(f.valor_informado_pago_centavos)} tom="alerta" />
             <Stat rotulo="Em negociação" valor={brl(f.valor_em_negociacao_centavos)} ajuda="Propostas não são dinheiro recuperado" />
             <Stat rotulo="Acordos formalizados" valor={brl(f.valor_acordos_centavos)} ajuda="Acordos não são dinheiro recuperado" />
-            <Stat rotulo="Encaminhado à HS" valor={brl(f.valor_encaminhado_hs_centavos)} ajuda={f.comissao_hs_centavos ? `Comissão HS sobre recebidos: ${brl(f.comissao_hs_centavos)}` : undefined} />
+            <Stat rotulo="Encaminhado ao Acorly" valor={brl(f.valor_encaminhado_hs_centavos)} ajuda={f.comissao_hs_centavos ? `Comissão Acorly sobre recebidos: ${brl(f.comissao_hs_centavos)}` : undefined} />
           </div>
           <div className="grid g3">
             <Link to="/pagamentos" className="card stat"><span className="rot">Pagamentos aguardando sua conferência</span><span className="val" style={{ color: o.pagamentos_aguardando_confirmacao ? 'var(--alerta)' : undefined }}>{o.pagamentos_aguardando_confirmacao}</span></Link>
             <Link to="/negociacoes" className="card stat"><span className="rot">Propostas aguardando sua aprovação</span><span className="val" style={{ color: o.aprovacoes_pendentes ? 'var(--alerta)' : undefined }}>{o.aprovacoes_pendentes}</span></Link>
-            <div className="card stat"><span className="rot">Dívidas próprias / na HS</span><span className="val">{o.dividas_proprias} / {o.dividas_hs}</span></div>
+            <div className="card stat"><span className="rot">Dívidas próprias / no Acorly</span><span className="val">{o.dividas_proprias} / {o.dividas_hs}</span></div>
           </div>
           <GraficoMensal serie={data.serie} />
           <div className="card">
@@ -158,7 +158,7 @@ export function PainelHS() {
   const listaEmp = Array.isArray(empresas.data) ? empresas.data : empresas.data?.itens || [];
   return (
     <div className="stack">
-      <Cabecalho titulo="Visão geral HS" sub="Indicadores calculados a partir dos registros reais. Recuperado = pagamentos confirmados pelos credores." />
+      <Cabecalho titulo="Visão geral Acorly" sub="Indicadores calculados a partir dos registros reais. Recuperado = pagamentos confirmados pelos credores." />
       <Filtros valores={filtros} set={setFiltros} campos={[
         { nome: 'de', rotulo: 'De', tipo: 'data' }, { nome: 'ate', rotulo: 'Até', tipo: 'data' },
         { nome: 'empresa_id', rotulo: 'Empresa', opcoes: listaEmp.map((e) => ({ valor: e.id, rotulo: e.nome_fantasia || e.razao_social })) },

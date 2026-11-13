@@ -59,7 +59,7 @@ export function Configurar2FA({ aoConcluir }) {
   );
 }
 
-/** Tela de bloqueio: a equipe HS precisa ativar o 2FA antes de usar o sistema. */
+/** Tela de bloqueio: a equipe Acorly precisa ativar o 2FA antes de usar o sistema. */
 export function Exigir2FA() {
   const s = useSessao();
   return (
@@ -68,7 +68,7 @@ export function Exigir2FA() {
         <div className="row between"><Marca escura /><button className="btn sm" onClick={() => sair()}>Sair</button></div>
         <div className="card stack">
           <h1>Proteja sua conta</h1>
-          <div className="aviso alerta">Por segurança, a equipe HS só acessa dados de devedores com a verificação em duas etapas ativa.</div>
+          <div className="aviso alerta">Por segurança, a equipe Acorly só acessa dados de devedores com a verificação em duas etapas ativa.</div>
           <Configurar2FA aoConcluir={() => s.recarregar()} />
         </div>
       </div>
@@ -106,7 +106,7 @@ export function Seguranca2FA() {
         </>
       ) : (
         <>
-          <p>Recomendado para todos os usuários{seg.exige_2fa ? ' e obrigatório para a equipe HS' : ''}.</p>
+          <p>Recomendado para todos os usuários{seg.exige_2fa ? ' e obrigatório para a equipe Acorly' : ''}.</p>
           <div><button className="btn prim" onClick={() => setConfigurando(true)}>Ativar</button></div>
         </>
       )}

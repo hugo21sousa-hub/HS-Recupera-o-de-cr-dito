@@ -16,7 +16,7 @@ export const MENU_EMPRESA = [
   ] },
   { secao: 'Cobrança', itens: [
     { to: '/cobrancas', r: 'Minhas cobranças', p: 'caso.ler_empresa' },
-    { to: '/cobranca-hs', r: 'Cobranças HS', p: 'caso.ler_empresa' },
+    { to: '/cobranca-hs', r: 'Cobranças Acorly', p: 'caso.ler_empresa' },
     { to: '/carteiras', r: 'Carteiras', p: 'carteira.ler' },
     { to: '/negociacoes', r: 'Negociações', p: 'negociacao.ler', contador: 'aprovacoes' },
     { to: '/acordos', r: 'Acordos', p: 'acordo.ler' },
@@ -50,7 +50,7 @@ export const MENU_HS = [
     { to: '/hs/operadores', r: 'Operadores', p: 'caso.distribuir' },
     { to: '/hs/whatsapp', r: 'WhatsApp sem caso', p: 'caso.distribuir' },
   ] },
-  { secao: 'Administração HS', itens: [
+  { secao: 'Administração Acorly', itens: [
     { to: '/hs/equipe', r: 'Equipe interna', p: 'usuario.gerenciar_interno' },
     { to: '/hs/contratos', r: 'Contratos de cobrança', p: 'contrato.gerenciar' },
     { to: '/hs/planos', r: 'Planos e assinaturas', p: 'plano.gerenciar' },
@@ -150,7 +150,7 @@ export function Layout() {
           <div className="row">
             <button className="btn icone menu-btn" onClick={() => setAberta(!aberta)} aria-label="Abrir menu">☰</button>
             <div>
-              <div style={{ fontWeight: 600 }}>{s.ehHS ? 'Equipe HS' : s.empresa?.nome_fantasia || s.empresa?.razao_social}</div>
+              <div style={{ fontWeight: 600 }}>{s.ehHS ? 'Equipe Acorly' : s.empresa?.nome_fantasia || s.empresa?.razao_social}</div>
               {!s.ehHS && s.empresa?.status !== 'ATIVA' && <div className="small" style={{ color: 'var(--alerta)' }}>Empresa: {rotulo(s.empresa?.status)}</div>}
             </div>
           </div>

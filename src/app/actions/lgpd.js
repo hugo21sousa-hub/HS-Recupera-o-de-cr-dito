@@ -5,7 +5,7 @@ import { isHS } from '../../core/permissions.js';
 const TIPOS = ['ACESSO', 'CORRECAO', 'ELIMINACAO', 'PORTABILIDADE', 'INFORMACAO_COMPARTILHAMENTO', 'OPOSICAO', 'REVOGACAO_CONSENTIMENTO'];
 
 export const actions = {
-  /** Registro de solicitação do titular (devedor). A empresa credora é controladora; a HS, operadora. */
+  /** Registro de solicitação do titular (devedor). A empresa credora é controladora; o Acorly, operadora. */
   registrarSolicitacaoTitular: {
     perm: 'lgpd.atender',
     async run(ctx, input) {

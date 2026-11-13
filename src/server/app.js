@@ -240,7 +240,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
       if (!s) return json(res, 401, { ok: false, error: 'Não autenticado' });
       if (rota.endsWith('desativar')) {
         const perfil = (await exclusivo(() => db.UsuarioPlataforma.filter({ email: s.email })))[0];
-        if (exigir2faHS && perfil && PERFIS_HS.includes(perfil.perfil)) return json(res, 403, { ok: false, error: 'A verificação em duas etapas é obrigatória para a equipe HS' });
+        if (exigir2faHS && perfil && PERFIS_HS.includes(perfil.perfil)) return json(res, 403, { ok: false, error: 'A verificação em duas etapas é obrigatória para a equipe Acorly' });
       }
       const r = await exclusivo(() => (rota.endsWith('iniciar') ? auth.iniciar2fa(s.email) : rota.endsWith('ativar') && !rota.endsWith('desativar') ? auth.ativar2fa(s.email, b.codigo) : auth.desativar2fa(s.email, b.senha, b.codigo)));
       if (r.erro) return json(res, 422, { ok: false, error: r.erro });
@@ -364,7 +364,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
     return exclusivo(async () => {
       let u = (await db.UsuarioPlataforma.filter({ email: emailAdm }))[0];
       if (u && u.perfil !== 'SUPERADMIN_HS') return null;
-      if (!u) u = await db.UsuarioPlataforma.create({ nome: env.SUPERADMIN_NOME || 'Administrador HS', email: emailAdm, perfil: 'SUPERADMIN_HS', empresa_id: null, status: 'ATIVO', data_criacao: new Date().toISOString() });
+      if (!u) u = await db.UsuarioPlataforma.create({ nome: env.SUPERADMIN_NOME || 'Administrador Acorly', email: emailAdm, perfil: 'SUPERADMIN_HS', empresa_id: null, status: 'ATIVO', data_criacao: new Date().toISOString() });
       const planos = await db.Plano.filter({});
       for (const pl of planos) {
         const novo = PLANOS_NOMES_ANTERIORES[pl.nome];

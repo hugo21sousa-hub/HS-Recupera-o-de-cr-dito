@@ -35,7 +35,7 @@ export async function handle(ctx, action, payload = {}) {
         const emp = await getById(ctx, 'Empresa', ctx.user.empresa_id);
         if (!emp) throw new AccessError('Empresa não encontrada', 404);
         if ((emp.status === 'SUSPENSA' || emp.status === 'CANCELADA') && !LIBERADAS_EMPRESA_BLOQUEADA.has(action)) {
-          throw new AccessError(`Empresa ${emp.status.toLowerCase()}: acesso limitado. Contate a HS.`);
+          throw new AccessError(`Empresa ${emp.status.toLowerCase()}: acesso limitado. Contate o Acorly.`);
         }
       }
       if (def.perm) requirePerm(ctx.user, def.perm);

@@ -31,7 +31,7 @@ export const ENTITIES = {
   UsuarioPlataforma: {
     description: 'Vínculo usuário ↔ perfil ↔ empresa. Fonte de verdade de autorização (NÃO usar campos do User, que o próprio usuário pode alterar).',
     properties: {
-      nome: s('Nome'), email: s('E-mail de login (minúsculo)', { format: 'email' }), perfil: e(PERFIS, 'Perfil de acesso'), empresa_id: s('Empresa (vazio para equipe HS)'),
+      nome: s('Nome'), email: s('E-mail de login (minúsculo)', { format: 'email' }), perfil: e(PERFIS, 'Perfil de acesso'), empresa_id: s('Empresa (vazio para equipe Acorly)'),
       status: e(['ATIVO', 'BLOQUEADO', 'INATIVO'], 'Status', 'ATIVO'), data_criacao: ts('Criação'),
       capacidade_casos: n('Capacidade de casos simultâneos (operador)'), alcada_desconto_bps: n('Alçada individual de desconto do operador (bps)'),
     },
@@ -53,14 +53,14 @@ export const ENTITIES = {
     required: ['empresa_id', 'tipo'],
   },
   ContratoServico: {
-    description: 'Contrato de cobrança gerenciada HS',
+    description: 'Contrato de cobrança gerenciada Acorly',
     properties: {
       ...EMP, modalidade: e(['PACOTE_CASOS', 'CARTEIRA_ESPECIFICA', 'CARTEIRA_COMPLETA', 'PERSONALIZADA'], 'Modalidade'), tipo_carteira: e(['CARTEIRA_SELECIONADA', 'TODOS_ELEGIVEIS'], 'Escopo'),
       quantidade_casos_contratada: n('Limite de casos (pacote)'), valor_contratado_centavos: c('Preço do serviço'), forma_cobranca_servico: s('Periodicidade/forma de cobrança do serviço'),
       data_inicio: dt('Início da vigência'), data_fim: dt('Fim da vigência'), escopo: s('Escopo contratado'), limites: s('Limites'), documento: s('file_uri do contrato (privado)'),
       status: e(['SOLICITADO', 'PROPOSTO', 'ATIVO', 'ENCERRADO', 'CANCELADO'], 'Status', 'SOLICITADO'), aceite: b('Aceito pela empresa'), data_aceite: ts('Data do aceite'),
       responsavel_autorizacao: ref('UsuarioPlataforma que aceitou'), observacoes: s('Observações'), motivo_encerramento: s('Motivo do encerramento'),
-      comissao_faixas: arr('Comissão da HS por faixa de atraso [{ate_dias, bps}] sobre valores recebidos', { type: 'object' }),
+      comissao_faixas: arr('Comissão do Acorly por faixa de atraso [{ate_dias, bps}] sobre valores recebidos', { type: 'object' }),
     },
     required: ['empresa_id', 'modalidade', 'status'],
   },
@@ -81,7 +81,7 @@ export const ENTITIES = {
       valor_original_centavos: c('Valor original'), encargos_centavos: c('Encargos contratuais'), saldo_atual_centavos: c('Saldo atual'), data_vencimento: dt('Vencimento'),
       modalidade_cobranca: e(MODALIDADE, 'Modalidade de cobrança', 'AUTOCONTRATADA'),
       status_financeiro: e(['EM_ABERTO', 'EM_ACORDO', 'PARCIALMENTE_PAGA', 'QUITADA', 'CANCELADA', 'CONTESTADA'], 'Status financeiro', 'EM_ABERTO'),
-      status_validacao: e(['NAO_VALIDADA', 'EM_VALIDACAO', 'VALIDADA', 'REPROVADA'], 'Validação HS', 'NAO_VALIDADA'), pendencia_validacao: s('Pendência apontada'),
+      status_validacao: e(['NAO_VALIDADA', 'EM_VALIDACAO', 'VALIDADA', 'REPROVADA'], 'Validação Acorly', 'NAO_VALIDADA'), pendencia_validacao: s('Pendência apontada'),
       motivo_cancelamento: s('Motivo do cancelamento'), data_cadastro: ts('Cadastro'),
     },
     required: ['empresa_id', 'devedor_id', 'valor_original_centavos', 'saldo_atual_centavos', 'data_vencimento'],
@@ -112,7 +112,7 @@ export const ENTITIES = {
     required: ['empresa_id', 'carteira_id', 'divida_id'],
   },
   AutorizacaoCobranca: {
-    description: 'Autorização expressa (versionada) do credor para a HS cobrar',
+    description: 'Autorização expressa (versionada) do credor para o Acorly cobrar',
     properties: {
       ...EMP, contrato_servico_id: ref('ContratoServico'), divida_id: ref('Divida (opcional)'), carteira_id: ref('Carteira (opcional)'),
       tipo_autorizacao: e(['CARTEIRA', 'DIVIDAS', 'TODOS_ELEGIVEIS'], 'Tipo'), escopo_autorizado: s('JSON com ids das dívidas autorizadas'), condicoes: s('Condições'),
@@ -126,12 +126,12 @@ export const ENTITIES = {
     description: 'Caso de cobrança (status operacional, separado do status financeiro da dívida)',
     properties: {
       ...EMP, divida_id: ref('Divida'), devedor_id: ref('Devedor'), carteira_id: ref('Carteira'), contrato_servico_id: ref('ContratoServico'), autorizacao_id: ref('AutorizacaoCobranca'),
-      modalidade_cobranca: e(MODALIDADE, 'Modalidade'), operador_id: ref('UsuarioPlataforma (operador HS)'), responsavel_empresa_id: ref('UsuarioPlataforma (cobrança própria)'), gestor_id: ref('UsuarioPlataforma (gestor)'),
+      modalidade_cobranca: e(MODALIDADE, 'Modalidade'), operador_id: ref('UsuarioPlataforma (operador Acorly)'), responsavel_empresa_id: ref('UsuarioPlataforma (cobrança própria)'), gestor_id: ref('UsuarioPlataforma (gestor)'),
       status_operacional: e(STATUS_CASO, 'Status operacional', 'AGUARDANDO_VALIDACAO'), status_anterior: s('Status antes da suspensão'), motivo_status: s('Motivo da última transição'),
       prioridade: e(['URGENTE', 'ALTA', 'NORMAL', 'BAIXA'], 'Prioridade', 'NORMAL'), data_recebimento: ts('Recebimento'), data_inicio: ts('Início do trabalho'),
       data_validacao: ts('Validação'), validado_por: ref('UsuarioPlataforma'), ultima_interacao: ts('Última interação'), proxima_atividade: s('Próxima atividade (data)'),
-      data_encerramento: ts('Encerramento'), encerrado_por_retirada: b('Encerrado porque o credor retirou da HS'),
-      dias_atraso_no_envio: n('Dias de atraso quando foi encaminhado'), comissao_bps: n('Comissão da HS (bps) fixada no encaminhamento'), comissao_faixa: s('Faixa de atraso da comissão'),
+      data_encerramento: ts('Encerramento'), encerrado_por_retirada: b('Encerrado porque o credor retirou do Acorly'),
+      dias_atraso_no_envio: n('Dias de atraso quando foi encaminhado'), comissao_bps: n('Comissão do Acorly (bps) fixada no encaminhamento'), comissao_faixa: s('Faixa de atraso da comissão'),
     },
     required: ['empresa_id', 'divida_id', 'modalidade_cobranca', 'status_operacional'],
   },
@@ -190,7 +190,7 @@ export const ENTITIES = {
       identificador_transacao: s('ID da transação (evita duplicidade)'), comprovante: s('file_uri do comprovante (não é prova definitiva)'),
       status_confirmacao: e(['INFORMADO', 'EM_CONFIRMACAO', 'CONFIRMADO', 'REJEITADO'], 'Status', 'INFORMADO'), informado_por: ref('Quem informou'), informado_por_perfil: s('Perfil de quem informou'),
       valor_confirmado_centavos: c('Valor confirmado'), data_confirmacao: ts('Data da confirmação/rejeição'), confirmado_por: ref('Usuário do credor'), motivo_rejeicao: s('Motivo da rejeição'),
-      comissao_bps: n('Comissão HS aplicada (bps)'), comissao_hs_centavos: c('Comissão devida à HS sobre este pagamento'),
+      comissao_bps: n('Comissão Acorly aplicada (bps)'), comissao_hs_centavos: c('Comissão devida ao Acorly sobre este pagamento'),
     },
     required: ['empresa_id', 'divida_id', 'valor_centavos', 'data_informada', 'status_confirmacao'],
   },
@@ -211,11 +211,11 @@ export const ENTITIES = {
   },
   Notificacao: {
     description: 'Notificação interna',
-    properties: { empresa_id: s('Empresa (vazio p/ HS)'), usuario_id: ref('Destinatário'), tipo: s('Tipo'), titulo: s('Título'), mensagem: s('Mensagem'), link: s('Rota interna'), lida: b('Lida'), data_criacao: ts('Criação') },
+    properties: { empresa_id: s('Empresa (vazio p/ Acorly)'), usuario_id: ref('Destinatário'), tipo: s('Tipo'), titulo: s('Título'), mensagem: s('Mensagem'), link: s('Rota interna'), lida: b('Lida'), data_criacao: ts('Criação') },
     required: ['usuario_id', 'titulo'],
   },
   ModeloMensagem: {
-    description: 'Modelos de mensagem (globais HS ou da empresa). aprovado_meta indica template aprovado na WhatsApp Business Platform (futuro).',
+    description: 'Modelos de mensagem (globais Acorly ou da empresa). aprovado_meta indica template aprovado na WhatsApp Business Platform (futuro).',
     properties: { empresa_id: s('Empresa (vazio = global)'), nome: s('Nome'), canal: e(['WHATSAPP', 'EMAIL', 'SMS'], 'Canal', 'WHATSAPP'), conteudo: s('Texto com {{nome}}, {{credor}}, {{valor}}, {{vencimento}}'), status: e(['ATIVO', 'INATIVO'], 'Status', 'ATIVO'), aprovado_meta: b('Aprovado na Meta'), nome_template_meta: s('Nome do modelo aprovado na Meta'), idioma_template: s('Idioma do modelo (ex.: pt_BR)') },
     required: ['nome', 'conteudo'],
   },
@@ -226,16 +226,16 @@ export const ENTITIES = {
   },
   ConfiguracaoEmpresa: {
     description: 'Configurações da empresa (retenção, DPO, regras)',
-    properties: { ...EMP, retencao_meses_apos_quitacao: n('Retenção após quitação (meses)'), exigir_documento_hs: b('Exigir documento para encaminhar à HS', true), encarregado_dpo_nome: s('Encarregado (DPO)'), encarregado_dpo_email: s('E-mail do DPO') },
+    properties: { ...EMP, retencao_meses_apos_quitacao: n('Retenção após quitação (meses)'), exigir_documento_hs: b('Exigir documento para encaminhar ao Acorly', true), encarregado_dpo_nome: s('Encarregado (DPO)'), encarregado_dpo_email: s('E-mail do DPO') },
     required: ['empresa_id'],
   },
   LogIntegracao: {
     description: 'Logs de integrações externas (futuro)',
-    properties: { empresa_id: s('Empresa'), integracao: s('Integração'), direcao: e(['ENTRADA', 'SAIDA'], 'Direção'), status: s('Status (TRIAGEM, VINCULADA, DESCARTADA...)'), payload_resumo: s('Resumo da mensagem (acesso restrito à gestão HS)'), caso_id: s('Caso vinculado'), data_hora: ts('Data/hora') },
+    properties: { empresa_id: s('Empresa'), integracao: s('Integração'), direcao: e(['ENTRADA', 'SAIDA'], 'Direção'), status: s('Status (TRIAGEM, VINCULADA, DESCARTADA...)'), payload_resumo: s('Resumo da mensagem (acesso restrito à gestão Acorly)'), caso_id: s('Caso vinculado'), data_hora: ts('Data/hora') },
     required: ['integracao'],
   },
   ConfiguracaoHS: {
-    description: 'Configurações gerais da HS (registro único), como a tabela padrão de comissão',
+    description: 'Configurações gerais do Acorly (registro único), como a tabela padrão de comissão',
     properties: { comissao_faixas: arr('Faixas de comissão [{ate_dias, bps}]', { type: 'object' }), atualizado_por: s('Usuário'), atualizado_em: ts('Atualização') },
     required: [],
   },

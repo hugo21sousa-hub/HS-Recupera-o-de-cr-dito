@@ -27,7 +27,7 @@ export const PLANOS_PADRAO = [
   { nome: 'ACORLY ILIMITADO', preco_mensal_centavos: 25990, limite_devedores: null, limite_usuarios: null, funcionalidades: ['devedores', 'dividas', 'pagamentos', 'dashboard_basico', 'carteiras', 'importacao', 'negociacao', 'relatorios', 'exportacao', 'api_futura'], status: 'ATIVO', ordem: 4 },
 ];
 
-/** Tabela de comissão vigente: a do contrato, senão a padrão configurada pela HS, senão a de fábrica. */
+/** Tabela de comissão vigente: a do contrato, senão a padrão configurada pelo Acorly, senão a de fábrica. */
 export async function tabelaComissao(ctx, contrato = null) {
   if (contrato?.comissao_faixas?.length) return contrato.comissao_faixas;
   const cfg = (await find(ctx, 'ConfiguracaoHS'))[0];
@@ -36,7 +36,7 @@ export async function tabelaComissao(ctx, contrato = null) {
 export const comRotulos = (faixas) => faixas.map((f, i) => ({ ...f, faixa: rotuloFaixa(faixas, i) }));
 
 /**
- * Comissão de um caso HS. Casos antigos (encaminhados antes da tabela existir) recebem a faixa
+ * Comissão de um caso Acorly. Casos antigos (encaminhados antes da tabela existir) recebem a faixa
  * correspondente ao atraso na data do encaminhamento, e o valor fica gravado no caso.
  */
 export async function comissaoDoCaso(ctx, caso, divida) {
@@ -186,7 +186,7 @@ export const actions = {
   assinarPlano: {
     perm: 'assinatura.gerenciar_propria',
     async run(ctx, { plano_id }) {
-      if (!ctx.asaas?.disponivel) throw new ValidationError('Pagamento online da assinatura indisponível. Fale com a HS.');
+      if (!ctx.asaas?.disponivel) throw new ValidationError('Pagamento online da assinatura indisponível. Fale com o Acorly.');
       const empresa = await getById(ctx, 'Empresa', ctx.user.empresa_id);
       const plano = await getById(ctx, 'Plano', plano_id);
       exigir(plano && plano.status === 'ATIVO', 'Plano indisponível');
@@ -213,7 +213,7 @@ export const actions = {
     },
   },
 
-  /** Proposta/edição de contrato de cobrança gerenciada (pela HS). */
+  /** Proposta/edição de contrato de cobrança gerenciada (pelo Acorly). */
   salvarContrato: {
     perm: 'contrato.gerenciar',
     async run(ctx, input) {
@@ -285,7 +285,7 @@ export const actions = {
     },
   },
 
-  /** Modelos de mensagem: globais (HS) ou da empresa. Validados contra termos abusivos. */
+  /** Modelos de mensagem: globais (Acorly) ou da empresa. Validados contra termos abusivos. */
   salvarModeloMensagem: {
     perm: null,
     async run(ctx, input) {
@@ -295,7 +295,7 @@ export const actions = {
       if (isHS(ctx.user)) requirePerm(ctx.user, 'config.sistema');
       else { requirePerm(ctx.user, 'empresa.editar'); empresa_id = ctx.user.empresa_id; }
       const dados = { empresa_id, nome: input.nome, canal: input.canal || 'WHATSAPP', conteudo: input.conteudo, status: input.status || 'ATIVO', aprovado_meta: false };
-      // Só a HS cadastra modelos aprovados na Meta (o número do WhatsApp Business é da HS)
+      // Só o Acorly cadastra modelos aprovados na Meta (o número do WhatsApp Business é do Acorly)
       if (isHS(ctx.user) && input.nome_template_meta) Object.assign(dados, { aprovado_meta: true, nome_template_meta: String(input.nome_template_meta).trim(), idioma_template: input.idioma_template || 'pt_BR' });
       if (input.id) {
         const m = await getById(ctx, 'ModeloMensagem', input.id);

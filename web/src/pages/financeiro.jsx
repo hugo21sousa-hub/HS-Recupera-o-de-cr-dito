@@ -98,7 +98,7 @@ export function Pagamentos() {
   const filtro = aba === 'TODOS' ? {} : { status_confirmacao: aba };
   return (
     <div className="stack">
-      <Cabecalho titulo={s.ehHS ? 'Pagamentos em confirmação' : 'Pagamentos'} sub={s.ehHS ? 'Pagamentos informados pela equipe, aguardando a conferência do credor. A HS não confirma pagamentos.' : 'O devedor paga direto à sua empresa. Confira no extrato e confirme ou rejeite cada pagamento informado.'}>
+      <Cabecalho titulo={s.ehHS ? 'Pagamentos em confirmação' : 'Pagamentos'} sub={s.ehHS ? 'Pagamentos informados pela equipe, aguardando a conferência do credor. O Acorly não confirma pagamentos.' : 'O devedor paga direto à sua empresa. Confira no extrato e confirme ou rejeite cada pagamento informado.'}>
         {!s.ehHS && s.pode('pagamento.informar') && <Link className="btn ok" to="/dividas">Registrar pagamento (pela dívida)</Link>}
       </Cabecalho>
       <Abas ativa={aba} onChange={setAba} abas={[{ id: 'INFORMADO', rotulo: 'Informados' }, { id: 'EM_CONFIRMACAO', rotulo: 'Em conferência' }, { id: 'CONFIRMADO', rotulo: 'Confirmados' }, { id: 'REJEITADO', rotulo: 'Rejeitados' }, { id: 'TODOS', rotulo: 'Todos' }]} />
@@ -108,7 +108,7 @@ export function Pagamentos() {
         { titulo: 'Data informada', render: (p) => data(p.data_informada) },
         { titulo: 'Valor informado', num: true, render: (p) => brl(p.valor_centavos) },
         { titulo: 'Confirmado', num: true, render: (p) => brl(p.valor_confirmado_centavos) },
-        { titulo: 'Comissão HS', num: true, render: (p) => (p.comissao_hs_centavos ? <span title={pct(p.comissao_bps)}>{brl(p.comissao_hs_centavos)}</span> : '—') },
+        { titulo: 'Comissão Acorly', num: true, render: (p) => (p.comissao_hs_centavos ? <span title={pct(p.comissao_bps)}>{brl(p.comissao_hs_centavos)}</span> : '—') },
         { titulo: 'Forma', render: (p) => rotulo(p.forma_pagamento) },
         { titulo: 'Transação', render: (p) => p.identificador_transacao || '—' },
         { titulo: 'Status', render: (p) => <><Badge status={p.status_confirmacao} />{p.motivo_rejeicao && <div className="small muted">{p.motivo_rejeicao}</div>}</> },
@@ -139,7 +139,7 @@ function gerarPDF(p) {
       ['Acordos realizados', rel.acordos_realizados], ['Pagamentos informados', `${rel.pagamentos_informados} (${brl(rel.valor_informado_centavos)})`],
       ['Pagamentos confirmados pelo credor', rel.pagamentos_confirmados], ['Valores recuperados (confirmados)', brl(rel.valor_recuperado_centavos)],
       ['Casos suspensos', rel.casos_suspensos], ['Casos sem sucesso', rel.casos_sem_sucesso],
-      ['Comissão da HS no período (sobre valores confirmados)', brl(rel.comissao_hs_centavos || 0)],
+      ['Comissão do Acorly no período (sobre valores confirmados)', brl(rel.comissao_hs_centavos || 0)],
     ],
   });
   if (rel.comissoes?.length) {

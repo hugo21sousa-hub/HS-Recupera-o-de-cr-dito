@@ -34,7 +34,7 @@ export const actions = {
     async run(ctx, input) {
       const caso = await carregarCaso(ctx, input.caso_id);
       exigir(casoAtivo(caso) && !['SUSPENSO', 'CONTESTACAO', 'AGUARDANDO_VALIDACAO', 'AGUARDANDO_AUTORIZACAO'].includes(caso.status_operacional), 'Caso não permite negociação no status atual');
-      if (!isHS(ctx.user)) exigir(caso.modalidade_cobranca === 'AUTOCONTRATADA', 'Em casos HS a empresa aprova propostas; quem propõe é a equipe HS');
+      if (!isHS(ctx.user)) exigir(caso.modalidade_cobranca === 'AUTOCONTRATADA', 'Em casos Acorly a empresa aprova propostas; quem propõe é a equipe Acorly');
       const abertas = (await find(ctx, 'Negociacao', { caso_id: caso.id })).filter((n) => ['AGUARDANDO_APROVACAO_CREDOR', 'APROVADA_ALCADA', 'APROVADA_CREDOR'].includes(n.status));
       exigir(!abertas.length, 'Já existe proposta em aberto para este caso; cancele-a ou formalize o acordo');
       exigir(!(await find(ctx, 'Acordo', { caso_id: caso.id })).some((a) => a.status === 'ATIVO'), 'Há um acordo ativo. Encerre-o (rompido/cancelado) antes de uma nova proposta.');
@@ -70,7 +70,7 @@ export const actions = {
     },
   },
 
-  /** Decisão do CREDOR (ADMIN/FINANCEIRO da empresa dona do caso). HS nunca aprova fora da alçada. */
+  /** Decisão do CREDOR (ADMIN/FINANCEIRO da empresa dona do caso). Acorly nunca aprova fora da alçada. */
   decidirNegociacao: {
     perm: 'negociacao.aprovar_empresa',
     async run(ctx, { negociacao_id, decisao, justificativa }) {
@@ -178,7 +178,7 @@ export const actions = {
   },
 };
 
-/** Listagem escopada: empresa vê os seus; HS vê apenas os de casos a que tem acesso. */
+/** Listagem escopada: empresa vê os seus; Acorly vê apenas os de casos a que tem acesso. */
 export async function listarPorCaso(ctx, entidade, input, permitidos) {
   let rows;
   if (!isHS(ctx.user)) {

@@ -40,9 +40,9 @@ export function MinhasCobrancas() {
 export function CobrancasHS() {
   const s = useSessao();
   return (
-    <ListaCasos titulo="Cobranças HS" sub="Casos encaminhados à equipe HS. Acompanhe contatos, propostas e pagamentos."
+    <ListaCasos titulo="Cobranças Acorly" sub="Casos encaminhados à equipe Acorly. Acompanhe contatos, propostas e pagamentos."
       payload={{ filtros: { modalidade_cobranca: 'HS_GERENCIADA' } }}
-      acoes={<>{s.pode('carteira.ler') && <Link className="btn" to="/cobranca-hs/autorizacoes">Autorizações</Link>}{s.pode('carteira.encaminhar_hs') && <Link className="btn prim" to="/cobranca-hs/encaminhar">Encaminhar à HS</Link>}</>} />
+      acoes={<>{s.pode('carteira.ler') && <Link className="btn" to="/cobranca-hs/autorizacoes">Autorizações</Link>}{s.pode('carteira.encaminhar_hs') && <Link className="btn prim" to="/cobranca-hs/encaminhar">Encaminhar ao Acorly</Link>}</>} />
   );
 }
 
@@ -52,7 +52,7 @@ export function Carteiras() {
   const [nova, setNova] = useState(false);
   return (
     <div className="stack">
-      <Cabecalho titulo="Carteiras" sub="Agrupe dívidas para organizar cobranças ou encaminhar lotes à HS.">
+      <Cabecalho titulo="Carteiras" sub="Agrupe dívidas para organizar cobranças ou encaminhar lotes ao Acorly.">
         {s.pode('carteira.editar') && <button className="btn prim" onClick={() => setNova(true)}>Nova carteira</button>}
       </Cabecalho>
       <Tabela acao="listarCarteiras" filtros={[{ nome: 'status', rotulo: 'Status', opcoes: ['RASCUNHO', 'ENCAMINHADA', 'EM_OPERACAO', 'ENCERRADA'] }, { nome: 'modalidade', rotulo: 'Modalidade', opcoes: ['AUTOCONTRATADA', 'HS_GERENCIADA'] }]} colunas={[
@@ -108,7 +108,7 @@ export function CarteiraDetalhe() {
       <Cabecalho titulo={c.nome} sub={c.descricao} voltar="/carteiras">
         {s.pode('carteira.editar') && rascunho && <button className="btn" onClick={() => setEditar(true)}>Editar</button>}
         {s.pode('carteira.editar') && rascunho && <button className="btn" onClick={() => setAdd(true)}>Adicionar dívidas</button>}
-        {s.pode('carteira.encaminhar_hs') && rascunho && d.itens.length > 0 && <Link className="btn prim" to={`/cobranca-hs/encaminhar?carteira=${c.id}`}>Encaminhar à HS</Link>}
+        {s.pode('carteira.encaminhar_hs') && rascunho && d.itens.length > 0 && <Link className="btn prim" to={`/cobranca-hs/encaminhar?carteira=${c.id}`}>Encaminhar ao Acorly</Link>}
       </Cabecalho>
       <div className="grid g3"><Stat rotulo="Dívidas" valor={c.quantidade_dividas} /><Stat rotulo="Valor total" valor={brl(c.valor_total_centavos)} /><div className="card stat"><span className="rot">Status</span><Badge status={c.status} /></div></div>
       <div className="card p0"><div className="tabela-wrap"><table>
@@ -130,7 +130,7 @@ const CAMPOS_AUT = [
   { nome: 'horario_contato', rotulo: 'Janela de contato', padrao: '08:00-20:00', validar: (v) => (!/^\d{2}:\d{2}-\d{2}:\d{2}$/.test(v) ? 'Use HH:MM-HH:MM' : null), ajuda: 'Segunda a sábado, horário de Brasília' },
   { nome: 'canais_autorizados', rotulo: 'Canais autorizados', tipo: 'multi', opcoes: CANAIS, obrigatorio: true, padrao: ['WHATSAPP', 'TELEFONE'] },
   { nome: 'exige_aprovacao_sempre', tipo: 'checkbox', textoCheck: 'Toda proposta precisa da minha aprovação, mesmo dentro dos limites', full: true },
-  { nome: 'condicoes', rotulo: 'Condições e orientações para a equipe HS', tipo: 'textarea' },
+  { nome: 'condicoes', rotulo: 'Condições e orientações para a equipe Acorly', tipo: 'textarea' },
 ];
 
 export function Encaminhar() {
@@ -154,8 +154,8 @@ export function Encaminhar() {
   useEffect(() => { if (!contrato && ativos.length === 1) setContrato(ativos[0].id); }, [ativos.length]); // eslint-disable-line react-hooks/exhaustive-deps
   const selecao = { tipo_selecao: tipo, carteira_ids: tipo === 'CARTEIRA' ? carteiras : undefined, divida_ids: tipo === 'DIVIDAS' ? dividas : undefined };
 
-  if (s.empresa?.status !== 'ATIVA') return <div className="stack"><Cabecalho titulo="Encaminhar à HS" voltar="/cobranca-hs" /><div className="aviso alerta">Sua empresa precisa estar validada (ATIVA) pela HS para encaminhar cobranças. Situação atual: {rotulo(s.empresa?.status)}.</div></div>;
-  if (contratos.data && !ativos.length) return <div className="stack"><Cabecalho titulo="Encaminhar à HS" voltar="/cobranca-hs" /><div className="aviso alerta">Você ainda não tem contrato de cobrança gerenciada ativo. <Link to="/contratos">Veja seus contratos</Link> para aceitar uma proposta ou solicitar uma.</div></div>;
+  if (s.empresa?.status !== 'ATIVA') return <div className="stack"><Cabecalho titulo="Encaminhar ao Acorly" voltar="/cobranca-hs" /><div className="aviso alerta">Sua empresa precisa estar validada (ATIVA) pelo Acorly para encaminhar cobranças. Situação atual: {rotulo(s.empresa?.status)}.</div></div>;
+  if (contratos.data && !ativos.length) return <div className="stack"><Cabecalho titulo="Encaminhar ao Acorly" voltar="/cobranca-hs" /><div className="aviso alerta">Você ainda não tem contrato de cobrança gerenciada ativo. <Link to="/contratos">Veja seus contratos</Link> para aceitar uma proposta ou solicitar uma.</div></div>;
 
   const verPrevia = async () => {
     setEnviando(true);
@@ -174,7 +174,7 @@ export function Encaminhar() {
   const av = aut.valores;
   return (
     <div className="stack">
-      <Cabecalho titulo="Encaminhar à cobrança HS" sub="Selecione, confira, defina os limites e autorize expressamente." voltar="/cobranca-hs" />
+      <Cabecalho titulo="Encaminhar à cobrança Acorly" sub="Selecione, confira, defina os limites e autorize expressamente." voltar="/cobranca-hs" />
       <div className="row small">{['Seleção', 'Conferência', 'Limites', 'Autorização'].map((t, i) => <Badge key={t} status={passo > i + 1 ? 'CONCLUIDA' : passo === i + 1 ? 'PENDENTE' : 'info'}>{i + 1}. {t}</Badge>)}</div>
 
       {passo === 1 && (
@@ -213,10 +213,10 @@ export function Encaminhar() {
             <Stat rotulo="Valor total" valor={brl(r.valor_total_centavos)} /><Stat rotulo="Valor vencido" valor={brl(r.valor_vencido_centavos)} tom="critico" />
             <Stat rotulo="Elegíveis" valor={`${r.elegiveis} · ${brl(r.valor_elegivel_centavos)}`} tom="ok" /><Stat rotulo="Registros incompletos" valor={r.registros_incompletos} tom={r.registros_incompletos ? 'alerta' : ''} />
             <Stat rotulo="Não podem ser encaminhados" valor={r.registros_bloqueados} tom={r.registros_bloqueados ? 'critico' : ''} />
-            <Stat rotulo="Comissão HS se tudo for recebido" valor={brl(r.comissao_estimada_elegiveis_centavos)} ajuda="Cobrada só sobre o que entrar" />
+            <Stat rotulo="Comissão Acorly se tudo for recebido" valor={brl(r.comissao_estimada_elegiveis_centavos)} ajuda="Cobrada só sobre o que entrar" />
           </div>
           {previa.itens.some((i) => i.elegivel) && (
-            <div className="tabela-wrap"><table><thead><tr><th>Dívida elegível</th><th className="num">Atraso</th><th>Faixa</th><th className="num">Comissão HS</th><th className="num">Saldo</th><th className="num">Comissão se receber tudo</th></tr></thead><tbody>
+            <div className="tabela-wrap"><table><thead><tr><th>Dívida elegível</th><th className="num">Atraso</th><th>Faixa</th><th className="num">Comissão Acorly</th><th className="num">Saldo</th><th className="num">Comissão se receber tudo</th></tr></thead><tbody>
               {previa.itens.filter((i) => i.elegivel).map((i) => <tr key={i.divida_id}><td>{i.devedor_nome}{i.documento_referencia ? ` · ${i.documento_referencia}` : ''}</td><td className="num">{i.dias_atraso} dias</td><td>{i.comissao_faixa}</td><td className="num"><strong>{pct(i.comissao_bps)}</strong></td><td className="num">{brl(i.saldo_centavos)}</td><td className="num">{brl(i.comissao_estimada_centavos)}</td></tr>)}
             </tbody></table></div>
           )}
@@ -235,7 +235,7 @@ export function Encaminhar() {
       {passo === 3 && (
         <div className="card stack">
           <h2>Limites de negociação e contato</h2>
-          <p className="muted">A equipe HS só negocia e contata dentro destes limites. Propostas fora deles chegam para a sua aprovação.</p>
+          <p className="muted">A equipe Acorly só negocia e contata dentro destes limites. Propostas fora deles chegam para a sua aprovação.</p>
           <Campos campos={CAMPOS_AUT} valores={aut.valores} setValores={aut.setValores} erros={aut.erros} />
           <div className="row" style={{ justifyContent: 'space-between' }}><button className="btn" onClick={() => setPasso(2)}>Voltar</button><button className="btn prim" onClick={() => aut.validar() && setPasso(4)}>Revisar autorização</button></div>
         </div>
@@ -248,7 +248,7 @@ export function Encaminhar() {
             Autorizo a HS Recuperação de Crédito a realizar a cobrança extrajudicial administrativa de <strong>{r.elegiveis} dívida(s)</strong>, no valor de <strong>{brl(r.valor_elegivel_centavos)}</strong>,
             com desconto de até <strong>{pct(Math.round(Number(String(av.limite_desconto_bps).replace(',', '.')) * 100))}</strong>, em até <strong>{av.limite_parcelamento}x</strong>,
             pelos canais <strong>{(av.canais_autorizados || []).map(rotulo).join(', ')}</strong>, das {av.horario_contato}. O pagamento será feito diretamente à minha empresa, que confirmará o recebimento.
-            {' '}Estou ciente da <strong>comissão da HS</strong> conforme a faixa de atraso de cada dívida (abaixo), cobrada somente sobre os valores efetivamente recebidos e confirmados.
+            {' '}Estou ciente da <strong>comissão do Acorly</strong> conforme a faixa de atraso de cada dívida (abaixo), cobrada somente sobre os valores efetivamente recebidos e confirmados.
           </div>
           <TabelaComissao faixas={previa?.tabela_comissao} />
           <label className="check"><input type="checkbox" checked={aceite} onChange={(e) => setAceite(e.target.checked)} />Li e autorizo expressamente, em nome da empresa, nos termos acima.</label>
@@ -259,9 +259,9 @@ export function Encaminhar() {
 
       {passo === 5 && resultado && (
         <div className="card stack">
-          <div className="aviso ok"><strong>{resultado.casos_criados} caso(s) encaminhado(s)</strong> (autorização v{resultado.autorizacao.versao}). Eles aguardam a validação da equipe HS antes de entrar na fila de cobrança.</div>
+          <div className="aviso ok"><strong>{resultado.casos_criados} caso(s) encaminhado(s)</strong> (autorização v{resultado.autorizacao.versao}). Eles aguardam a validação da equipe Acorly antes de entrar na fila de cobrança.</div>
           {resultado.nao_encaminhadas.length > 0 && <p>{resultado.nao_encaminhadas.length} dívida(s) não foram encaminhadas por pendências.</p>}
-          <div className="row"><button className="btn prim" onClick={() => nav('/cobranca-hs')}>Ver cobranças HS</button></div>
+          <div className="row"><button className="btn prim" onClick={() => nav('/cobranca-hs')}>Ver cobranças Acorly</button></div>
         </div>
       )}
     </div>

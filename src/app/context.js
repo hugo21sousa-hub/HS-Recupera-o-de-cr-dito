@@ -55,7 +55,7 @@ export function pick(obj, keys) {
  * Resolve a empresa alvo da operação.
  * - Usuário de empresa: SEMPRE a própria (qualquer empresa_id enviado é ignorado/recusado).
  * - SUPERADMIN_HS: precisa informar empresa_id; o acesso é auditado.
- * - Demais perfis HS: não acessam dados de empresa fora dos casos.
+ * - Demais perfis Acorly: não acessam dados de empresa fora dos casos.
  */
 export async function empresaAlvo(ctx, input = {}) {
   const u = ctx.user;
@@ -68,14 +68,14 @@ export async function empresaAlvo(ctx, input = {}) {
     await auditar(ctx, { acao: 'ACESSO_ADMINISTRATIVO', entidade: 'Empresa', registro_id: input.empresa_id, empresa_id: input.empresa_id });
     return input.empresa_id;
   }
-  throw new AccessError('Perfil HS sem acesso direto aos dados da empresa');
+  throw new AccessError('Perfil Acorly sem acesso direto aos dados da empresa');
 }
 
 export async function exigirEmpresaOperante(ctx, empresa_id, { exigirAtiva = false } = {}) {
   const emp = await getById(ctx, 'Empresa', empresa_id);
   if (!emp) throw new AccessError('Empresa não encontrada', 404);
   if (emp.status === 'SUSPENSA' || emp.status === 'CANCELADA') throw new AccessError(`Empresa ${emp.status.toLowerCase()}`);
-  if (exigirAtiva && emp.status !== 'ATIVA') throw new ValidationError('A empresa precisa estar ATIVA (validada pela HS) para esta operação');
+  if (exigirAtiva && emp.status !== 'ATIVA') throw new ValidationError('A empresa precisa estar ATIVA (validada pelo Acorly) para esta operação');
   return emp;
 }
 

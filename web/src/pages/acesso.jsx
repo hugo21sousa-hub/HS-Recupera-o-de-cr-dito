@@ -17,7 +17,7 @@ function TelaAcesso({ children }) {
           <h2>Recupere seus créditos com organização, transparência e respeito ao devedor.</h2>
           <ul>
             <li>Cadastre devedores e dívidas, negocie e acompanhe pagamentos.</li>
-            <li>Ou contrate a equipe HS para cobrar por você, acompanhando tudo pelo seu painel.</li>
+            <li>Ou contrate a equipe Acorly para cobrar por você, acompanhando tudo pelo seu painel.</li>
             <li>O devedor paga direto à sua empresa. Só você confirma o recebimento.</li>
           </ul>
         </div>
@@ -139,7 +139,7 @@ export function Esqueci() {
         ) : r.email_disponivel ? (
           <div className="aviso ok">Se o e-mail estiver cadastrado, você receberá um link para criar uma nova senha em instantes. Confira também a caixa de spam.</div>
         ) : (
-          <div className="aviso info">O envio de e-mails não está configurado. Peça ao administrador da sua empresa (ou à HS) um novo link de acesso.</div>
+          <div className="aviso info">O envio de e-mails não está configurado. Peça ao administrador da sua empresa (ou ao Acorly) um novo link de acesso.</div>
         )}
       </div>
     </TelaAcesso>
@@ -216,8 +216,8 @@ const CAMPOS_ONB = [...CAMPOS_EMPRESA, { nome: 'admin_nome', rotulo: 'Seu nome (
 
 const SERVICOS = [
   { id: 'PLATAFORMA', titulo: 'A. Quero utilizar a plataforma', texto: 'Sua equipe faz as cobranças pelo sistema. Você paga só a assinatura, sem comissão sobre o que recuperar.' },
-  { id: 'HS_GERENCIADA', titulo: 'B. Quero contratar a cobrança da HS', texto: 'A equipe HS faz contatos e negociações. O devedor paga direto à sua empresa. Exige contrato próprio.' },
-  { id: 'AMBOS', titulo: 'Quero os dois', texto: 'Parte das dívidas você cobra; outra parte você encaminha à equipe HS.' },
+  { id: 'HS_GERENCIADA', titulo: 'B. Quero contratar a cobrança do Acorly', texto: 'A equipe Acorly faz contatos e negociações. O devedor paga direto à sua empresa. Exige contrato próprio.' },
+  { id: 'AMBOS', titulo: 'Quero os dois', texto: 'Parte das dívidas você cobra; outra parte você encaminha à equipe Acorly.' },
 ];
 
 export function Onboarding() {
@@ -242,7 +242,7 @@ export function Onboarding() {
     try {
       await hs('escolherServico', { modalidade_servico: servico, tipo_carteira: servico === 'PLATAFORMA' ? undefined : tipo });
       await s.recarregar();
-      toast.ok(servico === 'PLATAFORMA' ? 'Tudo pronto!' : 'Solicitação enviada. A HS vai preparar a proposta de contrato.');
+      toast.ok(servico === 'PLATAFORMA' ? 'Tudo pronto!' : 'Solicitação enviada. O Acorly vai preparar a proposta de contrato.');
       nav('/painel');
     } catch (err) { toast.erro(err); } finally { setEnviando(false); }
   };
@@ -255,7 +255,7 @@ export function Onboarding() {
         {!temEmpresa ? (
           <form className="card stack" onSubmit={cadastrar}>
             <h1>Cadastro da empresa</h1>
-            <p className="muted">Esses dados identificam sua empresa como credora. A HS confere o cadastro antes de liberar a cobrança gerenciada.</p>
+            <p className="muted">Esses dados identificam sua empresa como credora. O Acorly confere o cadastro antes de liberar a cobrança gerenciada.</p>
             <Campos campos={CAMPOS_ONB} valores={f.valores} setValores={f.setValores} erros={f.erros} />
             <div className="row" style={{ justifyContent: 'flex-end' }}><button className="btn prim" disabled={enviando}>{enviando && <Spinner />}Continuar</button></div>
           </form>
@@ -271,14 +271,14 @@ export function Onboarding() {
             </div>
             {servico && servico !== 'PLATAFORMA' && (
               <fieldset className="stack" style={{ border: '1px solid var(--borda)', borderRadius: 8, padding: 12 }}>
-                <legend className="small muted">Escopo da cobrança HS</legend>
+                <legend className="small muted">Escopo da cobrança Acorly</legend>
                 <label className="check"><input type="radio" name="tipo" checked={tipo === 'CARTEIRA_SELECIONADA'} onChange={() => setTipo('CARTEIRA_SELECIONADA')} />Cobrança por carteira selecionada (você escolhe quais dívidas encaminhar)</label>
                 <label className="check"><input type="radio" name="tipo" checked={tipo === 'TODOS_ELEGIVEIS'} onChange={() => setTipo('TODOS_ELEGIVEIS')} />Cobrança de todos os devedores elegíveis</label>
               </fieldset>
             )}
             <p className="small muted">Você pode mudar a modalidade depois, conforme as condições contratuais.</p>
             <div className="row" style={{ justifyContent: 'flex-end' }}><button className="btn prim" disabled={!servico || enviando} onClick={escolher}>{enviando && <Spinner />}Concluir</button></div>
-            <div className="aviso info">Situação do cadastro: <strong>{rotulo(s.empresa.status)}</strong>. A HS valida os dados da empresa antes de liberar a cobrança gerenciada.</div>
+            <div className="aviso info">Situação do cadastro: <strong>{rotulo(s.empresa.status)}</strong>. O Acorly valida os dados da empresa antes de liberar a cobrança gerenciada.</div>
           </div>
         )}
       </div>

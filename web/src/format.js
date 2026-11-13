@@ -65,10 +65,10 @@ export function tom(status) {
   return 'info';
 }
 const ROTULOS = {
-  AUTOCONTRATADA: 'Própria', HS_GERENCIADA: 'HS gerenciada', EM_ABERTO: 'Em aberto', DEVEDOR_RESPONDEU: 'Devedor respondeu',
+  AUTOCONTRATADA: 'Própria', HS_GERENCIADA: 'Acorly gerenciada', EM_ABERTO: 'Em aberto', DEVEDOR_RESPONDEU: 'Devedor respondeu',
   RECUPERADO_INTEGRALMENTE: 'Recuperado', APROVADA_ALCADA: 'Aprovada (alçada)', APROVADA_CREDOR: 'Aprovada pelo credor',
   AGUARDANDO_APROVACAO_CREDOR: 'Aguardando credor', ACORDO_AGUARDANDO_PAGAMENTO: 'Acordo aguardando pagamento',
-  SUPERADMIN_HS: 'Superadmin HS', GESTOR_OPERACOES_HS: 'Gestor de operações', OPERADOR_HS: 'Operador HS',
+  SUPERADMIN_HS: 'Superadmin Acorly', GESTOR_OPERACOES_HS: 'Gestor de operações', OPERADOR_HS: 'Operador Acorly',
   ADMIN_EMPRESA: 'Administrador', FINANCEIRO_EMPRESA: 'Financeiro', VISUALIZADOR_EMPRESA: 'Visualizador',
   CONVERTIDA_EM_ACORDO: 'Virou acordo', PF: 'Pessoa física', PJ: 'Pessoa jurídica',
   AGUARDANDO_VALIDACAO: 'Aguardando validação', AGUARDANDO_AUTORIZACAO: 'Aguardando autorização', PRONTO_PARA_COBRANCA: 'Pronto para cobrança',
@@ -76,7 +76,7 @@ const ROTULOS = {
   PAGAMENTO_INFORMADO: 'Pagamento informado', PAGAMENTO_EM_CONFIRMACAO: 'Pagamento em conferência', CONTESTACAO: 'Contestação', CONTESTADA: 'Contestada',
   EM_CONFIRMACAO: 'Em conferência', EM_VALIDACAO: 'Em validação', NAO_VALIDADA: 'Não validada', VALIDADA: 'Validada', REPROVADA: 'Devolvida',
   CADASTRO_INCOMPLETO: 'Cadastro incompleto', EM_ANALISE: 'Em análise', CONCLUIDA: 'Concluída', NEGADA_FUNDAMENTADA: 'Negada (fundamentada)',
-  PLATAFORMA: 'Plataforma (cobrança própria)', AMBOS: 'Plataforma + cobrança HS', CARTEIRA_SELECIONADA: 'Carteira selecionada', TODOS_ELEGIVEIS: 'Todos os elegíveis',
+  PLATAFORMA: 'Plataforma (cobrança própria)', AMBOS: 'Plataforma + cobrança Acorly', CARTEIRA_SELECIONADA: 'Carteira selecionada', TODOS_ELEGIVEIS: 'Todos os elegíveis',
   PACOTE_CASOS: 'Pacote de casos', CARTEIRA_ESPECIFICA: 'Carteira específica', CARTEIRA_COMPLETA: 'Carteira completa', PERSONALIZADA: 'Proposta personalizada',
   SEM_RESPOSTA: 'Sem resposta', NUMERO_INVALIDO: 'Número inválido', PROMESSA_PAGAMENTO: 'Promessa de pagamento', SOLICITOU_INTERRUPCAO: 'Pediu para não ser contatado',
   LIGACAO: 'Ligação', TRANSFERENCIA: 'Transferência', CARTAO: 'Cartão', CONFISSAO_DIVIDA: 'Confissão de dívida', COMPROVANTE_ENTREGA: 'Comprovante de entrega',

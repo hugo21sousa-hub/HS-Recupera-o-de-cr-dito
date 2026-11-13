@@ -64,7 +64,7 @@ export const actions = {
     },
   },
 
-  /** Painel administrativo HS — somente registros reais; recuperado = confirmados. */
+  /** Painel administrativo Acorly — somente registros reais; recuperado = confirmados. */
   dashboardHS: {
     perm: 'relatorio.hs',
     async run(ctx, input = {}) {
@@ -182,7 +182,7 @@ export const actions = {
           { titulo: 'Devedor', valor: (r) => dev(r)?.nome }, { titulo: 'CPF/CNPJ', valor: (r) => dev(r)?.cpf_cnpj },
           { titulo: 'Documento da dívida', valor: (r) => divs.get(r.divida_id)?.documento_referencia }, { titulo: 'Data informada', campo: 'data_informada' },
           { titulo: 'Valor informado', valor: (r) => reais(r.valor_centavos) }, { titulo: 'Status', campo: 'status_confirmacao' },
-          { titulo: 'Valor confirmado', valor: (r) => reais(r.valor_confirmado_centavos) }, { titulo: 'Comissão HS', valor: (r) => reais(r.comissao_hs_centavos) }, { titulo: 'Data confirmação', valor: (r) => (r.data_confirmacao || '').slice(0, 10) }, { titulo: 'Forma', campo: 'forma_pagamento' },
+          { titulo: 'Valor confirmado', valor: (r) => reais(r.valor_confirmado_centavos) }, { titulo: 'Comissão Acorly', valor: (r) => reais(r.comissao_hs_centavos) }, { titulo: 'Data confirmação', valor: (r) => (r.data_confirmacao || '').slice(0, 10) }, { titulo: 'Forma', campo: 'forma_pagamento' },
         ]);
       } else if (input.tipo === 'casos') {
         const rows = await find(ctx, 'CasoCobranca', { empresa_id });

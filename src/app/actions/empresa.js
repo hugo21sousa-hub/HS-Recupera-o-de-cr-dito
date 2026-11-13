@@ -39,7 +39,7 @@ export const actions = {
   registrarEmpresa: {
     publico: true,
     async run(ctx, input) {
-      if (ctx.user) throw new ValidationError('Usuário já vinculado a uma empresa ou à equipe HS');
+      if (ctx.user) throw new ValidationError('Usuário já vinculado a uma empresa ou à equipe Acorly');
       exigir(input.aceite_termos === true, 'É necessário aceitar os termos de uso');
       exigir(input.aceite_privacidade === true, 'É necessário aceitar a política de privacidade');
       validarEmpresa(input);
@@ -122,7 +122,7 @@ export const actions = {
     },
   },
 
-  /** Empresas atendidas pela HS (gestor/operações): só nome e contrato, sem dados de devedores. */
+  /** Empresas atendidas pelo Acorly (gestor/operações): só nome e contrato, sem dados de devedores. */
   listarEmpresasAtendidas: {
     perm: 'caso.ler_todos_hs',
     async run(ctx) {

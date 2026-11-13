@@ -21,7 +21,7 @@ export function LinkAcesso({ link, email, onClose, enviado }) {
   );
 }
 
-/** Lista e gestão de usuários (empresa ou equipe HS interna). */
+/** Lista e gestão de usuários (empresa ou equipe Acorly interna). */
 export function Usuarios({ internos = false }) {
   const s = useSessao();
   const confirmar = useConfirm();
@@ -46,7 +46,7 @@ export function Usuarios({ internos = false }) {
   const gerarLink = async (u) => { const x = await executar('gerarLinkAcesso', { usuario_id: u.id }); setLink({ ...x, enviado: x.enviado_por_email }); };
   return (
     <div className="stack">
-      <Cabecalho titulo={internos ? 'Equipe interna HS' : 'Usuários'} sub={internos ? 'Superadmins, gestores de operações e operadores.' : 'Pessoas da sua empresa com acesso à plataforma.'}>
+      <Cabecalho titulo={internos ? 'Equipe interna Acorly' : 'Usuários'} sub={internos ? 'Superadmins, gestores de operações e operadores.' : 'Pessoas da sua empresa com acesso à plataforma.'}>
         <button className="btn prim" onClick={() => setNovo(true)}>Convidar usuário</button>
       </Cabecalho>
       {!internos && <div className="aviso info small">Administrador: acesso completo. Financeiro: dívidas, aprovações e confirmação de pagamentos. Visualizador: somente consulta.</div>}
@@ -75,7 +75,7 @@ export function Contratos() {
   const { executar } = useExecutar();
   const [r, setR] = useState(0);
   const aceitar = async (c) => {
-    const ok = await confirmar({ titulo: 'Aceitar contrato de cobrança gerenciada', botao: 'Aceitar contrato', mensagem: <div className="stack"><Dl itens={[['Modalidade', rotulo(c.modalidade)], ['Valor do serviço', brl(c.valor_contratado_centavos)], ['Forma de cobrança', c.forma_cobranca_servico], ['Vigência', `${data(c.data_inicio)} a ${data(c.data_fim)}`], ['Limite de casos', c.quantidade_casos_contratada || 'Sem limite'], ['Escopo', c.escopo || '—'], ['Limites', c.limites || '—']]} />{c.comissao_faixas?.length > 0 && <><h3>Comissão da HS sobre valores recebidos</h3><TabelaComissao faixas={c.comissao_faixas.map((f, i, a) => ({ ...f, faixa: rotuloFaixa(a, i) }))} /></>}<p className="small">Ao aceitar, você contrata a HS para cobrança extrajudicial administrativa, conforme os Termos de Uso. O valor do serviço é cobrado separadamente da assinatura e não incide sobre os valores pagos pelos devedores, que vão direto à sua empresa.</p></div> });
+    const ok = await confirmar({ titulo: 'Aceitar contrato de cobrança gerenciada', botao: 'Aceitar contrato', mensagem: <div className="stack"><Dl itens={[['Modalidade', rotulo(c.modalidade)], ['Valor do serviço', brl(c.valor_contratado_centavos)], ['Forma de cobrança', c.forma_cobranca_servico], ['Vigência', `${data(c.data_inicio)} a ${data(c.data_fim)}`], ['Limite de casos', c.quantidade_casos_contratada || 'Sem limite'], ['Escopo', c.escopo || '—'], ['Limites', c.limites || '—']]} />{c.comissao_faixas?.length > 0 && <><h3>Comissão do Acorly sobre valores recebidos</h3><TabelaComissao faixas={c.comissao_faixas.map((f, i, a) => ({ ...f, faixa: rotuloFaixa(a, i) }))} /></>}<p className="small">Ao aceitar, você contrata o Acorly para cobrança extrajudicial administrativa, conforme os Termos de Uso. O valor do serviço é cobrado separadamente da assinatura e não incide sobre os valores pagos pelos devedores, que vão direto à sua empresa.</p></div> });
     if (ok) { await executar('aceitarContrato', { contrato_id: c.id, aceite: true }, 'Contrato aceito'); setR(r + 1); }
   };
   const encerrar = async (c) => {
@@ -84,7 +84,7 @@ export function Contratos() {
   };
   return (
     <div className="stack">
-      <Cabecalho titulo="Contratos" sub="Contratos de cobrança gerenciada com a HS. A assinatura da plataforma fica em Assinatura." />
+      <Cabecalho titulo="Contratos" sub="Contratos de cobrança gerenciada com o Acorly. A assinatura da plataforma fica em Assinatura." />
       <Tabela acao="listarContratos" busca={false} recarregar={r} colunas={[
         { titulo: 'Modalidade', render: (c) => rotulo(c.modalidade) }, { titulo: 'Escopo', render: (c) => rotulo(c.tipo_carteira) },
         { titulo: 'Valor do serviço', num: true, render: (c) => (c.status === 'SOLICITADO' ? 'Aguardando proposta' : brl(c.valor_contratado_centavos)) },
@@ -96,7 +96,7 @@ export function Contratos() {
           {c.status === 'PROPOSTO' && <button className="btn sm prim" onClick={() => aceitar(c)}>Revisar e aceitar</button>}
           {c.status === 'ATIVO' && <button className="btn sm perigo" onClick={() => encerrar(c)}>Encerrar</button>}
         </div> },
-      ]} vazio={<Vazio titulo="Nenhum contrato">Para contratar a cobrança da HS, escolha essa opção em Configurações › Serviço, ou fale com a HS.</Vazio>} />
+      ]} vazio={<Vazio titulo="Nenhum contrato">Para contratar a cobrança do Acorly, escolha essa opção em Configurações › Serviço, ou fale com o Acorly.</Vazio>} />
     </div>
   );
 }
@@ -121,7 +121,7 @@ export function Assinatura() {
       <Cabecalho titulo="Assinatura" sub="Plano da plataforma. Não há comissão sobre valores recuperados." />
       <div className="card">
         {d.atual ? <Dl itens={[['Plano', d.plano?.nome], ['Valor mensal', brl(d.atual.valor_contratado_centavos)], ['Início', data(d.atual.data_inicio)], ['Vencimento', data(d.atual.data_vencimento)], ['Limites', `${d.plano?.limite_devedores || '∞'} devedores · ${d.plano?.limite_usuarios || '∞'} usuários`], ['Status', <Badge key="s" status={d.atual.status} />]]} />
-          : <Vazio titulo="Nenhuma assinatura ativa">Fale com a HS para ativar o seu plano.</Vazio>}
+          : <Vazio titulo="Nenhuma assinatura ativa">Fale com o Acorly para ativar o seu plano.</Vazio>}
       </div>
       <div className="grid g4">
         {(planos.data || []).map((p) => (
@@ -136,7 +136,7 @@ export function Assinatura() {
       </div>
       {d.pendente && <div className="aviso alerta row between"><span>Fatura do plano <strong>{d.plano_pendente?.nome}</strong> aguardando pagamento.</span>{d.pendente.fatura_url && <a className="btn sm prim" href={d.pendente.fatura_url} target="_blank" rel="noreferrer">Pagar fatura</a>}</div>}
       {d.atual?.status === 'INADIMPLENTE' && <div className="aviso critico row between"><span>Há uma fatura da assinatura em atraso.</span>{d.atual.fatura_url && <a className="btn sm" href={d.atual.fatura_url} target="_blank" rel="noreferrer">Pagar agora</a>}</div>}
-      {d.gateway !== 'ASAAS' && <div className="aviso info">O pagamento online da assinatura não está configurado. Para contratar ou mudar de plano, fale com a HS.</div>}
+      {d.gateway !== 'ASAAS' && <div className="aviso info">O pagamento online da assinatura não está configurado. Para contratar ou mudar de plano, fale com o Acorly.</div>}
     </div>
   );
 }
@@ -173,13 +173,13 @@ function Servico() {
       <p>Serviço atual: <strong>{rotulo(s.empresa?.modalidade_servico)}</strong></p>
       {s.pode('empresa.editar') && s.empresa?.modalidade_servico === 'PLATAFORMA' && (
         <div className="card stack">
-          <h3>Contratar também a cobrança da HS</h3>
+          <h3>Contratar também a cobrança do Acorly</h3>
           <label className="check"><input type="radio" checked={tipo === 'CARTEIRA_SELECIONADA'} onChange={() => setTipo('CARTEIRA_SELECIONADA')} />Por carteira selecionada</label>
           <label className="check"><input type="radio" checked={tipo === 'TODOS_ELEGIVEIS'} onChange={() => setTipo('TODOS_ELEGIVEIS')} />Todos os devedores elegíveis</label>
-          <div><button className="btn prim" onClick={() => pedir('AMBOS')}>Solicitar proposta à HS</button></div>
+          <div><button className="btn prim" onClick={() => pedir('AMBOS')}>Solicitar proposta ao Acorly</button></div>
         </div>
       )}
-      <p className="small muted">Casos já encaminhados à HS seguem as regras do contrato; para retirar uma dívida, use "Retirar da HS" na tela da dívida.</p>
+      <p className="small muted">Casos já encaminhados ao Acorly seguem as regras do contrato; para retirar uma dívida, use "Retirar do Acorly" na tela da dívida.</p>
     </div>
   );
 }
@@ -194,7 +194,7 @@ function Privacidade() {
 function PrivacidadeForm({ cfg, pode, toast }) {
   const campos = [
     { nome: 'retencao_meses_apos_quitacao', rotulo: 'Retenção após quitação (meses)', tipo: 'numero', min: 0, max: 240, obrigatorio: true },
-    { nome: 'exigir_documento_hs', tipo: 'checkbox', textoCheck: 'Exigir documento anexado para encaminhar dívidas à HS', full: true },
+    { nome: 'exigir_documento_hs', tipo: 'checkbox', textoCheck: 'Exigir documento anexado para encaminhar dívidas ao Acorly', full: true },
     { nome: 'encarregado_dpo_nome', rotulo: 'Encarregado de dados (DPO)' }, { nome: 'encarregado_dpo_email', rotulo: 'E-mail do encarregado', tipo: 'email' },
   ];
   const f = useFormulario(campos, cfg);
@@ -242,12 +242,12 @@ export function Modelos({ global = false }) {
   const pode = global ? s.pode('config.sistema') : s.pode('empresa.editar');
   return (
     <div className="stack">
-      {global && <Cabecalho titulo="Modelos de mensagem" sub="Modelos globais, disponíveis para todos os casos HS." />}
+      {global && <Cabecalho titulo="Modelos de mensagem" sub="Modelos globais, disponíveis para todos os casos Acorly." />}
       <div className="row between"><p className="muted small" style={{ margin: 0 }}>Variáveis: {'{{nome}} {{credor}} {{valor}} {{vencimento}}'}. Textos com ameaça ou exposição são recusados.</p>{pode && <button className="btn prim" onClick={() => setEditar({})}>Novo modelo</button>}</div>
       {carregando && !lista ? <Carregando /> : meus.length ? (
         <div className="grid g2">{meus.map((m) => (
           <div key={m.id} className="card stack">
-            <div className="row between"><strong>{m.nome}</strong><div className="row">{m.aprovado_meta && <Badge status="ATIVA">Aprovado na Meta</Badge>}<Badge status="info">{rotulo(m.canal)}</Badge>{!m.empresa_id && !global && <Badge status="info">HS</Badge>}</div></div>
+            <div className="row between"><strong>{m.nome}</strong><div className="row">{m.aprovado_meta && <Badge status="ATIVA">Aprovado na Meta</Badge>}<Badge status="info">{rotulo(m.canal)}</Badge>{!m.empresa_id && !global && <Badge status="info">Acorly</Badge>}</div></div>
             <div className="small" style={{ whiteSpace: 'pre-wrap' }}>{m.conteudo}</div>
             {pode && (global ? !m.empresa_id : !!m.empresa_id) && <div><button className="btn sm" onClick={() => setEditar(m)}>Editar</button></div>}
           </div>
@@ -270,7 +270,7 @@ export function Integracoes() {
   const { data: d, carregando } = useApi('statusIntegracoes', {});
   if (carregando && !d) return <Carregando />;
   const itens = [
-    ['WhatsApp Business Platform', d.whatsapp_business_api, 'Envio pela API oficial da Meta (modelos aprovados e respostas em até 24 h) e recebimento automático das respostas nos casos HS. Quando inativo, o envio é manual pelo link do WhatsApp.'],
+    ['WhatsApp Business Platform', d.whatsapp_business_api, 'Envio pela API oficial da Meta (modelos aprovados e respostas em até 24 h) e recebimento automático das respostas nos casos Acorly. Quando inativo, o envio é manual pelo link do WhatsApp.'],
     ['E-mail transacional', d.email_transacional, 'Convites, redefinição de senha e notificações por e-mail. Quando inativo, os links de acesso são copiados pelo administrador.'],
     ['Pagamento da assinatura (Asaas)', d.gateway_assinatura, 'Cobrança mensal da assinatura por Pix, boleto ou cartão. Nunca recebe valores de devedores.'],
     ['Assistente de IA', d.assistente_ia, 'Resumo de histórico e sugestões de mensagem (etapa futura).'],

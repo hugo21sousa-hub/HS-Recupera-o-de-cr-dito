@@ -8,13 +8,13 @@ import { actions as operacoes } from './operacoes.js';
 const OPT_OUT = /^\s*(parar|pare|sair|stop|cancelar|descadastrar|nao quero mais|não quero mais)\s*[.!]*\s*$/i;
 
 export const actions = {
-  /** Envio pela API oficial (somente casos HS, quando a integração está configurada). */
+  /** Envio pela API oficial (somente casos Acorly, quando a integração está configurada). */
   enviarWhatsApp: {
     perm: 'interacao.registrar',
     async run(ctx, input) {
       if (!ctx.whatsapp?.disponivel) throw new ValidationError('Integração do WhatsApp Business indisponível. Use o envio manual.');
       const caso = await carregarCaso(ctx, input.caso_id);
-      exigir(caso.modalidade_cobranca === 'HS_GERENCIADA' && ctx.user.perfil !== 'ADMIN_EMPRESA', 'O envio pela API é usado nos casos conduzidos pela equipe HS');
+      exigir(caso.modalidade_cobranca === 'HS_GERENCIADA' && ctx.user.perfil !== 'ADMIN_EMPRESA', 'O envio pela API é usado nos casos conduzidos pela equipe Acorly');
       const devedor = await getById(ctx, 'Devedor', caso.devedor_id);
       const fone = telefoneBR(devedor.whatsapp) || telefoneBR(devedor.telefone);
       exigir(fone, 'Devedor sem WhatsApp válido');

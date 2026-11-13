@@ -160,7 +160,7 @@ export function Dividas() {
       <Tabela acao="listarDividas" filtros={[
         { nome: 'status_financeiro', rotulo: 'Status', opcoes: ['EM_ABERTO', 'EM_ACORDO', 'PARCIALMENTE_PAGA', 'QUITADA', 'CANCELADA'] },
         { nome: 'modalidade_cobranca', rotulo: 'Modalidade', opcoes: ['AUTOCONTRATADA', 'HS_GERENCIADA'] },
-        { nome: 'status_validacao', rotulo: 'Validação HS', opcoes: ['NAO_VALIDADA', 'EM_VALIDACAO', 'VALIDADA', 'REPROVADA'] },
+        { nome: 'status_validacao', rotulo: 'Validação Acorly', opcoes: ['NAO_VALIDADA', 'EM_VALIDACAO', 'VALIDADA', 'REPROVADA'] },
         { nome: 'vencimento_de', rotulo: 'Vence de', tipo: 'data' }, { nome: 'vencimento_ate', rotulo: 'até', tipo: 'data' },
       ]} colunas={[
         { titulo: 'Devedor', render: (d) => <Link to={`/dividas/${d.id}`}>{d.devedor_nome}</Link> },
@@ -202,7 +202,7 @@ export function RegistrarPagamento({ divida, parcelas = [], casoId, onClose, onF
   );
 }
 
-/** Quanto a HS cobraria (ou cobra) nesta dívida. */
+/** Quanto o Acorly cobraria (ou cobra) nesta dívida. */
 function QuadroComissaoHS({ divida }) {
   const s = useSessao();
   const { data: c } = useApi('comissaoDivida', { divida_id: divida.id }, [divida.saldo_atual_centavos]);
@@ -211,15 +211,15 @@ function QuadroComissaoHS({ divida }) {
   return (
     <div className="card stack">
       <div className="row between">
-        <h2 style={{ margin: 0 }}>Cobrança pela equipe HS</h2>
+        <h2 style={{ margin: 0 }}>Cobrança pela equipe Acorly</h2>
         <button className="btn sm" onClick={() => setVerTabela(!verTabela)}>{verTabela ? 'Ocultar tabela' : 'Ver tabela de comissão'}</button>
       </div>
       {c.ja_encaminhada ? (
-        <p style={{ margin: 0 }}>Esta dívida está com a HS. Comissão fixada no encaminhamento: <strong>{pct(c.comissao_bps)}</strong> ({c.comissao_faixa} de atraso), cobrada só sobre o que você receber. Sobre o saldo atual, seria até <strong>{brl(c.estimativa_centavos)}</strong>.</p>
+        <p style={{ margin: 0 }}>Esta dívida está com o Acorly. Comissão fixada no encaminhamento: <strong>{pct(c.comissao_bps)}</strong> ({c.comissao_faixa} de atraso), cobrada só sobre o que você receber. Sobre o saldo atual, seria até <strong>{brl(c.estimativa_centavos)}</strong>.</p>
       ) : (
-        <p style={{ margin: 0 }}>Se encaminhar hoje, a comissão da HS será de <strong>{pct(c.comissao_bps)}</strong>, porque a dívida está com <strong>{c.dias_atraso} dias de atraso</strong> (faixa {c.comissao_faixa}). Ela incide <strong>somente sobre o que você efetivamente receber</strong>: se o devedor pagar todo o saldo de {brl(divida.saldo_atual_centavos)}, a comissão será de {brl(c.estimativa_centavos)}. Se nada for recebido, não há comissão.</p>
+        <p style={{ margin: 0 }}>Se encaminhar hoje, a comissão do Acorly será de <strong>{pct(c.comissao_bps)}</strong>, porque a dívida está com <strong>{c.dias_atraso} dias de atraso</strong> (faixa {c.comissao_faixa}). Ela incide <strong>somente sobre o que você efetivamente receber</strong>: se o devedor pagar todo o saldo de {brl(divida.saldo_atual_centavos)}, a comissão será de {brl(c.estimativa_centavos)}. Se nada for recebido, não há comissão.</p>
       )}
-      {!c.tem_contrato && !c.ja_encaminhada && <div className="aviso alerta small">Para encaminhar à HS, você precisa de um contrato de cobrança gerenciada ativo{s.pode('contrato.ler') ? <> (veja em <Link to="/contratos">Contratos</Link>)</> : ''}. A tabela mostrada é a padrão da HS.</div>}
+      {!c.tem_contrato && !c.ja_encaminhada && <div className="aviso alerta small">Para encaminhar ao Acorly, você precisa de um contrato de cobrança gerenciada ativo{s.pode('contrato.ler') ? <> (veja em <Link to="/contratos">Contratos</Link>)</> : ''}. A tabela mostrada é a padrão do Acorly.</div>}
       {verTabela && <TabelaComissao faixas={c.tabela} destaque={c.comissao_faixa} />}
     </div>
   );
@@ -303,8 +303,8 @@ export function DividaDetalhe() {
     if (r) { await executar('cancelarDivida', { divida_id: dv.id, motivo: r.motivo }, 'Dívida cancelada'); recarregar(); }
   };
   const retirar = async () => {
-    const r = await confirmar({ titulo: 'Retirar da cobrança HS', pedirMotivo: true, mensagem: 'O caso na HS será encerrado e a dívida volta para a cobrança própria. Não é possível com acordo ou pagamento em andamento.' });
-    if (r) { await executar('alterarModalidade', { divida_id: dv.id, para: 'AUTOCONTRATADA', motivo: r.motivo }, 'Dívida retirada da HS'); recarregar(); }
+    const r = await confirmar({ titulo: 'Retirar da cobrança Acorly', pedirMotivo: true, mensagem: 'O caso no Acorly será encerrado e a dívida volta para a cobrança própria. Não é possível com acordo ou pagamento em andamento.' });
+    if (r) { await executar('alterarModalidade', { divida_id: dv.id, para: 'AUTOCONTRATADA', motivo: r.motivo }, 'Dívida retirada do Acorly'); recarregar(); }
   };
   const iniciar = async () => {
     const c = await executar('abrirCobrancaPropria', { divida_id: dv.id }, 'Cobrança iniciada');
@@ -317,17 +317,17 @@ export function DividaDetalhe() {
         {s.pode('divida.editar') && aberta && <button className="btn" onClick={() => setModal('editar')}>Editar</button>}
         {s.pode('pagamento.informar') && aberta && <button className="btn ok" onClick={() => setModal('pagamento')}>Registrar pagamento</button>}
         {s.pode('interacao.registrar') && aberta && !casoAtivo && dv.modalidade_cobranca === 'AUTOCONTRATADA' && <button className="btn prim" onClick={iniciar}>Iniciar cobrança própria</button>}
-        {s.pode('carteira.encaminhar_hs') && aberta && !casoAtivo && dv.modalidade_cobranca === 'AUTOCONTRATADA' && <Link className="btn prim" to={`/cobranca-hs/encaminhar?divida=${dv.id}`}>Encaminhar à HS</Link>}
-        {s.pode('carteira.encaminhar_hs') && dv.modalidade_cobranca === 'HS_GERENCIADA' && casoAtivo && <button className="btn" onClick={retirar}>Retirar da HS</button>}
+        {s.pode('carteira.encaminhar_hs') && aberta && !casoAtivo && dv.modalidade_cobranca === 'AUTOCONTRATADA' && <Link className="btn prim" to={`/cobranca-hs/encaminhar?divida=${dv.id}`}>Encaminhar ao Acorly</Link>}
+        {s.pode('carteira.encaminhar_hs') && dv.modalidade_cobranca === 'HS_GERENCIADA' && casoAtivo && <button className="btn" onClick={retirar}>Retirar do Acorly</button>}
         {casoAtivo && <Link className="btn" to={`/casos/${casoAtivo.id}`}>Ver caso</Link>}
       </Cabecalho>
       {aberta && <QuadroComissaoHS divida={dv} />}
-      {dv.status_validacao === 'REPROVADA' && <div className="aviso critico">A HS devolveu esta dívida para correção: {dv.pendencia_validacao}. Corrija os dados e reative o caso.</div>}
+      {dv.status_validacao === 'REPROVADA' && <div className="aviso critico">O Acorly devolveu esta dívida para correção: {dv.pendencia_validacao}. Corrija os dados e reative o caso.</div>}
       <div className="grid g4">
         <Stat rotulo="Valor original" valor={brl(dv.valor_original_centavos)} ajuda={dv.encargos_centavos ? `+ encargos ${brl(dv.encargos_centavos)}` : undefined} />
         <Stat rotulo="Saldo atual" valor={brl(dv.saldo_atual_centavos)} tom={dv.saldo_atual_centavos ? 'critico' : 'ok'} />
         <Stat rotulo="Vencimento" valor={data(dv.data_vencimento)} />
-        <div className="card stat"><span className="rot">Situação</span><div className="row"><Badge status={dv.status_financeiro} /><Badge status="info">{rotulo(dv.modalidade_cobranca)}</Badge><Badge status={dv.status_validacao}>HS: {rotulo(dv.status_validacao)}</Badge></div></div>
+        <div className="card stat"><span className="rot">Situação</span><div className="row"><Badge status={dv.status_financeiro} /><Badge status="info">{rotulo(dv.modalidade_cobranca)}</Badge><Badge status={dv.status_validacao}>Acorly: {rotulo(dv.status_validacao)}</Badge></div></div>
       </div>
       <div className="card">
         <Abas ativa={aba} onChange={setAba} abas={[
@@ -353,7 +353,7 @@ export function DividaDetalhe() {
             )}
             {d.documentos.length ? <table><thead><tr><th>Arquivo</th><th>Tipo</th><th>Enviado em</th><th></th></tr></thead><tbody>
               {d.documentos.map((x) => <tr key={x.id}><td>{x.nome_arquivo}</td><td>{rotulo(x.tipo_documento)}</td><td>{dataHora(x.data_upload)}</td><td className="right"><button className="btn sm" onClick={() => abrirLink(hs('urlDocumento', { documento_id: x.id })).catch(toast.erro)}>Abrir</button></td></tr>)}
-            </tbody></table> : <Vazio titulo="Nenhum documento">A HS exige documentação mínima para cobrança gerenciada.</Vazio>}
+            </tbody></table> : <Vazio titulo="Nenhum documento">O Acorly exige documentação mínima para cobrança gerenciada.</Vazio>}
           </div>
         )}
         {aba === 'pagamentos' && (d.pagamentos.length ? <table><thead><tr><th>Data</th><th className="num">Informado</th><th className="num">Confirmado</th><th>Forma</th><th>Status</th><th></th></tr></thead><tbody>
@@ -372,7 +372,7 @@ export function DividaDetalhe() {
       {modal === 'parcelas' && <EditorParcelas divida={dv} onClose={() => setModal(null)} onFeito={recarregar} />}
       {modal === 'editar' && <FormModal titulo="Editar dívida" inicial={dv} onClose={() => setModal(null)}
         campos={[...CAMPOS_DIVIDA.filter((c) => c.nome !== 'encargos_centavos'), { nome: 'motivo_correcao', rotulo: 'Motivo (obrigatório se mudar o valor original)', full: true }]}
-        aviso={<div className="aviso info">O valor original só pode ser corrigido antes de qualquer pagamento e fora da cobrança HS. A correção fica registrada no histórico.</div>}
+        aviso={<div className="aviso info">O valor original só pode ser corrigido antes de qualquer pagamento e fora da cobrança Acorly. A correção fica registrada no histórico.</div>}
         onSubmit={async (v) => { await hs('salvarDivida', { ...v, id: dv.id }); toast.ok('Dívida atualizada'); recarregar(); }} />}
     </div>
   );

@@ -52,7 +52,7 @@ async function montarValidacao(ctx, empresa_id, dividas, contrato = null) {
   const cfg = (await find(ctx, 'ConfiguracaoEmpresa', { empresa_id }))[0];
   const hoje = ctx.now().toISOString().slice(0, 10);
   const v = validarCarteira(itens, { exigirDocumento: cfg?.exigir_documento_hs !== false, hoje });
-  // Comissão da HS por dívida (faixa de atraso de hoje); estimativa sobre o saldo, cobrada só sobre o que for recebido
+  // Comissão do Acorly por dívida (faixa de atraso de hoje); estimativa sobre o saldo, cobrada só sobre o que for recebido
   const faixas = await tabelaComissao(ctx, contrato);
   const porId = new Map(dividas.map((d) => [d.id, d]));
   for (const it of v.itens) {
@@ -149,7 +149,7 @@ export const actions = {
     },
   },
 
-  /** Carteiras recebidas pela HS — apenas metadados, sem dados pessoais. */
+  /** Carteiras recebidas pelo Acorly — apenas metadados, sem dados pessoais. */
   listarCarteirasRecebidas: {
     perm: 'caso.ler_todos_hs',
     async run(ctx, input = {}) {
@@ -160,7 +160,7 @@ export const actions = {
     },
   },
 
-  /** Prévia obrigatória antes do encaminhamento à HS. */
+  /** Prévia obrigatória antes do encaminhamento ao Acorly. */
   previewEncaminhamento: {
     perm: 'carteira.encaminhar_hs',
     async run(ctx, input) {
@@ -171,7 +171,7 @@ export const actions = {
     },
   },
 
-  /** Quanto a HS cobraria se esta dívida fosse encaminhada hoje. */
+  /** Quanto o Acorly cobraria se esta dívida fosse encaminhada hoje. */
   comissaoDivida: {
     perm: 'divida.ler',
     async run(ctx, input) {
@@ -190,7 +190,7 @@ export const actions = {
   },
 
   /**
-   * Encaminha à cobrança gerenciada HS. Exige: empresa ATIVA, contrato ativo e aceito,
+   * Encaminha à cobrança gerenciada Acorly. Exige: empresa ATIVA, contrato ativo e aceito,
    * autorização expressa (confirmacao=true) com limites; cria versão da autorização e casos AGUARDANDO_VALIDACAO.
    */
   encaminharParaHS: {
@@ -224,13 +224,13 @@ export const actions = {
         entrada_minima_bps: a.entrada_minima_bps || 0, exige_aprovacao_sempre: a.exige_aprovacao_sempre === true,
         canais_autorizados: a.canais_autorizados, horario_contato: a.horario_contato || '08:00-20:00',
         data_autorizacao: agora, responsavel: ctx.user.id, responsavel_nome: ctx.user.nome, documento: a.documento || null,
-        versao: versoes.length + 1, texto_aceite: input.texto_aceite || 'Autorizo a HS Recuperação de Crédito a realizar cobrança extrajudicial administrativa das dívidas listadas, nos limites acima. O pagamento será feito diretamente à empresa credora. A comissão da HS, conforme a faixa de atraso de cada dívida, incide somente sobre os valores efetivamente recebidos e confirmados.',
+        versao: versoes.length + 1, texto_aceite: input.texto_aceite || 'Autorizo a HS Recuperação de Crédito a realizar cobrança extrajudicial administrativa das dívidas listadas, nos limites acima. O pagamento será feito diretamente à empresa credora. A comissão do Acorly, conforme a faixa de atraso de cada dívida, incide somente sobre os valores efetivamente recebidos e confirmados.',
         status: 'ATIVA',
       }, 'CONCEDER_AUTORIZACAO');
 
       let carteira_id = autorizacao.carteira_id;
       if (!carteira_id) {
-        const c = await ctx.db.Carteira.create({ empresa_id, nome: `Encaminhamento HS ${agora.slice(0, 10)} (v${autorizacao.versao})`, descricao: input.tipo_selecao, modalidade: 'HS_GERENCIADA', quantidade_dividas: 0, valor_total_centavos: 0, status: 'RASCUNHO', data_criacao: agora });
+        const c = await ctx.db.Carteira.create({ empresa_id, nome: `Encaminhamento Acorly ${agora.slice(0, 10)} (v${autorizacao.versao})`, descricao: input.tipo_selecao, modalidade: 'HS_GERENCIADA', quantidade_dividas: 0, valor_total_centavos: 0, status: 'RASCUNHO', data_criacao: agora });
         carteira_id = c.id;
       }
       const casos = [];
@@ -286,7 +286,7 @@ export const actions = {
       if (ctx.user.perfil !== 'ADMIN_EMPRESA') throw new AccessError('Somente a empresa abre cobrança própria');
       const empresa_id = await empresaAlvo(ctx, input);
       const div = await carregarDaEmpresa(ctx, 'Divida', input.divida_id, { empresa_id });
-      exigir(div.modalidade_cobranca === 'AUTOCONTRATADA', 'Dívida está na cobrança HS');
+      exigir(div.modalidade_cobranca === 'AUTOCONTRATADA', 'Dívida está na cobrança Acorly');
       exigir(div.saldo_atual_centavos > 0 && div.status_financeiro !== 'CANCELADA', 'Dívida sem saldo em aberto');
       const ativos = (await find(ctx, 'CasoCobranca', { divida_id: div.id })).filter(casoAtivo);
       exigir(!ativos.length, 'Já existe caso ativo para esta dívida');
@@ -306,13 +306,13 @@ export const actions = {
     async run(ctx, input) {
       const div = await carregarDaEmpresa(ctx, 'Divida', input.divida_id, input);
       exigir(input.motivo, 'Motivo obrigatório');
-      exigir(input.para === 'AUTOCONTRATADA', 'Para encaminhar à HS use o fluxo de encaminhamento com autorização');
+      exigir(input.para === 'AUTOCONTRATADA', 'Para encaminhar ao Acorly use o fluxo de encaminhamento com autorização');
       exigir(div.modalidade_cobranca === 'HS_GERENCIADA', 'Dívida já é autocontratada');
       const ativos = (await find(ctx, 'CasoCobranca', { divida_id: div.id })).filter(casoAtivo);
       const bloqueante = ativos.find((c) => ['ACORDO_AGUARDANDO_PAGAMENTO', 'PAGAMENTO_INFORMADO', 'PAGAMENTO_EM_CONFIRMACAO'].includes(c.status_operacional));
-      exigir(!bloqueante, 'Há acordo ou pagamento em andamento; conclua-o antes de retirar da HS');
+      exigir(!bloqueante, 'Há acordo ou pagamento em andamento; conclua-o antes de retirar do Acorly');
       for (const c of ativos) {
-        await alterar(ctx, 'CasoCobranca', c, { status_operacional: 'SEM_SUCESSO', motivo_status: `Retirado da HS pelo credor: ${input.motivo}`, data_encerramento: ctx.now().toISOString(), encerrado_por_retirada: true }, 'ENCERRAR_CASO_RETIRADA');
+        await alterar(ctx, 'CasoCobranca', c, { status_operacional: 'SEM_SUCESSO', motivo_status: `Retirado do Acorly pelo credor: ${input.motivo}`, data_encerramento: ctx.now().toISOString(), encerrado_por_retirada: true }, 'ENCERRAR_CASO_RETIRADA');
       }
       return alterar(ctx, 'Divida', div, { modalidade_cobranca: 'AUTOCONTRATADA', status_validacao: 'NAO_VALIDADA' }, 'ALTERAR_MODALIDADE');
     },

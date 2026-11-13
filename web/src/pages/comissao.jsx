@@ -8,7 +8,7 @@ export function TabelaComissao({ faixas, destaque }) {
   if (!faixas?.length) return null;
   return (
     <table>
-      <thead><tr><th>Atraso da dívida ao encaminhar</th><th className="num">Comissão da HS</th></tr></thead>
+      <thead><tr><th>Atraso da dívida ao encaminhar</th><th className="num">Comissão do Acorly</th></tr></thead>
       <tbody>{faixas.map((f) => (
         <tr key={f.faixa} style={destaque === f.faixa ? { background: 'var(--azul-claro)', fontWeight: 700 } : undefined}>
           <td>{f.faixa}</td><td className="num">{pct(f.bps)}</td>
@@ -64,7 +64,7 @@ export function Comissoes() {
   const exemplo = 100000;
   return (
     <div className="stack" style={{ maxWidth: 820 }}>
-      <Cabecalho titulo="Comissão da cobrança gerenciada" sub="Percentual da HS por faixa de atraso, cobrado somente sobre os valores recebidos e confirmados pelo credor." />
+      <Cabecalho titulo="Comissão da cobrança gerenciada" sub="Percentual do Acorly por faixa de atraso, cobrado somente sobre os valores recebidos e confirmados pelo credor." />
       <div className="card stack">
         <h2>Tabela padrão (referência)</h2>
         <p className="small muted" style={{ margin: 0 }}>Usada no site e como ponto de partida das propostas. Para combinar condições diferentes com uma empresa, use uma tabela própria no contrato dela (Contratos de cobrança › Nova proposta).</p>

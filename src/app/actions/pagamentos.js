@@ -31,7 +31,7 @@ export const actions = {
         caso = await carregarCaso(ctx, input.caso_id);
         divida = await getById(ctx, 'Divida', caso.divida_id);
       } else {
-        exigir(!isHS(ctx.user), 'Equipe HS informa pagamentos a partir do caso');
+        exigir(!isHS(ctx.user), 'Equipe Acorly informa pagamentos a partir do caso');
         divida = await carregarDaEmpresa(ctx, 'Divida', input.divida_id, input);
         caso = await casoDaDivida(ctx, divida.id);
       }
@@ -113,7 +113,7 @@ export const actions = {
         await ctx.db.ConfirmacaoPagamento.update(conf.id, { status: 'DESCARTADA_CONCORRENCIA' });
         throw new ValidationError('Saldo alterado durante a confirmação; tente novamente');
       }
-      // Comissão da HS: só em casos de cobrança gerenciada e só sobre o valor confirmado
+      // Comissão do Acorly: só em casos de cobrança gerenciada e só sobre o valor confirmado
       const casoPag = pag.caso_id ? await getById(ctx, 'CasoCobranca', pag.caso_id) : await casoDaDivida(ctx, divida.id);
       const cm = await comissaoDoCaso(ctx, casoPag, divida);
       const comissao = cm ? { comissao_bps: cm.bps, comissao_hs_centavos: calcularComissao(efeitos.pagamento.valor_confirmado_centavos, cm.bps) } : { comissao_bps: 0, comissao_hs_centavos: 0 };
@@ -185,7 +185,7 @@ export const actions = {
     },
   },
 
-  /** Link temporário do comprovante (credor dono ou HS com acesso ao caso). */
+  /** Link temporário do comprovante (credor dono ou Acorly com acesso ao caso). */
   urlComprovante: {
     perm: null,
     async run(ctx, { pagamento_id }) {

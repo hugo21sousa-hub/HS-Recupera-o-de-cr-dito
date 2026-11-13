@@ -3,9 +3,9 @@ export const SENHA_DEMO = 'Demo2026hs';
 export const USUARIOS_DEMO = [
   ['empresa@demo.hs', 'Empresa: administrador', 'Cadastra dívidas, acompanha cobranças, aprova propostas e confirma pagamentos'],
   ['financeiro@demo.hs', 'Empresa: financeiro', 'Aprova propostas e confere pagamentos'],
-  ['admin@demo.hs', 'HS: superadmin', 'Empresas, contratos, planos, equipe e auditoria'],
-  ['gestor@demo.hs', 'HS: gestor de operações', 'Valida carteiras e distribui casos'],
-  ['operador@demo.hs', 'HS: operadora', 'Fila de casos, contatos, negociação e acordos'],
+  ['admin@demo.hs', 'Acorly: superadmin', 'Empresas, contratos, planos, equipe e auditoria'],
+  ['gestor@demo.hs', 'Acorly: gestor de operações', 'Valida carteiras e distribui casos'],
+  ['operador@demo.hs', 'Acorly: operadora', 'Fila de casos, contatos, negociação e acordos'],
 ];
 
 export async function semear(db, como) {

@@ -122,12 +122,12 @@ export const actions = {
       for (const k of ['origem', 'descricao', 'documento_referencia']) if (input[k] !== undefined) patch[k] = input[k];
       if (input.data_vencimento !== undefined) patch.data_vencimento = parseDataISO(input.data_vencimento, 'data_vencimento');
       if (input.valor_original_centavos !== undefined && input.valor_original_centavos !== div.valor_original_centavos) {
-        // Correção do valor original: somente admin da empresa, sem pagamentos e fora da cobrança HS
+        // Correção do valor original: somente admin da empresa, sem pagamentos e fora da cobrança Acorly
         requirePerm(ctx.user, 'divida.editar');
         exigir(input.motivo_correcao, 'Informe o motivo da correção do valor original');
         const pags = await find(ctx, 'Pagamento', { divida_id: div.id });
         exigir(pags.every((p) => p.status_confirmacao === 'REJEITADO'), 'Valor original não pode ser alterado após pagamentos');
-        exigir(div.modalidade_cobranca !== 'HS_GERENCIADA', 'Retire a dívida da cobrança HS antes de corrigir o valor');
+        exigir(div.modalidade_cobranca !== 'HS_GERENCIADA', 'Retire a dívida da cobrança Acorly antes de corrigir o valor');
         assertCentavos(input.valor_original_centavos, 'valor_original');
         patch.valor_original_centavos = input.valor_original_centavos;
         patch.saldo_atual_centavos = input.valor_original_centavos + (div.encargos_centavos || 0);
@@ -257,7 +257,7 @@ export const actions = {
     },
   },
 
-  /** Gera URL temporária SOMENTE após validar acesso (empresa dona ou HS com caso autorizado). */
+  /** Gera URL temporária SOMENTE após validar acesso (empresa dona ou Acorly com caso autorizado). */
   urlDocumento: {
     perm: 'documento.ler',
     async run(ctx, input) {

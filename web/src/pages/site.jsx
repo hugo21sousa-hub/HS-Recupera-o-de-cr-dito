@@ -18,12 +18,12 @@ const SERVICOS = [
     ],
   },
   {
-    nome: 'HS Cobrança Gerenciada',
-    resumo: 'A equipe HS cobra por você.',
+    nome: 'Acorly Cobrança Gerenciada',
+    resumo: 'A equipe Acorly cobra por você.',
     preco: 'Contrato próprio, por carteira, pacote de casos ou carteira completa.',
     itens: [
       'Você escolhe quais dívidas encaminhar e autoriza os limites',
-      'A HS valida a carteira e distribui entre os operadores',
+      'O Acorly valida a carteira e distribui entre os operadores',
       'Contatos por WhatsApp, telefone e e-mail, dentro das regras',
       'Propostas fora do limite chegam para a sua aprovação',
       'Você acompanha tudo em tempo real pelo seu painel',
@@ -33,26 +33,26 @@ const SERVICOS = [
 
 const PASSOS = [
   ['Cadastre', 'Inclua os clientes devedores e as dívidas, com documentos, ou importe uma planilha.'],
-  ['Cobre ou encaminhe', 'Conduza a cobrança com a sua equipe ou envie à equipe HS, com autorização expressa e limites definidos por você.'],
+  ['Cobre ou encaminhe', 'Conduza a cobrança com a sua equipe ou envie à equipe Acorly, com autorização expressa e limites definidos por você.'],
   ['Negocie', 'Simule desconto, entrada e parcelas. Propostas fora do limite autorizado só seguem com a sua aprovação.'],
   ['Confirme o recebimento', 'O devedor paga direto para a sua empresa. Você confere no extrato e confirma, e o saldo é atualizado.'],
 ];
 
 const GARANTIAS = [
-  ['O dinheiro vai direto para você', 'O Acorly e a HS não recebem valores de devedores, não guardam saldo e não fazem repasses.'],
+  ['O dinheiro vai direto para você', 'O Acorly não recebe valores de devedores, não guarda saldo e não faz repasses.'],
   ['Números reais', 'Só pagamentos confirmados por você contam como recuperados. Propostas e acordos aparecem separados.'],
   ['Cobrança respeitosa', 'O sistema bloqueia mensagens com ameaça ou exposição, limita tentativas diárias e respeita quem pede para não ser contatado (CDC).'],
   ['Dados protegidos (LGPD)', 'Cada empresa enxerga só os próprios dados. Há registro de autorizações, atendimento ao titular e retenção configurável.'],
-  ['Acesso seguro', 'Senhas protegidas, verificação em duas etapas para a equipe HS e trilha de auditoria de cada alteração.'],
+  ['Acesso seguro', 'Senhas protegidas, verificação em duas etapas para a equipe Acorly e trilha de auditoria de cada alteração.'],
   ['Sem instalar nada', 'Funciona no navegador do computador e do celular, com conexão protegida (HTTPS).'],
 ];
 
 const DUVIDAS = [
-  ['A HS recebe o dinheiro das dívidas?', 'Não. O devedor paga diretamente para a sua empresa, pelos meios que você já usa (Pix, boleto, transferência). Você confirma o recebimento no sistema.'],
-  ['Preciso contratar a cobrança da HS para usar o Acorly?', 'Não. Você pode usar só a plataforma e cobrar com a sua equipe, contratar a cobrança gerenciada ou usar as duas formas ao mesmo tempo.'],
+  ['O Acorly recebe o dinheiro das dívidas?', 'Não. O devedor paga diretamente para a sua empresa, pelos meios que você já usa (Pix, boleto, transferência). Você confirma o recebimento no sistema.'],
+  ['Preciso contratar a cobrança gerenciada para usar o Acorly?', 'Não. Você pode usar só a plataforma e cobrar com a sua equipe, contratar a cobrança gerenciada ou usar as duas formas ao mesmo tempo.'],
   ['Quanto custa a cobrança gerenciada?', 'Você paga uma comissão apenas sobre o que for efetivamente recebido, com percentual conforme o tempo de atraso da dívida (veja a tabela de referência em Planos). Se nada for recebido, não há comissão. Os percentuais finais são combinados com cada empresa e ficam no contrato. A contratação é feita por contrato próprio, por carteira específica, pacote de casos ou carteira completa.'],
-  ['Outras empresas podem ver os meus dados?', 'Não. Cada empresa tem um ambiente isolado. A equipe HS só acessa os casos que você encaminhar e autorizar.'],
-  ['Como a equipe HS negocia em meu nome?', 'Dentro dos limites que você define: desconto máximo, número de parcelas, entrada mínima, canais e horários de contato. Fora disso, a proposta vai para a sua aprovação.'],
+  ['Outras empresas podem ver os meus dados?', 'Não. Cada empresa tem um ambiente isolado. A equipe Acorly só acessa os casos que você encaminhar e autorizar.'],
+  ['Como a equipe Acorly negocia em meu nome?', 'Dentro dos limites que você define: desconto máximo, número de parcelas, entrada mínima, canais e horários de contato. Fora disso, a proposta vai para a sua aprovação.'],
   ['Posso importar a minha lista de devedores?', 'Sim. Basta uma planilha CSV (o Excel salva nesse formato). O sistema mostra uma prévia com os erros antes de importar.'],
 ];
 
@@ -86,7 +86,7 @@ export function Site() {
           <div className="site-hero-texto">
             <span className="site-selo">Recuperação de crédito para empresas</span>
             <h1>Recupere o que é seu, com organização e respeito ao seu cliente.</h1>
-            <p>O Acorly reúne em um só lugar o cadastro de dívidas, a cobrança, as negociações e a confirmação de pagamentos. Use a plataforma com a sua equipe ou deixe a cobrança com a equipe HS, acompanhando tudo pelo seu painel.</p>
+            <p>O Acorly reúne em um só lugar o cadastro de dívidas, a cobrança, as negociações e a confirmação de pagamentos. Use a plataforma com a sua equipe ou deixe a cobrança com a equipe Acorly, acompanhando tudo pelo seu painel.</p>
             <div className="row">
               <Link className="btn prim site-btn-grande" to="/cadastro">Criar conta da empresa</Link>
               <Link className="btn site-btn-grande site-btn-claro" to="/entrar">Acessar o sistema</Link>
@@ -121,7 +121,7 @@ export function Site() {
       <section id="servicos" className="site-secao site-secao-alt">
         <div className="site-largura">
           <h2 className="site-titulo">Dois jeitos de recuperar</h2>
-          <p className="site-sub">Comece com um e mude quando quiser. Também dá para usar os dois ao mesmo tempo: parte das dívidas com a sua equipe e parte com a HS.</p>
+          <p className="site-sub">Comece com um e mude quando quiser. Também dá para usar os dois ao mesmo tempo: parte das dívidas com a sua equipe e parte com o Acorly.</p>
           <div className="site-servicos">
             {SERVICOS.map((s) => (
               <article key={s.nome} className="site-cartao">
@@ -153,9 +153,9 @@ export function Site() {
           </div>
           <div className="site-cartao site-comissao">
             <div>
-              <h3>Cobrança gerenciada pela equipe HS</h3>
+              <h3>Cobrança gerenciada pela equipe Acorly</h3>
               <p className="site-resumo">Você só paga sobre o que recuperar.</p>
-              <p className="small muted" style={{ margin: 0 }}>A comissão é um percentual sobre os valores <strong>efetivamente recebidos e confirmados</strong> por você, conforme o tempo de atraso da dívida no dia em que ela é encaminhada. Se nada for recebido, não há comissão. A tabela ao lado é a referência da HS: as condições finais são combinadas com cada empresa e ficam no contrato. Você vê o percentual de cada dívida antes de encaminhar.</p>
+              <p className="small muted" style={{ margin: 0 }}>A comissão é um percentual sobre os valores <strong>efetivamente recebidos e confirmados</strong> por você, conforme o tempo de atraso da dívida no dia em que ela é encaminhada. Se nada for recebido, não há comissão. A tabela ao lado é a referência do Acorly: as condições finais são combinadas com cada empresa e ficam no contrato. Você vê o percentual de cada dívida antes de encaminhar.</p>
             </div>
             {dados?.comissao?.length > 0 && (
               <table className="site-tabela-comissao">
