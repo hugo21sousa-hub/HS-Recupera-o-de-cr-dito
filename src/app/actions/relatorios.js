@@ -2,7 +2,8 @@ import { dashboardFinanceiro, prestacaoContas, toCSV } from '../../core/reports.
 import { formatBRL, soma } from '../../core/money.js';
 import { isHS } from '../../core/permissions.js';
 import { diasAtraso } from '../../core/dates.js';
-import { AccessError, requirePerm, getById, find, criar, empresaAlvo, exigir, auditar } from '../context.js';
+import { AccessError, requirePerm, getById, find, criar, empresaAlvo, exigir, auditar, notificar } from '../context.js';
+import { casoAtivo } from '../../core/caseStatus.js';
 
 const entre = (iso, de, ate) => !!iso && (!de || iso.slice(0, 10) >= de) && (!ate || iso.slice(0, 10) <= ate);
 
@@ -41,6 +42,121 @@ function serieMensal(pagamentos, meses, hojeISO) {
     });
   }
   return out;
+}
+
+const NOMES_MES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+export const nomeMes = (aaaamm) => `${NOMES_MES[Number(aaaamm.slice(5, 7)) - 1]}/${aaaamm.slice(0, 4)}`;
+export function mesAnterior(agora) {
+  const d = new Date(Date.UTC(agora.getUTCFullYear(), agora.getUTCMonth() - 1, 1));
+  return d.toISOString().slice(0, 7);
+}
+const fimDoMes = (aaaamm) => new Date(Date.UTC(Number(aaaamm.slice(0, 4)), Number(aaaamm.slice(5, 7)), 0)).toISOString().slice(0, 10);
+const ABERTAS = (p) => p.saldo_centavos > 0 && !['PAGA', 'CANCELADA', 'SUBSTITUIDA'].includes(p.status);
+
+/**
+ * Monta e grava a prestação de contas de um contrato: indicadores do período, pagamentos confirmados (com comissão),
+ * acordos, parcelas a receber e casos ainda em cobrança (posição na data da geração).
+ */
+export async function gerarPrestacao(ctx, contrato, periodo_inicio, periodo_fim) {
+  const casos = await find(ctx, 'CasoCobranca', { contrato_servico_id: contrato.id });
+  const ids = new Set(casos.map((c) => c.id));
+  const dividas = new Set(casos.map((c) => c.divida_id));
+  const q = { empresa_id: contrato.empresa_id };
+  const [interacoes, negociacoes, acordos, pagamentos, parcelas] = await Promise.all([find(ctx, 'Interacao', q), find(ctx, 'Negociacao', q), find(ctx, 'Acordo', q), find(ctx, 'Pagamento', q), find(ctx, 'Parcela', q)]);
+  const acordosContrato = acordos.filter((a) => ids.has(a.caso_id));
+  const pagsContrato = pagamentos.filter((p) => dividas.has(p.divida_id));
+  const rel = prestacaoContas({
+    casos: casos.filter((c) => !c.encerrado_por_retirada || c.status_operacional !== 'SEM_SUCESSO'),
+    interacoes: interacoes.filter((i) => ids.has(i.caso_id)), negociacoes: negociacoes.filter((n) => ids.has(n.caso_id)),
+    acordos: acordosContrato, pagamentos: pagsContrato, inicio: periodo_inicio, fim: periodo_fim,
+  });
+  const empresa = await getById(ctx, 'Empresa', contrato.empresa_id);
+  const devedores = new Map((await find(ctx, 'Devedor', { empresa_id: contrato.empresa_id })).map((d) => [d.id, d.nome]));
+  const divs = new Map((await find(ctx, 'Divida', { empresa_id: contrato.empresa_id })).map((d) => [d.id, d]));
+  const nomeDev = (divida_id) => devedores.get(divs.get(divida_id)?.devedor_id) || '—';
+  const agora = ctx.now().toISOString();
+  const hoje = agora.slice(0, 10);
+
+  // Recuperado: no período (com comissão) e acumulado desde o início do contrato
+  const confirmados = pagsContrato.filter((p) => p.status_confirmacao === 'CONFIRMADO' && p.data_confirmacao);
+  rel.comissoes = confirmados.filter((p) => p.data_confirmacao.slice(0, 10) >= periodo_inicio && p.data_confirmacao.slice(0, 10) <= periodo_fim)
+    .sort((a, b) => (a.data_confirmacao > b.data_confirmacao ? 1 : -1))
+    .map((p) => ({ data: p.data_confirmacao.slice(0, 10), devedor: nomeDev(p.divida_id), valor_centavos: p.valor_confirmado_centavos ?? p.valor_centavos, comissao_bps: p.comissao_bps || 0, comissao_centavos: p.comissao_hs_centavos || 0 }));
+  rel.recuperado_acumulado_centavos = soma(confirmados.filter((p) => p.data_confirmacao.slice(0, 10) <= periodo_fim).map((p) => p.valor_confirmado_centavos ?? p.valor_centavos));
+
+  // Acordos (todos os do contrato até o fim do período)
+  rel.acordos = acordosContrato.filter((a) => (a.data_aceite || a.created_date || '').slice(0, 10) <= periodo_fim)
+    .sort((a, b) => ((a.data_aceite || '') > (b.data_aceite || '') ? 1 : -1))
+    .map((a) => {
+      const ps = parcelas.filter((p) => p.acordo_id === a.id);
+      const abertas = ps.filter(ABERTAS);
+      const proxima = abertas.map((p) => p.vencimento).sort()[0] || null;
+      return {
+        devedor: nomeDev(a.divida_id), data_aceite: a.data_aceite || null, valor_acordado_centavos: a.valor_acordado_centavos || 0, desconto_centavos: a.desconto_centavos || 0,
+        parcelas_total: ps.length, parcelas_pagas: ps.filter((p) => p.status === 'PAGA').length,
+        pago_centavos: soma(ps.map((p) => (p.valor_original_centavos || 0) - (p.saldo_centavos || 0))),
+        a_receber_centavos: a.status === 'ATIVO' ? soma(abertas.map((p) => p.saldo_centavos)) : 0, proximo_vencimento: a.status === 'ATIVO' ? proxima : null, status: a.status,
+      };
+    });
+
+  // A receber: parcelas em aberto de acordos ativos (posição na geração)
+  const ativos = new Set(acordosContrato.filter((a) => a.status === 'ATIVO').map((a) => a.id));
+  rel.a_receber = parcelas.filter((p) => ativos.has(p.acordo_id) && ABERTAS(p)).sort((a, b) => (a.vencimento > b.vencimento ? 1 : -1))
+    .map((p) => ({ vencimento: p.vencimento, devedor: nomeDev(p.divida_id), parcela: p.numero === 0 ? 'Entrada' : `${p.numero}`, valor_centavos: p.saldo_centavos, vencida: p.vencimento < hoje }));
+  const porMes = new Map();
+  for (const p of rel.a_receber) porMes.set(p.vencimento.slice(0, 7), (porMes.get(p.vencimento.slice(0, 7)) || 0) + p.valor_centavos);
+  rel.a_receber_por_mes = [...porMes.entries()].map(([mes, valor_centavos]) => ({ mes, valor_centavos }));
+  rel.a_receber_centavos = soma(rel.a_receber.map((p) => p.valor_centavos));
+  rel.a_receber_vencido_centavos = soma(rel.a_receber.filter((p) => p.vencida).map((p) => p.valor_centavos));
+
+  // Em cobrança: casos ativos sem acordo ativo
+  const comAcordo = new Set(acordosContrato.filter((a) => a.status === 'ATIVO').map((a) => a.caso_id));
+  rel.em_cobranca = casos.filter((c) => casoAtivo(c) && !comAcordo.has(c.id)).map((c) => {
+    const d = divs.get(c.divida_id);
+    return { devedor: nomeDev(c.divida_id), saldo_centavos: d?.saldo_atual_centavos || 0, dias_atraso: d ? diasAtraso(d.data_vencimento, hoje) : null, status: c.status_operacional };
+  }).sort((a, b) => b.saldo_centavos - a.saldo_centavos);
+  rel.saldo_em_cobranca_centavos = soma(rel.em_cobranca.map((c) => c.saldo_centavos));
+  rel.posicao_em = agora;
+
+  return criar(ctx, 'PrestacaoContas', {
+    empresa_id: contrato.empresa_id, contrato_servico_id: contrato.id, periodo_inicio, periodo_fim, quantidade_casos: casos.length,
+    valor_cobrado_centavos: contrato.valor_contratado_centavos || 0, valor_negociado_centavos: rel.valor_negociado_centavos, valor_confirmado_centavos: rel.valor_recuperado_centavos,
+    relatorio: JSON.stringify({ ...rel, credor: empresa.razao_social, cnpj: empresa.cnpj, contrato: contrato.id, gerado_por: ctx.user.nome }), data_geracao: agora,
+  }, 'GERAR_PRESTACAO_CONTAS');
+}
+
+/** Aviso no sistema e e-mail (via notificação) ao administrador e ao financeiro da empresa, com o resumo. */
+export async function enviarPrestacao(ctx, p) {
+  const rel = JSON.parse(p.relatorio || '{}');
+  const mensal = p.periodo_inicio.slice(8) === '01' && p.periodo_fim === fimDoMes(p.periodo_inicio.slice(0, 7)) && p.periodo_inicio.slice(0, 7) === p.periodo_fim.slice(0, 7);
+  const periodo = mensal ? nomeMes(p.periodo_inicio.slice(0, 7)) : `${p.periodo_inicio.split('-').reverse().join('/')} a ${p.periodo_fim.split('-').reverse().join('/')}`;
+  const linhas = [
+    `Recuperado no período: ${formatBRL(rel.valor_recuperado_centavos || 0)} (${rel.pagamentos_confirmados || 0} pagamento(s) confirmado(s)).`,
+    `Recuperado desde o início do contrato: ${formatBRL(rel.recuperado_acumulado_centavos || 0)}.`,
+    `Acordos realizados no período: ${rel.acordos_realizados || 0}.`,
+    `A receber em acordos: ${formatBRL(rel.a_receber_centavos || 0)}${rel.a_receber_vencido_centavos ? ` (${formatBRL(rel.a_receber_vencido_centavos)} já vencido)` : ''}.`,
+    `Saldo ainda em cobrança: ${formatBRL(rel.saldo_em_cobranca_centavos || 0)}.`,
+    'Abra o relatório no Acorly para ver os detalhes e baixar o PDF.',
+  ];
+  const destinatarios = (await find(ctx, 'UsuarioPlataforma', { empresa_id: p.empresa_id, status: 'ATIVO' })).filter((u) => ['ADMIN_EMPRESA', 'FINANCEIRO_EMPRESA'].includes(u.perfil));
+  await notificar(ctx, p.empresa_id, { perfis: ['ADMIN_EMPRESA', 'FINANCEIRO_EMPRESA'], tipo: 'PRESTACAO_CONTAS', titulo: `Prestação de contas de ${periodo}`, mensagem: linhas.join('\n'), link: '/relatorios' });
+  return ctx.db.PrestacaoContas.update(p.id, { enviado_em: ctx.now().toISOString(), enviado_para: destinatarios.map((u) => u.email), enviado_por: ctx.user.id });
+}
+
+/** Gera e envia o mês para todos os contratos ativos no mês (pula os que já têm a prestação daquele mês). */
+export async function prestacoesDoMes(ctx, mes) {
+  const inicio = `${mes}-01`;
+  const fim = fimDoMes(mes);
+  let geradas = 0, ja_existiam = 0;
+  const contratos = (await find(ctx, 'ContratoServico', {})).filter((c) => c.aceite && ['ATIVO', 'ENCERRADO'].includes(c.status) && (c.data_aceite || c.data_inicio || '').slice(0, 10) <= fim && !(c.status === 'ENCERRADO' && (c.updated_date || '').slice(0, 10) < inicio));
+  for (const c of contratos) {
+    const existentes = await find(ctx, 'PrestacaoContas', { contrato_servico_id: c.id });
+    if (existentes.some((p) => p.periodo_inicio === inicio && p.periodo_fim === fim)) { ja_existiam++; continue; }
+    const p = await gerarPrestacao(ctx, c, inicio, fim);
+    await enviarPrestacao(ctx, p);
+    geradas++;
+  }
+  return { mes, geradas, ja_existiam };
 }
 
 export const actions = {
@@ -117,33 +233,34 @@ export const actions = {
 
   gerarPrestacaoContas: {
     perm: null,
-    async run(ctx, { contrato_servico_id, periodo_inicio, periodo_fim }) {
+    async run(ctx, { contrato_servico_id, periodo_inicio, periodo_fim, enviar = false }) {
       const contrato = await getById(ctx, 'ContratoServico', contrato_servico_id);
       if (!contrato) throw new AccessError('Contrato não encontrado', 404);
       if (isHS(ctx.user)) requirePerm(ctx.user, 'prestacao.gerar');
       else { requirePerm(ctx.user, 'relatorio.empresa'); if (contrato.empresa_id !== ctx.user.empresa_id) throw new AccessError('Contrato não encontrado', 404); }
       exigir(/^\d{4}-\d{2}-\d{2}$/.test(periodo_inicio || '') && /^\d{4}-\d{2}-\d{2}$/.test(periodo_fim || '') && periodo_inicio <= periodo_fim, 'Período inválido');
-      const casos = await find(ctx, 'CasoCobranca', { contrato_servico_id: contrato.id });
-      const ids = new Set(casos.map((c) => c.id));
-      const dividas = new Set(casos.map((c) => c.divida_id));
-      const q = { empresa_id: contrato.empresa_id };
-      const [interacoes, negociacoes, acordos, pagamentos] = await Promise.all([find(ctx, 'Interacao', q), find(ctx, 'Negociacao', q), find(ctx, 'Acordo', q), find(ctx, 'Pagamento', q)]);
-      const rel = prestacaoContas({
-        casos: casos.filter((c) => !c.encerrado_por_retirada || c.status_operacional !== 'SEM_SUCESSO'),
-        interacoes: interacoes.filter((i) => ids.has(i.caso_id)), negociacoes: negociacoes.filter((n) => ids.has(n.caso_id)),
-        acordos: acordos.filter((a) => ids.has(a.caso_id)), pagamentos: pagamentos.filter((p) => dividas.has(p.divida_id)),
-        inicio: periodo_inicio, fim: periodo_fim,
-      });
-      const empresa = await getById(ctx, 'Empresa', contrato.empresa_id);
-      const devedores = new Map((await find(ctx, 'Devedor', { empresa_id: contrato.empresa_id })).map((d) => [d.id, d.nome]));
-      const divs = new Map((await find(ctx, 'Divida', { empresa_id: contrato.empresa_id })).map((d) => [d.id, d]));
-      rel.comissoes = pagamentos.filter((p) => dividas.has(p.divida_id) && p.status_confirmacao === 'CONFIRMADO' && p.data_confirmacao && p.data_confirmacao.slice(0, 10) >= periodo_inicio && p.data_confirmacao.slice(0, 10) <= periodo_fim)
-        .map((p) => ({ data: p.data_confirmacao.slice(0, 10), devedor: devedores.get(divs.get(p.divida_id)?.devedor_id) || '—', valor_centavos: p.valor_confirmado_centavos ?? p.valor_centavos, comissao_bps: p.comissao_bps || 0, comissao_centavos: p.comissao_hs_centavos || 0 }));
-      return criar(ctx, 'PrestacaoContas', {
-        empresa_id: contrato.empresa_id, contrato_servico_id: contrato.id, periodo_inicio, periodo_fim, quantidade_casos: casos.length,
-        valor_cobrado_centavos: contrato.valor_contratado_centavos || 0, valor_negociado_centavos: rel.valor_negociado_centavos, valor_confirmado_centavos: rel.valor_recuperado_centavos,
-        relatorio: JSON.stringify({ ...rel, credor: empresa.razao_social, cnpj: empresa.cnpj, contrato: contrato.id, gerado_por: ctx.user.nome }), data_geracao: ctx.now().toISOString(),
-      }, 'GERAR_PRESTACAO_CONTAS');
+      const p = await gerarPrestacao(ctx, contrato, periodo_inicio, periodo_fim);
+      if (enviar && isHS(ctx.user)) return enviarPrestacao(ctx, p);
+      return p;
+    },
+  },
+
+  /** Envia (ou reenvia) a prestação de contas por e-mail e aviso no sistema ao administrador e ao financeiro da empresa. */
+  enviarPrestacaoContas: {
+    perm: 'prestacao.gerar',
+    async run(ctx, { prestacao_id }) {
+      const p = await getById(ctx, 'PrestacaoContas', prestacao_id);
+      if (!p) throw new AccessError('Prestação de contas não encontrada', 404);
+      return enviarPrestacao(ctx, p);
+    },
+  },
+
+  /** Gera e envia a prestação de contas de um mês para todos os contratos de cobrança gerenciada (sem duplicar). */
+  gerarPrestacoesDoMes: {
+    perm: 'prestacao.gerar',
+    async run(ctx, { mes } = {}) {
+      exigir(!mes || /^\d{4}-\d{2}$/.test(mes), 'Mês inválido (use AAAA-MM)');
+      return prestacoesDoMes(ctx, mes || mesAnterior(ctx.now()));
     },
   },
 

@@ -389,7 +389,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
     timer = setInterval(rodar, 24 * 3600e3);
     timer.unref();
     // Lembretes (mensalidade, fim do teste, parcelas de acordo): de hora em hora, só em horário comercial
-    const lembrar = () => transacao((pos) => rodarLembretes(ctxSistema(pos))).then((r) => { if (r && (r.mensalidade || r.teste || r.parcelas)) console.log('[lembretes]', r); }).catch((e) => console.error('[lembretes]', e.message));
+    const lembrar = () => transacao((pos) => rodarLembretes(ctxSistema(pos))).then((r) => { if (r && (r.mensalidade || r.teste || r.parcelas || r.prestacoes)) console.log('[lembretes]', r); }).catch((e) => console.error('[lembretes]', e.message));
     setTimeout(lembrar, 60e3).unref();
     timerLembretes = setInterval(lembrar, 3600e3);
     timerLembretes.unref();

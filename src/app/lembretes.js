@@ -8,6 +8,7 @@ import { casoAtivo } from '../core/caseStatus.js';
 import { emailValido } from '../core/documento.js';
 import { formatBRL } from '../core/money.js';
 import { LIMITE_CONTATOS_DIA } from '../core/compliance.js';
+import { prestacoesDoMes, mesAnterior } from './actions/relatorios.js';
 
 export const DIAS_ANTES_MENSALIDADE = 3;
 export const AVISOS_PARCELA = [{ dias: 3, chave: 'D-3' }, { dias: 0, chave: 'D0' }];
@@ -101,9 +102,16 @@ export async function lembretesParcelas(ctx) {
   return n;
 }
 
+/** Dia 1º (horário de Brasília): gera e envia a prestação de contas do mês anterior de cada contrato (uma vez só). */
+export async function prestacoesAutomaticas(ctx) {
+  const local = new Date(ctx.now().getTime() - 3 * 3600e3);
+  if (local.getUTCDate() !== 1) return 0;
+  return (await prestacoesDoMes(ctx, mesAnterior(local))).geradas;
+}
+
 /** Roda todos os lembretes (só em horário comercial de Brasília). */
 export async function rodarLembretes(ctx, { ignorarHorario = false } = {}) {
   const horaBrasilia = (ctx.now().getUTCHours() + 21) % 24;
   if (!ignorarHorario && (horaBrasilia < 9 || horaBrasilia >= 18)) return null;
-  return { mensalidade: await lembretesMensalidade(ctx), teste: await lembretesTeste(ctx), parcelas: await lembretesParcelas(ctx) };
+  return { mensalidade: await lembretesMensalidade(ctx), teste: await lembretesTeste(ctx), parcelas: await lembretesParcelas(ctx), prestacoes: await prestacoesAutomaticas(ctx) };
 }

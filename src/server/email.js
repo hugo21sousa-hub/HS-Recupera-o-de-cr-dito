@@ -115,6 +115,6 @@ ${botao ? `<p style="margin:20px 0"><a href="${esc(botao.url)}" style="backgroun
       para, assunto: `${codigo} é o seu código de acesso — Acorly`, titulo: 'Seu código de acesso',
       paragrafos: [`Use o código ${codigo} para concluir a entrada no sistema.`, 'Ele vale por 10 minutos e só pode ser usado uma vez.', 'Se você não tentou entrar agora, ignore este e-mail e troque a sua senha.'],
     }),
-    notificacao: (para, n) => enviar({ para, assunto: `${n.titulo} — Acorly`, paragrafos: [n.mensagem || n.titulo], botao: { texto: 'Abrir na plataforma', url: `${urlBase}${n.link || '/'}` } }),
+    notificacao: (para, n) => enviar({ para, assunto: `${n.titulo} — Acorly`, titulo: n.titulo, paragrafos: String(n.mensagem || n.titulo).split('\n').filter(Boolean), botao: { texto: 'Abrir na plataforma', url: `${urlBase}${n.link || '/'}` } }),
   };
 }

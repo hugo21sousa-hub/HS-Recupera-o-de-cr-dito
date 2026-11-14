@@ -204,7 +204,7 @@ export const ENTITIES = {
   },
   PrestacaoContas: {
     description: 'Relatório de prestação de contas por contrato/período',
-    properties: { ...EMP, contrato_servico_id: ref('ContratoServico'), periodo_inicio: dt('Início'), periodo_fim: dt('Fim'), quantidade_casos: n('Casos'), valor_cobrado_centavos: c('Valor do serviço'), valor_negociado_centavos: c('Valor negociado'), valor_confirmado_centavos: c('Valor recuperado confirmado'), relatorio: s('JSON do relatório'), data_geracao: ts('Geração') },
+    properties: { ...EMP, contrato_servico_id: ref('ContratoServico'), periodo_inicio: dt('Início'), periodo_fim: dt('Fim'), quantidade_casos: n('Casos'), valor_cobrado_centavos: c('Valor do serviço'), valor_negociado_centavos: c('Valor negociado'), valor_confirmado_centavos: c('Valor recuperado confirmado'), relatorio: s('JSON do relatório'), data_geracao: ts('Geração'), enviado_em: ts('Enviado à empresa em'), enviado_para: arr('E-mails que receberam'), enviado_por: s('Quem enviou') },
     required: ['empresa_id', 'contrato_servico_id', 'periodo_inicio', 'periodo_fim'],
   },
   HistoricoAuditoria: {

@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { hs, abrirLink, baixarArquivo, DEMO } from '../api.js';
 import { useSessao } from '../sessao.jsx';
 import { Tabela, Badge, Cabecalho, FormModal, useApi, useToast, useConfirm, Vazio, Abas, useExecutar, Stat } from '../ui.jsx';
 import { brl, data, dataHora, rotulo, pct, mascaraDoc, hojeISO } from '../format.js';
+import { montarPDFPrestacao, mesCurto } from '../prestacaoPdf.js';
 
 /** Botões de conferência/confirmação/rejeição — somente o credor. */
 export function AcoesPagamento({ pagamento: p, onFeito }) {
@@ -123,34 +122,7 @@ export function Pagamentos() {
 
 function gerarPDF(p) {
   if (DEMO) throw new Error('Prestação de contas gerada. O download do PDF fica desativado na demonstração.');
-  const rel = JSON.parse(p.relatorio);
-  const doc = new jsPDF();
-  doc.setFillColor(11, 37, 69); doc.rect(0, 0, 210, 28, 'F');
-  doc.setTextColor(255); doc.setFontSize(16); doc.setFont('helvetica', 'bold'); doc.text('Acorly', 14, 13);
-  doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.text('Prestação de contas — cobrança gerenciada', 14, 21);
-  doc.setTextColor(31, 41, 55); doc.setFontSize(11);
-  doc.text(`Credor: ${rel.credor}  ·  CNPJ ${mascaraDoc(rel.cnpj)}`, 14, 38);
-  doc.text(`Período: ${data(p.periodo_inicio)} a ${data(p.periodo_fim)}  ·  Gerado em ${dataHora(p.data_geracao)}`, 14, 45);
-  autoTable(doc, {
-    startY: 52, head: [['Indicador', 'Valor']], headStyles: { fillColor: [29, 95, 167] }, styles: { fontSize: 10 },
-    body: [
-      ['Casos recebidos no período', rel.casos_recebidos], ['Casos trabalhados', rel.casos_trabalhados], ['Contatos realizados', rel.contatos_realizados],
-      ['Respostas recebidas', rel.respostas_recebidas], ['Negociações iniciadas', rel.negociacoes_iniciadas], ['Valor negociado', brl(rel.valor_negociado_centavos)],
-      ['Acordos realizados', rel.acordos_realizados], ['Pagamentos informados', `${rel.pagamentos_informados} (${brl(rel.valor_informado_centavos)})`],
-      ['Pagamentos confirmados pelo credor', rel.pagamentos_confirmados], ['Valores recuperados (confirmados)', brl(rel.valor_recuperado_centavos)],
-      ['Casos suspensos', rel.casos_suspensos], ['Casos sem sucesso', rel.casos_sem_sucesso],
-      ['Comissão do Acorly no período (sobre valores confirmados)', brl(rel.comissao_hs_centavos || 0)],
-    ],
-  });
-  if (rel.comissoes?.length) {
-    autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 8, head: [['Confirmado em', 'Devedor', 'Valor recebido', 'Comissão', 'Valor da comissão']], headStyles: { fillColor: [29, 95, 167] }, styles: { fontSize: 9 },
-      body: rel.comissoes.map((c) => [data(c.data), c.devedor, brl(c.valor_centavos), pct(c.comissao_bps), brl(c.comissao_centavos)]),
-    });
-  }
-  doc.setFontSize(8); doc.setTextColor(107, 114, 128);
-  doc.text('Valores recuperados consideram somente pagamentos confirmados pelo credor. Os pagamentos são feitos diretamente à empresa credora.', 14, doc.lastAutoTable.finalY + 10, { maxWidth: 182 });
-  doc.save(`prestacao-contas-${p.periodo_inicio}-${p.periodo_fim}.pdf`);
+  montarPDFPrestacao(p).save(`prestacao-contas-${p.periodo_inicio}-${p.periodo_fim}.pdf`);
 }
 
 export function Relatorios() {
@@ -161,7 +133,19 @@ export function Relatorios() {
   const empresas = useApi(s.ehHS ? (s.pode('empresa.gerenciar_todas') ? 'listarEmpresas' : 'listarEmpresasAtendidas') : null, { pageSize: 200 });
   const prestacoes = useApi('listarPrestacoes', {});
   const [gerar, setGerar] = useState(false);
+  const [gerandoMes, setGerandoMes] = useState(false);
+  const confirmar = useConfirm();
   const inicioMes = hojeISO().slice(0, 8) + '01';
+  const mesPassado = (() => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 7); })();
+  const gerarMes = async () => {
+    const ok = await confirmar({ titulo: `Gerar o mês ${mesCurto(mesPassado)} para todos os clientes`, botao: 'Gerar e enviar', mensagem: 'Gera a prestação de contas do mês passado para cada contrato de cobrança gerenciada que ainda não tem e envia por e-mail ao administrador e ao financeiro de cada empresa. Isso também acontece sozinho todo dia 1º.' });
+    if (!ok) return;
+    setGerandoMes(true);
+    try { const r = await executar('gerarPrestacoesDoMes', { mes: mesPassado }); toast.ok(`${r.geradas} prestação(ões) gerada(s) e enviada(s)${r.ja_existiam ? `; ${r.ja_existiam} já existia(m)` : ''}.`); prestacoes.recarregar(); } catch { /* aviso já mostrado */ } finally { setGerandoMes(false); }
+  };
+  const enviar = async (p) => {
+    try { await executar('enviarPrestacaoContas', { prestacao_id: p.id }, p.enviado_em ? 'Reenviada à empresa' : 'Enviada à empresa'); prestacoes.recarregar(); } catch { /* aviso já mostrado */ }
+  };
   const nomesEmp = new Map((Array.isArray(empresas.data) ? empresas.data : empresas.data?.itens || []).map((e) => [e.id, e.nome_fantasia || e.razao_social]));
   const listaContratos = (contratos.data?.itens || []).filter((c) => c.status !== 'PROPOSTO' && c.status !== 'SOLICITADO');
   const exportar = async (tipo) => {
@@ -169,7 +153,8 @@ export function Relatorios() {
   };
   return (
     <div className="stack">
-      <Cabecalho titulo="Relatórios" sub="Prestação de contas por contrato e período, e exportação de dados em planilha.">
+      <Cabecalho titulo="Relatórios" sub={s.ehHS ? 'Prestação de contas por contrato e período. Todo dia 1º, a do mês anterior é gerada e enviada por e-mail a cada cliente.' : 'Prestação de contas por contrato e período, e exportação de dados em planilha.'}>
+        {s.ehHS && s.pode('prestacao.gerar') && <button className="btn" onClick={gerarMes} disabled={gerandoMes || !listaContratos.length}>Gerar o mês para todos os clientes</button>}
         {(s.ehHS ? s.pode('prestacao.gerar') : s.pode('relatorio.empresa')) && <button className="btn prim" onClick={() => setGerar(true)} disabled={!listaContratos.length}>Gerar prestação de contas</button>}
       </Cabecalho>
       {!s.ehHS && s.pode('relatorio.exportar') && (
@@ -182,10 +167,14 @@ export function Relatorios() {
       <div className="card p0">
         <div style={{ padding: '12px 16px 0' }}><h2>Prestações de contas geradas</h2></div>
         <div className="tabela-wrap"><table>
-          <thead><tr>{s.ehHS && <th>Credor</th>}<th>Período</th><th className="num">Casos</th><th className="num">Negociado</th><th className="num">Recuperado (confirmado)</th><th>Gerado em</th><th></th></tr></thead>
+          <thead><tr>{s.ehHS && <th>Credor</th>}<th>Período</th><th className="num">Casos</th><th className="num">Negociado</th><th className="num">Recuperado (confirmado)</th><th>Gerado em</th>{s.ehHS && <th>Enviado</th>}<th></th></tr></thead>
           <tbody>{(prestacoes.data || []).slice().sort((a, b) => (a.data_geracao < b.data_geracao ? 1 : -1)).map((p) => (
             <tr key={p.id}>{s.ehHS && <td>{nomesEmp.get(p.empresa_id) || JSON.parse(p.relatorio).credor}</td>}<td>{data(p.periodo_inicio)} – {data(p.periodo_fim)}</td><td className="num">{p.quantidade_casos}</td><td className="num">{brl(p.valor_negociado_centavos)}</td><td className="num">{brl(p.valor_confirmado_centavos)}</td><td>{dataHora(p.data_geracao)}</td>
-              <td className="right"><button className="btn sm" onClick={() => { try { gerarPDF(p); } catch (e) { toast.erro(e); } }}>Baixar PDF</button></td></tr>
+              {s.ehHS && <td className="small">{p.enviado_em ? <span title={(p.enviado_para || []).join(', ')}>{dataHora(p.enviado_em)}</span> : <span className="muted">não enviado</span>}</td>}
+              <td className="right"><div className="row" style={{ justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
+                {s.ehHS && s.pode('prestacao.gerar') && <button className="btn sm" onClick={() => enviar(p)}>{p.enviado_em ? 'Reenviar' : 'Enviar'}</button>}
+                <button className="btn sm" onClick={() => { try { gerarPDF(p); } catch (e) { toast.erro(e); } }}>Baixar PDF</button>
+              </div></td></tr>
           ))}</tbody>
         </table>{!prestacoes.data?.length && <Vazio titulo="Nenhuma prestação de contas gerada">{listaContratos.length ? 'Gere a primeira escolhendo um contrato e um período.' : 'Disponível para empresas com contrato de cobrança gerenciada.'}</Vazio>}</div>
       </div>
@@ -193,7 +182,8 @@ export function Relatorios() {
         { nome: 'contrato_servico_id', rotulo: 'Contrato', tipo: 'select', obrigatorio: true, full: true, opcoes: listaContratos.map((c) => ({ valor: c.id, rotulo: `${s.ehHS ? `${nomesEmp.get(c.empresa_id) || 'Empresa'} · ` : ''}${rotulo(c.modalidade)} · desde ${data(c.data_inicio)} · ${rotulo(c.status)}` })) },
         { nome: 'periodo_inicio', rotulo: 'Início', tipo: 'data', obrigatorio: true, padrao: inicioMes },
         { nome: 'periodo_fim', rotulo: 'Fim', tipo: 'data', obrigatorio: true, padrao: hojeISO() },
-      ]} onSubmit={async (v) => { const p = await executar('gerarPrestacaoContas', v, 'Prestação de contas gerada'); prestacoes.recarregar(); gerarPDF(p); }} />}
+        ...(s.ehHS ? [{ nome: 'enviar', tipo: 'checkbox', textoCheck: 'Enviar por e-mail ao administrador e ao financeiro da empresa', padrao: true, full: true }] : []),
+      ]} onSubmit={async (v) => { const p = await executar('gerarPrestacaoContas', v, v.enviar ? 'Prestação de contas gerada e enviada' : 'Prestação de contas gerada'); prestacoes.recarregar(); try { gerarPDF(p); } catch (e) { toast.erro(e); } }} />}
     </div>
   );
 }

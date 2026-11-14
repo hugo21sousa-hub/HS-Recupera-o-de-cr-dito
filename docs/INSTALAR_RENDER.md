@@ -197,6 +197,21 @@ SMS, ligação e WhatsApp do Asaas ficam desligados, porque podem ter custo por 
 - Cada lembrete fica registrado no histórico do caso.
 - Os lembretes por WhatsApp aparecem na **Fila do dia** da Central de mensagens.
 
+## Prestação de contas aos clientes
+
+**Automática:** todo dia 1º (das 9h às 18h), o sistema gera a prestação de contas do mês anterior para cada contrato de cobrança gerenciada e avisa o administrador e o financeiro de cada empresa, no sistema e por e-mail. O aviso traz o resumo:
+- recuperado no mês e desde o início;
+- acordos;
+- a receber;
+- saldo em cobrança.
+
+A empresa abre o relatório completo e baixa o PDF em **Relatórios**.
+
+**Manual:** em **Relatórios**, você pode:
+- gerar a de um período qualquer, marcando "Enviar por e-mail";
+- usar **Gerar o mês para todos os clientes**;
+- reenviar uma prestação já gerada.
+
 ## Contato no site
 
 O endereço principal mostra o site de apresentação da HS, com os planos atualizados automaticamente. Para exibir o seu e-mail e WhatsApp no rodapé, adicione no Render (**Environment**) as variáveis `CONTATO_EMAIL` e `CONTATO_WHATSAPP` (ex.: `5511999999999`).
