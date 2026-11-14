@@ -6,6 +6,11 @@ import { AccessError, getById, find, criar, alterar, exigir, notificar, requireP
 export const REDES = ['LINKEDIN', 'INSTAGRAM'];
 export const STATUS_POST = ['SUGERIDO', 'APROVADO', 'PUBLICADO', 'DESCARTADO'];
 export const CAMPOS_REDES = ['instagram', 'linkedin', 'facebook', 'youtube', 'tiktok'];
+// Perfis oficiais (usados enquanto o superadmin não cadastrar outro endereço)
+export const REDES_PADRAO = {
+  instagram: 'https://www.instagram.com/acorly.app/',
+  linkedin: 'https://www.linkedin.com/search/results/companies/?keywords=Acorly%20Recupera%C3%A7%C3%A3o%20de%20Cr%C3%A9dito',
+};
 const INTERVALO_DIAS = 2;
 const HORIZONTE_DIAS = 14;
 const somaDias = (iso, d) => new Date(Date.parse(iso + 'T12:00:00Z') + d * 864e5).toISOString().slice(0, 10);
@@ -68,7 +73,7 @@ export const actions = {
       if (ver === 'historico') rows = rows.filter((p) => p.data_prevista < somaDias(hoje, -2) || ['PUBLICADO', 'DESCARTADO'].includes(p.status));
       rows.sort((a, b) => (a.data_prevista === b.data_prevista ? (a.rede > b.rede ? 1 : -1) : (a.data_prevista > b.data_prevista ? 1 : -1) * (ver === 'historico' ? -1 : 1)));
       const cfg = await configuracao(ctx);
-      return { itens: rows.slice(0, 200), restantes_no_banco: BANCO_POSTS.length - Number(cfg.conteudo_proximo || 0), redes: cfg.redes_sociais || {} };
+      return { itens: rows.slice(0, 200), restantes_no_banco: BANCO_POSTS.length - Number(cfg.conteudo_proximo || 0), redes: { ...REDES_PADRAO, ...(cfg.redes_sociais || {}) } };
     },
   },
 
@@ -152,7 +157,7 @@ export const actions = {
 
 export async function redesSociaisPublicas(ctx) {
   const cfg = (await find(ctx, 'ConfiguracaoHS', {}))[0];
-  return cfg?.redes_sociais || {};
+  return { ...REDES_PADRAO, ...(cfg?.redes_sociais || {}) };
 }
 
 export { requirePerm };

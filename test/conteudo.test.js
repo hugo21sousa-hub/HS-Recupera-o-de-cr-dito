@@ -62,8 +62,9 @@ test('fluxo: superadmin aprova e avisa o marketing; marketing publica; perfis re
   await t.falha('mkt@hs.com', 'listarCasos', {}, 403);
 });
 
-test('redes sociais: superadmin cadastra os links, que aparecem no site', async () => {
+test('redes sociais: perfis oficiais por padrão; superadmin troca os links, que aparecem no site', async () => {
   const t = await base();
+  assert.equal((await redesSociaisPublicas({ db: t.db })).instagram, 'https://www.instagram.com/acorly.app/');
   assert.match((await t.falha('super@hs.com', 'salvarRedesSociais', { instagram: 'instagram.com/acorly' }, 422)).error, /https/);
   await t.ok('super@hs.com', 'salvarRedesSociais', { instagram: 'https://www.instagram.com/acorly', linkedin: 'https://www.linkedin.com/company/acorly', facebook: '' });
   assert.deepEqual(await redesSociaisPublicas({ db: t.db }), { instagram: 'https://www.instagram.com/acorly', linkedin: 'https://www.linkedin.com/company/acorly' });

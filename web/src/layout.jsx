@@ -33,7 +33,7 @@ export const MENU_EMPRESA = [
 ];
 
 export const MENU_HS = [
-  { secao: 'Negócio', itens: [{ to: '/hs/negocio', r: 'Indicadores do negócio', p: 'plano.gerenciar' }, { to: '/hs/leads', r: 'Diagnósticos (leads)', p: 'lead.gerenciar', contador: 'leads' }, { to: '/hs/conteudo', r: 'Conteúdo e redes sociais', p: 'conteudo.ler' }] },
+  { secao: 'Negócio', itens: [{ to: '/hs/negocio', r: 'Indicadores do negócio', p: 'plano.gerenciar' }, { to: '/hs/leads', r: 'Diagnósticos (leads)', p: 'lead.gerenciar', contador: 'leads' }, { to: '/hs/conteudo', r: 'Conteúdo e redes sociais', p: 'conteudo.ler' }, { to: 'https://mail.hostinger.com/', externo: true, r: 'E-mail (webmail) ↗', p: 'config.sistema' }] },
   { secao: 'Central de operações', itens: [
     { to: '/hs', r: 'Visão geral', p: 'relatorio.hs', fim: true },
     { to: '/hs/empresas', r: 'Empresas', p: 'empresa.gerenciar_todas' },
@@ -172,8 +172,9 @@ export function Layout() {
           {menu.map((g) => {
             const itens = g.itens.filter(permitido);
             if (!itens.length) return null;
-            return [<div key={g.secao} className="secao">{g.secao}</div>, ...itens.map((i) => (
-              <NavLink key={i.to} to={i.to} end={i.fim} className={({ isActive }) => (isActive ? 'ativo' : '')}>
+            return [<div key={g.secao} className="secao">{g.secao}</div>, ...itens.map((i) => (i.externo
+              ? <a key={i.to} href={i.to} target="_blank" rel="noreferrer noopener" title="contato@acorly.com.br: abre o webmail da Hostinger em outra aba"><span>{i.r}</span></a>
+              : <NavLink key={i.to} to={i.to} end={i.fim} className={({ isActive }) => (isActive ? 'ativo' : '')}>
                 <span>{i.r}</span>{i.recurso && s.acesso && !s.acesso.recursos?.includes(i.recurso) && <span className="cadeado" title="Disponível em um plano superior">🔒</span>}{i.contador && contadores[i.contador] > 0 && <span className="contador">{contadores[i.contador]}</span>}
               </NavLink>
             ))];
