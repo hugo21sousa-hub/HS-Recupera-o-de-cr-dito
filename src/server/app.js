@@ -54,7 +54,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
   const whatsapp = criarWhatsApp({ config: whatsCfg, fetchImpl: fetchImpl || fetch });
   const asaas = criarAsaas({ config: configAsaas(env), fetchImpl: fetchImpl || fetch });
   const descadastro = criarDescadastro({ segredo, urlBase });
-  const integracoes = { email, descadastro, whatsapp: whatsapp.disponivel ? whatsapp : null, asaas: asaas.disponivel ? asaas : null };
+  const integracoes = { email, descadastro, urlBase, whatsapp: whatsapp.disponivel ? whatsapp : null, asaas: asaas.disponivel ? asaas : null };
 
   /** Executa em transação; efeitos externos (e-mails) só depois do COMMIT. */
   async function transacao(fn) {

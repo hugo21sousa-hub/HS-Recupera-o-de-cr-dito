@@ -1,8 +1,8 @@
 // Envio de mensagens ao devedor (WhatsApp assistido e e-mail) e registro de respostas.
 import { useEffect, useState } from 'react';
-import { hs } from './api.js';
-import { Modal, useApi, useExecutar } from './ui.jsx';
-import { rotulo, dataHora } from './format.js';
+import { hs, abrirLink, enviarArquivo } from './api.js';
+import { Modal, useApi, useExecutar, Badge } from './ui.jsx';
+import { rotulo, dataHora, data, brl } from './format.js';
 
 const RESULTADOS_RESPOSTA = ['RESPONDEU', 'PROMESSA_PAGAMENTO', 'RECUSA', 'CONTESTOU', 'SOLICITOU_INTERRUPCAO', 'OUTRO'];
 
@@ -140,6 +140,95 @@ export function RegistrarResposta({ casoId, onClose, onFeito }) {
         </div>
         {v.resultado === 'CONTESTOU' && <div className="aviso alerta small">O credor será avisado e o caso fica em contestação.</div>}
         {v.resultado === 'SOLICITOU_INTERRUPCAO' && <div className="aviso alerta small">O devedor fica marcado para não receber mais contatos.</div>}
+      </div>
+    </Modal>
+  );
+}
+
+/** Formas de pagamento das parcelas de um acordo: o credor informa (boleto/Pix); quem cobra envia ao devedor. */
+export function PagamentosAcordo({ acordo, podeInformar, podeEnviar, emailDisponivel }) {
+  const { data: parcelas, carregando, recarregar } = useApi('pagamentosDoAcordo', { acordo_id: acordo.id });
+  const { executar, enviando } = useExecutar();
+  const [informar, setInformar] = useState(null);
+  const [enviado, setEnviado] = useState(null);
+  const verBoleto = (f) => abrirLink(hs('urlBoleto', { forma_id: f.id })).catch(() => {});
+  const enviarWhats = async (p) => {
+    const janela = window.open('about:blank', '_blank');
+    try {
+      const r = await executar('enviarPagamentoParcela', { parcela_id: p.id, canal: 'WHATSAPP' }, 'Envio registrado no histórico');
+      if (janela && !janela.closed) janela.location.replace(r.link); else window.open(r.link, '_blank', 'noopener');
+      setEnviado({ tipo: 'whatsapp', ...r }); recarregar();
+    } catch { janela?.close(); }
+  };
+  const enviarEmail = async (p) => {
+    try { const r = await executar('enviarPagamentoParcela', { parcela_id: p.id, canal: 'EMAIL' }, 'E-mail enviado ao devedor'); setEnviado({ tipo: 'email', ...r }); recarregar(); } catch { /* aviso já mostrado */ }
+  };
+  if (carregando && !parcelas) return null;
+  const faltam = (parcelas || []).filter((p) => p.aberta && !p.forma).length;
+  return (
+    <div className="stack" style={{ marginTop: 12 }}>
+      <h3 style={{ margin: 0 }}>Pagamento das parcelas</h3>
+      {faltam > 0 && <div className="aviso alerta small">{podeInformar ? `Informe o boleto ou o Pix de ${faltam} parcela(s) para a equipe enviar ao devedor. O pagamento cai direto na sua conta.` : `O credor ainda não informou a forma de pagamento de ${faltam} parcela(s).`}</div>}
+      <div className="tabela-wrap"><table>
+        <thead><tr><th>Parcela</th><th>Vencimento</th><th className="num">Valor</th><th>Situação</th><th>Forma de pagamento</th><th>Enviado ao devedor</th><th></th></tr></thead>
+        <tbody>{(parcelas || []).map((p) => (
+          <tr key={p.id}>
+            <td>{p.numero === 0 ? 'Entrada' : p.numero}</td><td>{data(p.vencimento)}</td><td className="num">{brl(p.aberta ? p.saldo_centavos : p.valor_original_centavos)}</td>
+            <td><Badge status={p.status} /></td>
+            <td className="small">{p.forma ? <>{[p.forma.tem_boleto || p.forma.linha_digitavel ? 'Boleto' : null, p.forma.pix_copia_cola ? 'Pix' : null, p.forma.link_pagamento ? 'Link' : null].filter(Boolean).join(' + ')}{p.substituicoes > 0 && <span className="muted"> (atualizado)</span>}</> : p.aberta ? <span style={{ color: 'var(--alerta)' }}>Pendente</span> : '—'}</td>
+            <td className="small">{p.forma?.enviado_ao_devedor_em ? dataHora(p.forma.enviado_ao_devedor_em) : '—'}</td>
+            <td className="right"><div className="row" style={{ justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
+              {p.forma?.tem_boleto && <button className="btn sm" onClick={() => verBoleto(p.forma)}>Ver boleto</button>}
+              {p.aberta && podeInformar && <button className={`btn sm ${p.forma ? '' : 'prim'}`} onClick={() => setInformar(p)}>{p.forma ? 'Substituir' : 'Informar boleto/Pix'}</button>}
+              {p.aberta && p.forma && podeEnviar && <button className="btn sm prim" disabled={enviando} onClick={() => enviarWhats(p)}>WhatsApp</button>}
+              {p.aberta && p.forma && podeEnviar && emailDisponivel && <button className="btn sm" disabled={enviando} onClick={() => enviarEmail(p)}>E-mail</button>}
+            </div></td>
+          </tr>
+        ))}</tbody>
+      </table></div>
+      {informar && <InformarPagamento parcela={informar} onClose={() => setInformar(null)} onFeito={recarregar} />}
+      {enviado && (
+        <Modal titulo={enviado.tipo === 'email' ? 'E-mail enviado' : 'WhatsApp aberto'} onClose={() => setEnviado(null)} rodape={<button className="btn prim" onClick={() => setEnviado(null)}>Concluir</button>}>
+          {enviado.tipo === 'email'
+            ? <div className="aviso ok">Enviado para <strong>{enviado.para}</strong>{enviado.anexou_boleto ? ', com o boleto em PDF anexado' : ''}, e registrado no histórico.</div>
+            : <div className="stack">
+                <div className="aviso ok">O WhatsApp abriu com os dados de pagamento. Confira e aperte <strong>Enviar</strong>.</div>
+                <div className="card small" style={{ whiteSpace: 'pre-wrap' }}>{enviado.mensagem}</div>
+                <div className="row between"><a href={enviado.link} target="_blank" rel="noreferrer" className="btn sm">Abrir o WhatsApp de novo</a><button className="btn sm perigo" onClick={async () => { try { await executar('desfazerEnvio', { interacao_id: enviado.interacao_id }, 'Envio desfeito'); setEnviado(null); } catch { /* aviso já mostrado */ } }}>Não consegui enviar: desfazer</button></div>
+              </div>}
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function InformarPagamento({ parcela, onClose, onFeito }) {
+  const [v, setV] = useState({ linha_digitavel: '', pix_copia_cola: '', link_pagamento: '', aplicar_todas: false });
+  const [arquivo, setArquivo] = useState(null);
+  const [salvando, setSalvando] = useState(false);
+  const { executar } = useExecutar();
+  const set = (k) => (e) => setV({ ...v, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
+  const temBoleto = arquivo || v.linha_digitavel.trim();
+  const salvar = async () => {
+    setSalvando(true);
+    try {
+      let arquivo_uri;
+      if (arquivo) arquivo_uri = (await enviarArquivo(arquivo)).file_uri;
+      await executar('salvarPagamentoParcela', { parcela_id: parcela.id, linha_digitavel: v.linha_digitavel || undefined, pix_copia_cola: v.pix_copia_cola || undefined, link_pagamento: v.link_pagamento || undefined, arquivo_uri, arquivo_nome: arquivo?.name, aplicar_todas: v.aplicar_todas && !temBoleto }, 'Forma de pagamento registrada');
+      onFeito(); onClose();
+    } catch { /* aviso já mostrado */ } finally { setSalvando(false); }
+  };
+  return (
+    <Modal titulo={`${parcela.numero === 0 ? 'Entrada' : `Parcela ${parcela.numero}`} · vencimento ${data(parcela.vencimento)} · ${brl(parcela.saldo_centavos)}`} onClose={onClose} rodape={<><button className="btn" onClick={onClose}>Cancelar</button><button className="btn prim" disabled={salvando || !(temBoleto || v.pix_copia_cola.trim() || v.link_pagamento.trim())} onClick={salvar}>Salvar</button></>}>
+      <div className="stack">
+        <div className="aviso info small">Informe uma ou mais formas. O devedor paga direto na conta da sua empresa. Se for um boleto atualizado, o anterior fica guardado no histórico.</div>
+        <h3 style={{ margin: 0 }}>Boleto</h3>
+        <div className="campo"><label>Arquivo do boleto (PDF ou imagem)</label><input type="file" accept="application/pdf,image/png,image/jpeg,image/webp" onChange={(e) => setArquivo(e.target.files?.[0] || null)} /></div>
+        <div className="campo"><label>Linha digitável</label><input value={v.linha_digitavel} onChange={set('linha_digitavel')} placeholder="00000.00000 00000.000000 00000.000000 0 00000000000000" /></div>
+        <h3 style={{ margin: '8px 0 0' }}>Pix ou link</h3>
+        <div className="campo"><label>Pix copia e cola</label><textarea rows={3} value={v.pix_copia_cola} onChange={set('pix_copia_cola')} placeholder="00020126..." /></div>
+        <div className="campo"><label>Link de pagamento (opcional)</label><input value={v.link_pagamento} onChange={set('link_pagamento')} placeholder="https://..." /></div>
+        <label className="check small"><input type="checkbox" checked={v.aplicar_todas && !temBoleto} disabled={!!temBoleto} onChange={set('aplicar_todas')} /> Usar este Pix/link em todas as parcelas em aberto do acordo{temBoleto ? ' (boletos são individuais)' : ''}</label>
       </div>
     </Modal>
   );

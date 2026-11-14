@@ -129,7 +129,13 @@ export const actions = {
       await alterar(ctx, 'Negociacao', neg, { status: 'CONVERTIDA_EM_ACORDO' }, 'CONVERTER_NEGOCIACAO');
       await alterar(ctx, 'Divida', div, { status_financeiro: 'EM_ACORDO' }, 'DIVIDA_EM_ACORDO');
       await levarCasoPara(ctx, await getById(ctx, 'CasoCobranca', caso.id), 'ACORDO_AGUARDANDO_PAGAMENTO', null, { obrigatorio: true });
-      await notificar(ctx, caso.empresa_id, { perfis: ['ADMIN_EMPRESA', 'FINANCEIRO_EMPRESA'], tipo: 'ACORDO_FORMALIZADO', titulo: 'Acordo formalizado', mensagem: `Acordo de ${neg.quantidade_parcelas + (neg.entrada_centavos > 0 ? 1 : 0)} pagamento(s) registrado. O devedor pagará diretamente à empresa.`, link: `/acordos/${acordo.id}` });
+      const qtd = neg.quantidade_parcelas + (neg.entrada_centavos > 0 ? 1 : 0);
+      if (caso.modalidade_cobranca === 'HS_GERENCIADA') {
+        const devedor = await getById(ctx, 'Devedor', caso.devedor_id);
+        await notificar(ctx, caso.empresa_id, { perfis: ['ADMIN_EMPRESA', 'FINANCEIRO_EMPRESA'], tipo: 'BOLETOS_PENDENTES', titulo: `Acordo com ${devedor?.nome || 'o devedor'}: envie os boletos ou o Pix`, mensagem: `Acordo de ${qtd} pagamento(s) formalizado pela equipe Acorly. O devedor paga diretamente à empresa: informe o boleto (PDF ou linha digitável) ou o Pix de cada parcela para enviarmos ao devedor.`, link: `/casos/${caso.id}` });
+      } else {
+        await notificar(ctx, caso.empresa_id, { perfis: ['ADMIN_EMPRESA', 'FINANCEIRO_EMPRESA'], tipo: 'ACORDO_FORMALIZADO', titulo: 'Acordo formalizado', mensagem: `Acordo de ${qtd} pagamento(s) registrado. O devedor pagará diretamente à empresa.`, link: `/casos/${caso.id}` });
+      }
       return { acordo, parcelas: parcelas.length };
     },
   },

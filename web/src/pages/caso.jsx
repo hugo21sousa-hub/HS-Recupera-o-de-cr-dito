@@ -6,7 +6,7 @@ import { Badge, Cabecalho, FormModal, Modal, useApi, useToast, useConfirm, Carre
 import { brl, data, dataHora, rotulo, pct, mascaraFone, mascaraDoc, hojeISO, reaisParaCentavos, pctParaBps } from '../format.js';
 import { RegistrarPagamento } from './cadastros.jsx';
 import { AcoesPagamento, DecisaoNegociacao } from './financeiro.jsx';
-import { EnviarMensagem, RegistrarResposta } from '../mensagens.jsx';
+import { EnviarMensagem, RegistrarResposta, PagamentosAcordo } from '../mensagens.jsx';
 
 const TIPOS = ['MENSAGEM_ENVIADA', 'LIGACAO', 'TENTATIVA_CONTATO', 'RESPOSTA_DEVEDOR', 'SEM_RESPOSTA', 'RETORNO_AGENDADO', 'NOTA_INTERNA'];
 const RESULTADOS = ['SEM_RESPOSTA', 'RESPONDEU', 'NUMERO_INVALIDO', 'PROMESSA_PAGAMENTO', 'RECUSA', 'CONTESTOU', 'SOLICITOU_INTERRUPCAO', 'OUTRO'];
@@ -195,7 +195,10 @@ export function CasoDetalhe() {
             })}
           </tbody></table>
         ) : <Vazio titulo="Nenhum acordo formalizado" />)}
-        {aba === 'acordos' && d.parcelas.some((p) => p.acordo_id) && (
+        {aba === 'acordos' && d.acordos.filter((a) => a.status === 'ATIVO').map((a) => (
+          <PagamentosAcordo key={a.id} acordo={a} podeInformar={!s.ehHS && s.pode('pagamento.confirmar')} podeEnviar={operavel && !bloqueadoContato} emailDisponivel={d.email_cobranca} />
+        ))}
+        {aba === 'acordos' && d.parcelas.some((p) => p.acordo_id) && !d.acordos.some((a) => a.status === 'ATIVO') && (
           <div style={{ marginTop: 12 }}><h3>Parcelas de acordo</h3><table><thead><tr><th>#</th><th>Vencimento</th><th className="num">Valor</th><th className="num">Saldo</th><th>Status</th></tr></thead><tbody>
             {d.parcelas.filter((p) => p.acordo_id).map((p) => <tr key={p.id}><td>{p.numero === 0 ? 'Entrada' : p.numero}</td><td>{data(p.vencimento)}</td><td className="num">{brl(p.valor_original_centavos)}</td><td className="num">{brl(p.saldo_centavos)}</td><td><Badge status={p.status} /></td></tr>)}
           </tbody></table></div>

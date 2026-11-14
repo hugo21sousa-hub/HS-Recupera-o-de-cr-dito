@@ -16,8 +16,9 @@ function separarRemetente(s) {
  */
 export function transporteBrevo({ chave, fetchImpl = fetch }) {
   return {
-    async sendMail({ from, to, subject, text, html, replyTo, headers }) {
+    async sendMail({ from, to, subject, text, html, replyTo, headers, attachments }) {
       const corpo = { sender: separarRemetente(from), to: [{ email: to }], subject, textContent: text, htmlContent: html };
+      if (attachments?.length) corpo.attachment = attachments.map((a) => ({ name: a.filename, content: Buffer.from(a.content).toString('base64') }));
       if (replyTo) corpo.replyTo = { email: replyTo };
       if (headers && Object.keys(headers).length) corpo.headers = headers;
       const r = await fetchImpl('https://api.brevo.com/v3/smtp/email', {
@@ -76,7 +77,7 @@ ${botao ? `<p style="margin:20px 0"><a href="${esc(botao.url)}" style="backgroun
   }
 
   /** E-mail de cobrança ao devedor: texto simples e respeitoso, identificação do credor e link de descadastro. */
-  async function paraDevedor({ para, nomeRemetente, responderPara, assunto, texto, rodape, descadastrar }) {
+  async function paraDevedor({ para, nomeRemetente, responderPara, assunto, texto, rodape, descadastrar, anexos = [] }) {
     if (!t || !enderecoCobranca) return { ok: false, erro: 'envio de cobrança não configurado' };
     const nome = String(nomeRemetente || 'Acorly').replace(/[<>"\r\n]/g, '').slice(0, 70);
     const corpoHtml = esc(texto).split(/\n{2,}/).map((p) => `<p style="font-size:15px;line-height:1.55;margin:0 0 14px">${p.replace(/\n/g, '<br>')}</p>`).join('');
@@ -89,7 +90,8 @@ ${botao ? `<p style="margin:20px 0"><a href="${esc(botao.url)}" style="backgroun
     const textoCompleto = `${texto}\n\n--\n${rodape || ''}${descadastrar ? `\nPara não receber mais e-mails sobre esta cobrança: ${descadastrar}` : ''}`;
     const headers = descadastrar ? { 'List-Unsubscribe': `<${descadastrar}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } : {};
     try {
-      const info = await t.sendMail({ from: `${nome} <${enderecoCobranca}>`, to: para, replyTo: responderPara || undefined, subject: assunto, text: textoCompleto, html, headers });
+      const attachments = anexos.map((a) => ({ filename: String(a.nome || 'anexo.pdf').replace(/[^\w.\- ]+/g, '_'), content: a.conteudo, contentType: a.mime }));
+      const info = await t.sendMail({ from: `${nome} <${enderecoCobranca}>`, to: para, replyTo: responderPara || undefined, subject: assunto, text: textoCompleto, html, headers, ...(attachments.length ? { attachments } : {}) });
       enviados.push({ para, assunto, cobranca: true, responderPara, info });
       return { ok: true, id: info?.messageId || null };
     } catch (e) {

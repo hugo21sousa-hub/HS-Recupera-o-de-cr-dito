@@ -202,6 +202,16 @@ export const ENTITIES = {
     properties: { ...EMP, pagamento_id: ref('Pagamento'), confirmado_por: ref('Usuário'), data_confirmacao: ts('Data'), evidencia: s('Evidência (extrato, file_uri)'), observacao: s('Observação'), valor_confirmado_centavos: c('Valor'), status: e(['VALIDA', 'DESCARTADA_DUPLICIDADE', 'DESCARTADA_CONCORRENCIA'], 'Status', 'VALIDA') },
     required: ['empresa_id', 'pagamento_id', 'confirmado_por'],
   },
+  PagamentoParcela: {
+    description: 'Forma de pagamento de uma parcela de acordo informada pelo credor (boleto, Pix ou link). O dinheiro vai direto ao credor.',
+    properties: {
+      ...EMP, acordo_id: ref('Acordo'), caso_id: ref('CasoCobranca'), parcela_id: ref('Parcela'), tipo: e(['BOLETO', 'PIX', 'LINK'], 'Tipo'),
+      arquivo_uri: s('file_uri do boleto em PDF (privado)'), arquivo_nome: s('Nome do arquivo'), linha_digitavel: s('Linha digitável'), pix_copia_cola: s('Pix copia e cola'), link_pagamento: s('Link de pagamento'),
+      status: e(['ATIVO', 'SUBSTITUIDO'], 'Status', 'ATIVO'), informado_por: ref('Quem informou'), informado_em: ts('Quando'), substitui_id: ref('Forma anterior'), substituido_em: ts('Substituído em'),
+      enviado_ao_devedor_em: ts('Último envio ao devedor'),
+    },
+    required: ['empresa_id', 'acordo_id', 'parcela_id', 'status'],
+  },
   PrestacaoContas: {
     description: 'Relatório de prestação de contas por contrato/período',
     properties: { ...EMP, contrato_servico_id: ref('ContratoServico'), periodo_inicio: dt('Início'), periodo_fim: dt('Fim'), quantidade_casos: n('Casos'), valor_cobrado_centavos: c('Valor do serviço'), valor_negociado_centavos: c('Valor negociado'), valor_confirmado_centavos: c('Valor recuperado confirmado'), relatorio: s('JSON do relatório'), data_geracao: ts('Geração'), enviado_em: ts('Enviado à empresa em'), enviado_para: arr('E-mails que receberam'), enviado_por: s('Quem enviou') },

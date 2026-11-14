@@ -9,6 +9,7 @@ import { emailValido } from '../core/documento.js';
 import { formatBRL } from '../core/money.js';
 import { LIMITE_CONTATOS_DIA } from '../core/compliance.js';
 import { prestacoesDoMes, mesAnterior } from './actions/relatorios.js';
+import { dadosPagamentoParcela } from './actions/boletos.js';
 
 export const DIAS_ANTES_MENSALIDADE = 3;
 export const AVISOS_PARCELA = [{ dias: 3, chave: 'D-3' }, { dias: 0, chave: 'D0' }];
@@ -80,7 +81,14 @@ export async function lembretesParcelas(ctx) {
       const responsavel = await getById(ctx, 'UsuarioPlataforma', caso.operador_id || caso.responsavel_empresa_id);
       const qual = p.numero === 0 ? 'a entrada' : `a parcela ${p.numero}`;
       const quando = aviso.dias === 0 ? 'vence hoje' : `vence em ${dataBR(p.vencimento)}`;
-      const texto = `Olá, ${devedor.nome.split(' ')[0]}.\n\nEste é um lembrete do seu acordo com a ${credor}: ${qual}, no valor de ${formatBRL(p.saldo_centavos)}, ${quando}.\n\nO pagamento é feito diretamente à ${credor}, pelos meios combinados no acordo. Se você já pagou, por favor desconsidere esta mensagem.\n\nQualquer dúvida, é só responder este e-mail.`;
+      const pg = await dadosPagamentoParcela(ctx, p);
+      const instrucoes = pg ? [
+        pg.forma.linha_digitavel ? `Linha digitável do boleto: ${pg.forma.linha_digitavel}` : null,
+        pg.link ? `Boleto em PDF: ${pg.link}` : null,
+        pg.forma.pix_copia_cola ? `Pix copia e cola:\n${pg.forma.pix_copia_cola}` : null,
+        pg.forma.link_pagamento ? `Link de pagamento: ${pg.forma.link_pagamento}` : null,
+      ].filter(Boolean).join('\n\n') : '';
+      const texto = `Olá, ${devedor.nome.split(' ')[0]}.\n\nEste é um lembrete do seu acordo com a ${credor}: ${qual}, no valor de ${formatBRL(p.saldo_centavos)}, ${quando}.\n\n${instrucoes ? `${instrucoes}\n\nO pagamento é feito diretamente à ${credor}.` : `O pagamento é feito diretamente à ${credor}, pelos meios combinados no acordo.`} Se você já pagou, por favor desconsidere esta mensagem.\n\nQualquer dúvida, é só responder este e-mail.`;
       const assunto = `Lembrete: ${qual} do seu acordo com ${credor} ${quando}`;
       const cnpj = String(empresa.cnpj || '').replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
       const r = await ctx.email.paraDevedor({

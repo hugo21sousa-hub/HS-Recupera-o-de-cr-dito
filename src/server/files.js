@@ -50,6 +50,15 @@ export function criarArquivos({ db, dir, segredo, agora = () => new Date(), arma
       return `/arquivos/${file_uri}?exp=${exp}&sig=${assinar(file_uri, exp)}`;
     },
 
+    /** Conteúdo do arquivo para uso interno do servidor (ex.: anexar o boleto no e-mail). */
+    async conteudo(file_uri) {
+      if (!/^arq_[0-9a-f]{40}$/.test(String(file_uri))) return null;
+      const buffer = await arm.get(file_uri);
+      if (!buffer) return null;
+      const meta = (await db.Arquivo.filter({ file_uri }))[0];
+      return { buffer, mime: meta?.mime || 'application/octet-stream', nome: meta?.nome || file_uri };
+    },
+
     async ler(file_uri, exp, sig) {
       if (!/^arq_[0-9a-f]{40}$/.test(file_uri)) return null;
       if (!exp || Number(exp) < agora().getTime() / 1000) return null;

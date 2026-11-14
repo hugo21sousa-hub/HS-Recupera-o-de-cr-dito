@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi, Cabecalho, Stat, Carregando, ErroCarga, Badge, Vazio } from '../ui.jsx';
 import { useSessao } from '../sessao.jsx';
-import { brl, pct, rotulo } from '../format.js';
+import { brl, pct, rotulo, data } from '../format.js';
 
 const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const SERIES = [
@@ -113,6 +113,7 @@ export function PainelEmpresa() {
       <Cabecalho titulo="Dashboard" sub="Valores reais da sua carteira. Só pagamentos confirmados por você contam como recuperados.">
         {s.pode('divida.editar') && <Link className="btn prim" to="/dividas?nova=1">Nova dívida</Link>}
       </Cabecalho>
+      {s.pode('pagamento.confirmar') && <BoletosPendentes />}
       {s.empresa?.status !== 'ATIVA' && <div className="aviso alerta">Sua empresa está como <strong>{rotulo(s.empresa?.status)}</strong>. Você já pode cadastrar e cobrar por conta própria; o encaminhamento ao Acorly é liberado após a validação.</div>}
       <Filtros valores={filtros} set={setFiltros} campos={[
         { nome: 'de', rotulo: 'De', tipo: 'data' }, { nome: 'ate', rotulo: 'Até', tipo: 'data' },
@@ -145,6 +146,18 @@ export function PainelEmpresa() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function BoletosPendentes() {
+  const { data: itens } = useApi('boletosPendentes', {});
+  if (!itens?.length) return null;
+  return (
+    <div className="aviso alerta stack" style={{ gap: 6 }}>
+      <strong>Acordos aguardando o boleto ou o Pix das parcelas</strong>
+      <span className="small">O devedor já aceitou o acordo. Informe como ele deve pagar (o dinheiro cai direto na sua conta) para a equipe enviar.</span>
+      {itens.map((i) => <div key={i.acordo_id} className="row between small"><span>{i.devedor_nome} · {i.parcelas_sem_pagamento} parcela(s) · próxima em {data(i.proximo_vencimento)}</span><Link className="btn sm prim" to={`/casos/${i.caso_id}`}>Informar</Link></div>)}
     </div>
   );
 }
