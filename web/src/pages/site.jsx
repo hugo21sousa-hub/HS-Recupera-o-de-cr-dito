@@ -227,6 +227,12 @@ export function Site() {
             <Link to="/termos">Termos de Uso</Link>
             <Link to="/privacidade">Política de Privacidade</Link>
           </div>
+          {dados?.redes && Object.keys(dados.redes).length > 0 && (
+            <div className="stack small" style={{ gap: 6 }}>
+              <strong>Redes sociais</strong>
+              <div className="site-redes">{[['instagram', 'Instagram'], ['linkedin', 'LinkedIn'], ['facebook', 'Facebook'], ['youtube', 'YouTube'], ['tiktok', 'TikTok']].filter(([k]) => dados.redes[k]).map(([k, r]) => <a key={k} href={dados.redes[k]} target="_blank" rel="noreferrer noopener">{r}</a>)}</div>
+            </div>
+          )}
           {(contato.email || contato.whatsapp) && (
             <div className="stack small" style={{ gap: 6 }}>
               <strong>Fale conosco</strong>

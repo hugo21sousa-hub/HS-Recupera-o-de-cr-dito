@@ -216,6 +216,15 @@ A empresa abre o relatório completo e baixa o PDF em **Relatórios**.
 
 No Render (**Environment**), adicione `DPO_NOME` com o nome do encarregado pelo tratamento de dados. Ele aparece na **Política de Privacidade** (acorly.com.br/privacidade) junto com o e-mail `contato@acorly.com.br`.
 
+## Conteúdo e redes sociais
+
+Em **Negócio › Conteúdo e redes sociais** (superadmin):
+- **Próximos posts:** a cada 2 dias o sistema sugere um post para o LinkedIn e um para o Instagram, com texto, hashtags, roteiro e arte pronta (PNG). **Nada é publicado automaticamente.** Revise, edite se quiser e clique em **Aprovar e enviar ao marketing**.
+- **Marketing:** convide a pessoa em **Equipe interna** com o perfil **Marketing**. Ela só vê essa tela, recebe aviso por e-mail a cada post aprovado, baixa a arte e o texto, publica manualmente e clica em **Marcar como publicado**.
+- **Redes sociais:** cadastre os links dos perfis (Instagram, LinkedIn, Facebook, YouTube, TikTok). Eles aparecem no rodapé do site.
+
+O banco inicial tem 16 temas (cerca de um mês). Quando estiver acabando, o sistema avisa. Aí é só cadastrar novos posts em **Novo post** ou pedir novos temas.
+
 ## Contato no site
 
 O endereço principal mostra o site de apresentação da HS, com os planos atualizados automaticamente. Para exibir o seu e-mail e WhatsApp no rodapé, adicione no Render (**Environment**) as variáveis `CONTATO_EMAIL` e `CONTATO_WHATSAPP` (ex.: `5511999999999`).

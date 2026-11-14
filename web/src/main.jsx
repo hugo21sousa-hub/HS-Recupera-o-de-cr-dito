@@ -18,6 +18,7 @@ import { Negociacoes, Acordos, Pagamentos, Relatorios } from './pages/financeiro
 import { CentralMensagens } from './pages/central.jsx';
 import { Diagnostico } from './pages/diagnostico.jsx';
 import { Leads } from './pages/leads.jsx';
+import { Conteudo } from './pages/conteudo.jsx';
 import { IndicadoresNegocio } from './pages/negocio.jsx';
 import { Usuarios, Contratos, Assinatura, Configuracoes, MinhaConta, Modelos } from './pages/gestao.jsx';
 import { TriagemWhatsApp } from './pages/hs.jsx';
@@ -56,7 +57,7 @@ function Raiz() {
   if (s.perfil?.seguranca?.exige_2fa && !s.perfil?.seguranca?.dois_fatores_ativo) return <Exigir2FA />;
   if (s.perfil?.precisa_onboarding && !s.ehHS) return <Routes><Route path="*" element={<Onboarding />} /></Routes>;
   if (s.usuario?.status && s.usuario.status !== 'ATIVO') return <Vazio titulo="Acesso bloqueado">Fale com o administrador da sua empresa.</Vazio>;
-  const inicio = s.ehHS ? (s.pode('relatorio.hs') ? '/hs' : '/hs/meus') : s.pode('relatorio.empresa') ? '/painel' : '/dividas';
+  const inicio = s.ehHS ? (s.pode('relatorio.hs') ? '/hs' : s.pode('conteudo.ler') && !s.pode('caso.ler_atribuidos') ? '/hs/conteudo' : '/hs/meus') : s.pode('relatorio.empresa') ? '/painel' : '/dividas';
   if (publicas.includes(loc.pathname)) return <Navigate to={inicio} replace />;
   const P = (p, el) => <Protegida p={p}>{el}</Protegida>;
   return (
@@ -98,6 +99,7 @@ function Raiz() {
           <Route path="/hs/distribuicao" element={P('caso.distribuir', <Distribuicao />)} />
           <Route path="/hs/meus" element={P(['caso.ler_atribuidos', 'caso.ler_todos_hs'], <MeusCasos />)} />
           <Route path="/hs/casos" element={P('caso.ler_todos_hs', <TodosCasos />)} />
+          <Route path="/hs/conteudo" element={P('conteudo.ler', <Conteudo />)} />
           <Route path="/hs/leads" element={P('lead.gerenciar', <Leads />)} />
           <Route path="/hs/negocio" element={P('plano.gerenciar', <IndicadoresNegocio />)} />
           <Route path="/hs/mensagens" element={P('interacao.registrar', <CentralMensagens />)} />

@@ -132,13 +132,13 @@ export function ConfirmProvider({ children }) {
       {pedido && (
         <Modal titulo={pedido.titulo || 'Confirmar'} onClose={() => fechar(null)} rodape={<>
           <button className="btn" onClick={() => fechar(null)}>Cancelar</button>
-          <button className={`btn ${pedido.perigo ? 'perigo cheio' : 'prim'}`} disabled={pedido.pedirMotivo && !motivo.trim()} onClick={() => fechar({ motivo: motivo.trim() })}>{pedido.botao || 'Confirmar'}</button>
+          <button className={`btn ${pedido.perigo ? 'perigo cheio' : 'prim'}`} disabled={pedido.pedirMotivo && !pedido.motivoOpcional && !motivo.trim()} onClick={() => fechar({ motivo: motivo.trim() })}>{pedido.botao || 'Confirmar'}</button>
         </>}>
           <div className="stack">
             {typeof pedido.mensagem === 'string' ? <p>{pedido.mensagem}</p> : pedido.mensagem}
             {pedido.pedirMotivo && (
               <div className="campo">
-                <label htmlFor="motivo-conf">{pedido.rotuloMotivo || 'Motivo'} *</label>
+                <label htmlFor="motivo-conf">{pedido.rotuloMotivo || 'Motivo'}{pedido.motivoOpcional ? '' : ' *'}</label>
                 <textarea id="motivo-conf" autoFocus value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={1000} />
               </div>
             )}

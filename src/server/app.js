@@ -5,6 +5,7 @@ import { confirmarPorDecursoDePrazo } from '../app/actions/pagamentos.js';
 import { garantirModelosPadrao } from '../app/actions/mensagens.js';
 import { rodarLembretes } from '../app/lembretes.js';
 import { registrarLead } from '../app/actions/leads.js';
+import { garantirAgenda, redesSociaisPublicas } from '../app/actions/conteudo.js';
 import { readFileSync, existsSync, statSync, writeFileSync, mkdirSync, createReadStream } from 'node:fs';
 import { join, extname, resolve, sep } from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -84,6 +85,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
     return transacao(async (pos) => {
       const r = await executarRetencao(ctxSistema(pos));
       r.pagamentos_confirmados_por_decurso = (await confirmarPorDecursoDePrazo(ctxSistema(pos))).confirmados;
+      r.posts_sugeridos = (await garantirAgenda(ctxSistema(pos))).criados;
       // Pedidos de diagnóstico que não viraram clientes: apagados (com a planilha) após 12 meses
       const limiteLeads = new Date(Date.now() - 365 * 864e5).toISOString();
       for (const l of await db.Lead.filter({})) {
@@ -260,6 +262,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
         planos: planos.sort((a, b) => (a.ordem || 0) - (b.ordem || 0)).map((p) => ({ nome: p.nome, preco_mensal_centavos: p.preco_mensal_centavos, limite_devedores: p.limite_devedores, limite_usuarios: p.limite_usuarios, funcionalidades: p.funcionalidades || [] })),
         contato: { email: env.CONTATO_EMAIL || 'contato@acorly.com.br', whatsapp: env.CONTATO_WHATSAPP || null },
         dpo: env.DPO_NOME || null,
+        redes: await exclusivo(() => redesSociaisPublicas({ db })),
         dias_teste: DIAS_TESTE,
         comissao: await exclusivo(async () => { const cfg = (await db.ConfiguracaoHS.filter({}))[0]; const f = cfg?.comissao_faixas?.length ? cfg.comissao_faixas : TABELA_PADRAO; return f.map((x, i) => ({ ...x, faixa: rotuloFaixa(f, i) })); }),
       } });

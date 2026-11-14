@@ -1,0 +1,323 @@
+// Banco de posts para as redes sociais (um tema a cada 2 dias: LinkedIn + Instagram).
+// Linguagem respeitosa (CDC e LGPD): nunca expor devedores nem prometer recuperação garantida.
+const H_LI = ['#Acorly', '#RecuperacaoDeCredito', '#Inadimplencia', '#GestaoFinanceira'];
+const H_IG = ['#acorly', '#recuperacaodecredito', '#inadimplencia', '#empreendedorismo', '#gestaofinanceira'];
+
+export const BANCO_POSTS = [
+  {
+    tema: 'Lançamento do Acorly',
+    linkedin: {
+      titulo: 'Apresentamos o Acorly',
+      texto: 'Inadimplência não precisa ser uma planilha esquecida na gaveta.\n\nHoje apresentamos o Acorly, a plataforma de recuperação de crédito da HS Recuperação de Crédito.\n\nCom ele, a sua empresa:\n• organiza devedores, dívidas e acordos em um só lugar;\n• cobra com a própria equipe, com mensagens prontas e respeitosas;\n• ou encaminha as dívidas para a nossa equipe cobrar, com os limites que você definir.\n\nE o mais importante: o devedor paga direto para a sua empresa. Nós não intermediamos valores.\n\nQuer saber quanto da sua inadimplência dá para recuperar? O diagnóstico é gratuito: acorly.com.br/diagnostico',
+      roteiro: 'Formato: imagem única + texto. Publicar no perfil da empresa e compartilhar no perfil pessoal do fundador com um comentário pessoal sobre por que criou o Acorly.',
+      hashtags: [...H_LI, '#Lancamento'],
+      arte: { titulo: 'Recupere o que é seu', subtitulo: 'Organização, cobrança respeitosa e o dinheiro direto na sua conta.' },
+    },
+    instagram: {
+      formato: 'Carrossel (5 cards)',
+      legenda: 'Chegou o Acorly! 🚀 A forma organizada e respeitosa de recuperar o que seus clientes devem. Arrasta pro lado e conhece. Diagnóstico gratuito no link da bio.',
+      roteiro: 'Card 1: capa com a logo. Cards 2 a 4: um benefício por card. Card 5: chamada para o diagnóstico gratuito. Stories: repostar com enquete "Sua empresa sofre com inadimplência? Sim / Muito".',
+      hashtags: H_IG,
+      arte: { slides: [
+        { titulo: 'Chegou o Acorly', texto: 'Recuperação de crédito para empresas' },
+        { titulo: 'Tudo em um lugar', texto: 'Devedores, dívidas, acordos e pagamentos organizados.' },
+        { titulo: 'Cobrança respeitosa', texto: 'Mensagens prontas, dentro das regras do CDC.' },
+        { titulo: 'O dinheiro é seu', texto: 'O devedor paga direto para a sua empresa.' },
+        { titulo: 'Diagnóstico grátis', texto: 'acorly.com.br/diagnostico' },
+      ] },
+    },
+  },
+  {
+    tema: 'O tempo joga contra',
+    linkedin: {
+      titulo: 'Quanto mais antiga a dívida, mais difícil recuperar',
+      texto: 'Uma regra simples da cobrança: o tempo joga contra quem tem a receber.\n\nNos primeiros 90 dias, o cliente ainda lembra da compra, tem contato ativo e costuma estar mais disposto a negociar. Depois de um ano, o telefone muda, a prioridade muda e a conversa fica mais difícil.\n\nPor isso, a melhor estratégia não é esperar "o momento certo". É ter uma rotina: lembrete antes do vencimento, contato logo no atraso e proposta de acordo cedo.\n\nComo está a idade das dívidas da sua empresa hoje?',
+      roteiro: 'Formato: texto com imagem de apoio. Terminar com a pergunta para gerar comentários; responder todos no mesmo dia.',
+      hashtags: H_LI,
+      arte: { titulo: 'O tempo joga contra quem tem a receber', subtitulo: 'Cobre cedo, com rotina e respeito.' },
+    },
+    instagram: {
+      formato: 'Reels (20–30 s)',
+      legenda: 'Deixar a cobrança para depois sai caro. ⏳ Quanto antes você conversa com o cliente, maior a chance de acordo. Salva esse post!',
+      roteiro: 'Cena 1 (0–3 s): texto na tela "Esperar para cobrar é um erro". Cena 2: calendário passando rápido. Cena 3: "Até 90 dias: o cliente ainda lembra e negocia". Cena 4: "Depois de 1 ano: contato e prioridade mudam". Cena 5: "Crie uma rotina de cobrança" + logo. Áudio: música em alta, sem fala, ou narração curta.',
+      hashtags: H_IG,
+      arte: { slides: [{ titulo: 'Esperar para cobrar sai caro', texto: 'Quanto antes a conversa, maior a chance de acordo.' }] },
+    },
+  },
+  {
+    tema: 'O que o CDC permite na cobrança',
+    linkedin: {
+      titulo: 'Cobrar é um direito. Constranger, não.',
+      texto: 'O Código de Defesa do Consumidor é claro: na cobrança de dívidas, o consumidor não pode ser exposto ao ridículo nem submetido a constrangimento ou ameaça (art. 42). E o art. 71 trata como infração usar ameaça, coação ou informações falsas na cobrança.\n\nNa prática, isso significa:\n✅ cobrar em horário razoável, por canais adequados;\n✅ falar com o próprio devedor, com clareza sobre a dívida;\n❌ ligar para o chefe, vizinhos ou família;\n❌ expor o nome do devedor ou usar tom ameaçador.\n\nNo Acorly, essas regras viram parte do sistema: mensagens com termos abusivos são bloqueadas e há limite de contatos por dia.\n\nCobrança respeitosa protege a empresa e recupera mais.',
+      roteiro: 'Formato: documento/carrossel em PDF no LinkedIn (4 páginas: regra, pode, não pode, como o Acorly ajuda) ou texto + imagem.',
+      hashtags: [...H_LI, '#CDC', '#DireitoDoConsumidor'],
+      arte: { titulo: 'Cobrar é direito. Constranger, não.', subtitulo: 'CDC, arts. 42 e 71: o que muda na sua cobrança.' },
+    },
+    instagram: {
+      formato: 'Carrossel (4 cards)',
+      legenda: 'Você sabe o que pode e o que não pode na hora de cobrar um cliente? O CDC tem regras claras. Salva e compartilha com quem cuida do financeiro! ⚖️',
+      roteiro: 'Card 1: pergunta. Card 2: "Pode" com 3 itens. Card 3: "Não pode" com 3 itens. Card 4: "No Acorly, as regras já vêm no sistema" + chamada.',
+      hashtags: [...H_IG, '#cdc', '#direitodoconsumidor'],
+      arte: { slides: [
+        { titulo: 'Pode ou não pode na cobrança?', texto: 'O Código de Defesa do Consumidor responde.' },
+        { titulo: '✅ Pode', texto: 'Cobrar com clareza, em horário razoável, falando com o próprio devedor.' },
+        { titulo: '❌ Não pode', texto: 'Expor, ameaçar ou falar da dívida com chefe, vizinhos e família.' },
+        { titulo: 'No Acorly', texto: 'Mensagens abusivas são bloqueadas e há limite de contatos por dia.' },
+      ] },
+    },
+  },
+  {
+    tema: 'Diagnóstico gratuito',
+    linkedin: {
+      titulo: 'Quanto da sua inadimplência dá para recuperar?',
+      texto: 'Muitas empresas sabem quanto têm a receber, mas não sabem quanto disso ainda é recuperável.\n\nPor isso criamos o diagnóstico gratuito do Acorly: você envia a planilha dos clientes em atraso e, em até 2 dias úteis, recebe uma análise com:\n• o total vencido e a idade das dívidas;\n• o que tem mais chance de retorno;\n• como seria a cobrança e quanto custaria.\n\nSem compromisso e com os dados protegidos.\n\nPeça o seu: acorly.com.br/diagnostico',
+      roteiro: 'Formato: imagem + texto. Fixar este post no topo do perfil da empresa por 2 semanas.',
+      hashtags: H_LI,
+      arte: { titulo: 'Diagnóstico gratuito da sua carteira', subtitulo: 'Envie a planilha. Em 2 dias úteis, a análise.' },
+    },
+    instagram: {
+      formato: 'Imagem única + Stories com link',
+      legenda: 'Manda a planilha dos inadimplentes que a gente te diz quanto dá para recuperar. Grátis e sem compromisso. 📊 Link na bio!',
+      roteiro: 'Feed: imagem com o título. Stories: 3 telas (pergunta, como funciona, figurinha de link para acorly.com.br/diagnostico).',
+      hashtags: H_IG,
+      arte: { slides: [{ titulo: 'Quanto dá para recuperar?', texto: 'Diagnóstico gratuito em 2 dias úteis.' }] },
+    },
+  },
+  {
+    tema: '5 erros comuns ao cobrar clientes',
+    linkedin: {
+      titulo: '5 erros comuns ao cobrar clientes',
+      texto: 'Na cobrança, alguns erros se repetem em empresas de todos os tamanhos:\n\n1. Esperar demais para fazer o primeiro contato.\n2. Não registrar o que foi conversado (e repetir propostas).\n3. Oferecer acordo sem entrada e com parcelas que não cabem no bolso.\n4. Usar tom ameaçador, que afasta o cliente e gera risco jurídico.\n5. Não conferir os pagamentos e perder o controle do que entrou.\n\nUma rotina simples, com histórico e acordos bem feitos, resolve boa parte do problema.\n\nQual desses você já viu acontecer?',
+      roteiro: 'Formato: lista em texto + imagem. Pode virar carrossel em PDF com um erro por página.',
+      hashtags: H_LI,
+      arte: { titulo: '5 erros comuns ao cobrar clientes', subtitulo: 'E como evitar cada um deles.' },
+    },
+    instagram: {
+      formato: 'Carrossel (6 cards)',
+      legenda: 'Você comete algum desses erros na hora de cobrar? 👀 Salva para revisar a sua rotina!',
+      roteiro: 'Card 1: título. Cards 2 a 6: um erro por card, com uma dica curta de correção.',
+      hashtags: H_IG,
+      arte: { slides: [
+        { titulo: '5 erros ao cobrar clientes', texto: 'Arrasta e confere.' },
+        { titulo: '1. Esperar demais', texto: 'O primeiro contato deve ser logo no atraso.' },
+        { titulo: '2. Não registrar', texto: 'Sem histórico, a conversa recomeça do zero.' },
+        { titulo: '3. Acordo que não cabe', texto: 'Entrada e parcelas realistas evitam a quebra.' },
+        { titulo: '4. Tom ameaçador', texto: 'Afasta o cliente e gera risco jurídico.' },
+        { titulo: '5. Não conferir', texto: 'Confirme cada pagamento recebido.' },
+      ] },
+    },
+  },
+  {
+    tema: 'O devedor paga direto para você',
+    linkedin: {
+      titulo: 'Transparência: o dinheiro não passa por nós',
+      texto: 'Uma pergunta que sempre ouvimos: "o pagamento passa pela empresa de cobrança?"\n\nNo Acorly, não. O devedor paga diretamente para a sua empresa, por boleto, Pix ou pelos meios que você já usa. Você confirma o recebimento no sistema e acompanha tudo em tempo real.\n\nA HS não guarda saldo, não faz repasses e não fica com o seu dinheiro parado.\n\nTransparência não é diferencial. É o mínimo.',
+      roteiro: 'Formato: imagem + texto curto. Bom para responder objeções de clientes em potencial.',
+      hashtags: H_LI,
+      arte: { titulo: 'O devedor paga direto para você', subtitulo: 'Sem repasses. Sem saldo parado. Sem intermediários.' },
+    },
+    instagram: {
+      formato: 'Reels (15–20 s)',
+      legenda: 'Na cobrança do Acorly, o dinheiro vai direto para a sua conta. 💸 Simples assim.',
+      roteiro: 'Cena 1: "Na cobrança, o dinheiro passa por quem?". Cena 2: animação de seta do devedor direto para a empresa. Cena 3: "Boleto ou Pix da sua empresa". Cena 4: logo + "Transparência é o mínimo".',
+      hashtags: H_IG,
+      arte: { slides: [{ titulo: 'O dinheiro vai direto para você', texto: 'Boleto ou Pix da sua empresa. Sem repasses.' }] },
+    },
+  },
+  {
+    tema: 'Inadimplência em escolas',
+    linkedin: {
+      titulo: 'Mensalidades em atraso: como as escolas podem agir',
+      texto: 'Escolas e cursos vivem um dilema: cobrar sem prejudicar a relação com as famílias.\n\nAlgumas práticas ajudam muito:\n• lembrete amigável alguns dias antes do vencimento;\n• contato logo no primeiro atraso, sempre com o responsável financeiro;\n• propostas de acordo que caibam no orçamento da família;\n• registro de tudo, para que a secretaria e o financeiro falem a mesma língua.\n\nCobrança organizada protege o caixa da escola e a experiência das famílias.',
+      roteiro: 'Formato: texto + imagem. Marcar associações de escolas particulares da região, se houver página.',
+      hashtags: [...H_LI, '#Educacao', '#GestaoEscolar'],
+      arte: { titulo: 'Mensalidade em atraso?', subtitulo: 'Cobrança organizada protege o caixa e a relação com as famílias.' },
+    },
+    instagram: {
+      formato: 'Carrossel (4 cards)',
+      legenda: 'Gestor escolar, esse é para você! 🎒 Como cobrar mensalidades em atraso sem desgastar a relação com as famílias.',
+      roteiro: 'Card 1: título. Card 2: antes do vencimento. Card 3: no primeiro atraso. Card 4: acordo que cabe no orçamento + chamada.',
+      hashtags: [...H_IG, '#gestaoescolar', '#escolaparticular'],
+      arte: { slides: [
+        { titulo: 'Mensalidades em atraso', texto: 'Como cobrar sem desgastar a relação.' },
+        { titulo: 'Antes do vencimento', texto: 'Um lembrete amigável evita esquecimentos.' },
+        { titulo: 'No primeiro atraso', texto: 'Contato rápido com o responsável financeiro.' },
+        { titulo: 'Acordo que cabe', texto: 'Entrada e parcelas possíveis para a família.' },
+      ] },
+    },
+  },
+  {
+    tema: 'Acordo bem feito',
+    linkedin: {
+      titulo: 'O acordo que se cumpre vale mais que o acordo perfeito',
+      texto: 'Um erro comum na negociação é buscar o "melhor acordo" no papel e esquecer se ele cabe na realidade do cliente.\n\nAcordo bom tem:\n• entrada, para confirmar o compromisso;\n• parcelas que cabem no orçamento;\n• datas combinadas e por escrito;\n• lembrete antes de cada vencimento.\n\nNo Acorly, a negociação respeita os limites de desconto e parcelas definidos pelo credor, e cada parcela do acordo tem lembrete automático.',
+      roteiro: 'Formato: texto + imagem. Opcional: comentário do fundador com um caso real (sem identificar o devedor).',
+      hashtags: [...H_LI, '#Negociacao'],
+      arte: { titulo: 'Acordo bom é acordo cumprido', subtitulo: 'Entrada, parcelas possíveis e lembretes.' },
+    },
+    instagram: {
+      formato: 'Imagem única',
+      legenda: 'Não adianta fechar o acordo "perfeito" se ele não cabe no bolso do cliente. 🤝 Acordo bom é acordo cumprido!',
+      roteiro: 'Imagem com a frase principal. Nos Stories, uma caixa de perguntas: "Qual a sua maior dificuldade para negociar?"',
+      hashtags: H_IG,
+      arte: { slides: [{ titulo: 'Acordo bom é acordo cumprido', texto: 'Entrada + parcelas que cabem no bolso.' }] },
+    },
+  },
+  {
+    tema: 'LGPD na cobrança',
+    linkedin: {
+      titulo: 'Dados de devedores também são protegidos pela LGPD',
+      texto: 'Cobrar envolve dados pessoais: nome, CPF, telefone, valores. E a LGPD se aplica a tudo isso.\n\nAlguns cuidados essenciais:\n• compartilhar dados só com quem precisa (e com base legal);\n• não deixar planilhas de inadimplentes circulando por e-mail e WhatsApp;\n• registrar quem acessou e o que foi feito;\n• respeitar o pedido do devedor de não ser mais contatado por um canal.\n\nNo Acorly, cada empresa só vê os próprios dados, o acesso é por perfil e tudo fica na trilha de auditoria.',
+      roteiro: 'Formato: texto + imagem. Tema com autoridade jurídica: bom para o perfil pessoal do fundador (advogado).',
+      hashtags: [...H_LI, '#LGPD', '#ProtecaoDeDados'],
+      arte: { titulo: 'LGPD também vale na cobrança', subtitulo: 'Dados de devedores exigem cuidado e controle.' },
+    },
+    instagram: {
+      formato: 'Carrossel (4 cards)',
+      legenda: 'Planilha de inadimplentes no grupo do WhatsApp? 😬 Cuidado com a LGPD! Veja como proteger os dados na cobrança.',
+      roteiro: 'Card 1: alerta. Card 2: só quem precisa acessa. Card 3: nada de planilha circulando. Card 4: registro e respeito ao pedido do devedor.',
+      hashtags: [...H_IG, '#lgpd'],
+      arte: { slides: [
+        { titulo: 'LGPD na cobrança', texto: 'Dados de devedores também são protegidos.' },
+        { titulo: 'Acesso controlado', texto: 'Só quem precisa vê os dados.' },
+        { titulo: 'Nada de planilha solta', texto: 'Evite circular listas por e-mail e grupos.' },
+        { titulo: 'Registro e respeito', texto: 'Anote os contatos e respeite pedidos de não contato.' },
+      ] },
+    },
+  },
+  {
+    tema: 'Régua de cobrança',
+    linkedin: {
+      titulo: 'Régua de cobrança: o que é e por que ter uma',
+      texto: 'Régua de cobrança é a sequência de contatos que a sua empresa faz antes e depois do vencimento.\n\nUm exemplo simples:\n• 3 dias antes: lembrete amigável;\n• no vencimento: aviso com o boleto ou Pix;\n• 3 dias depois: primeiro contato de cobrança;\n• 15 dias depois: proposta de acordo;\n• 30 dias depois: cobrança gerenciada.\n\nSem régua, a cobrança depende da memória de alguém. Com régua, vira processo.',
+      roteiro: 'Formato: imagem com a régua desenhada (linha do tempo) + texto.',
+      hashtags: H_LI,
+      arte: { titulo: 'Sua empresa tem uma régua de cobrança?', subtitulo: 'Cobrança que depende da memória de alguém não é processo.' },
+    },
+    instagram: {
+      formato: 'Carrossel (6 cards)',
+      legenda: 'Monte a sua régua de cobrança em 5 passos. 📅 Salva para usar na sua empresa!',
+      roteiro: 'Card 1: título. Cards 2 a 6: cada etapa da régua (−3 dias, vencimento, +3, +15, +30).',
+      hashtags: H_IG,
+      arte: { slides: [
+        { titulo: 'Régua de cobrança em 5 passos', texto: 'Do lembrete ao acordo.' },
+        { titulo: '3 dias antes', texto: 'Lembrete amigável do vencimento.' },
+        { titulo: 'No vencimento', texto: 'Envio do boleto ou do Pix.' },
+        { titulo: '3 dias depois', texto: 'Primeiro contato de cobrança.' },
+        { titulo: '15 dias depois', texto: 'Proposta de acordo.' },
+        { titulo: '30 dias depois', texto: 'Cobrança gerenciada pela equipe Acorly.' },
+      ] },
+    },
+  },
+  {
+    tema: 'Clínicas e consultórios',
+    linkedin: {
+      titulo: 'Clínicas também precisam cobrar (e podem fazer isso bem)',
+      texto: 'Na área da saúde, cobrar costuma ser desconfortável. A relação com o paciente é delicada e ninguém quer parecer insensível.\n\nMas inadimplência não tratada afeta a equipe, os fornecedores e a qualidade do atendimento.\n\nO caminho é cobrar com processo e respeito: comunicação clara desde o orçamento, lembretes de vencimento, contato discreto e propostas possíveis.\n\nE, quando preferir manter distância da cobrança, encaminhe para uma equipe especializada, com os seus limites.',
+      roteiro: 'Formato: texto + imagem. Direcionar para gestores de clínicas na região.',
+      hashtags: [...H_LI, '#Saude', '#GestaoDeClinicas'],
+      arte: { titulo: 'Clínicas também podem cobrar bem', subtitulo: 'Processo, discrição e respeito ao paciente.' },
+    },
+    instagram: {
+      formato: 'Imagem única',
+      legenda: 'Cobrar paciente é desconfortável? Com processo e respeito, não precisa ser. 🩺 Fale com a gente.',
+      roteiro: 'Imagem com a frase. Stories com enquete: "Sua clínica tem rotina de cobrança? Sim / Ainda não".',
+      hashtags: [...H_IG, '#gestaodeclinicas', '#saude'],
+      arte: { slides: [{ titulo: 'Cobrar paciente sem constrangimento', texto: 'Processo, discrição e respeito.' }] },
+    },
+  },
+  {
+    tema: 'Comissão só sobre o recuperado',
+    linkedin: {
+      titulo: 'Só pagamos se você receber',
+      texto: 'Na cobrança gerenciada do Acorly, a remuneração da HS é uma comissão sobre o que for efetivamente recebido e confirmado por você.\n\nSe nada entrar, não há comissão.\n\nO percentual depende do tempo de atraso da dívida no dia em que ela é encaminhada, e você vê esse valor antes de encaminhar. Sem surpresas.\n\nE a plataforma, para quem prefere cobrar com a própria equipe, tem 7 dias de teste grátis.',
+      roteiro: 'Formato: imagem + texto. Não citar percentuais específicos (condições finais são definidas em contrato).',
+      hashtags: H_LI,
+      arte: { titulo: 'Comissão só sobre o que você receber', subtitulo: 'Se nada entrar, não há comissão.' },
+    },
+    instagram: {
+      formato: 'Reels (15 s)',
+      legenda: 'Cobrança gerenciada em que a gente só ganha se você receber. 🎯 Simples e justo.',
+      roteiro: 'Cena 1: "Quanto custa terceirizar a cobrança?". Cena 2: "No Acorly: comissão só sobre o que você receber". Cena 3: "Recebeu nada? Pagou nada." Cena 4: logo + diagnóstico grátis.',
+      hashtags: H_IG,
+      arte: { slides: [{ titulo: 'Só ganhamos se você receber', texto: 'Comissão apenas sobre o valor recuperado.' }] },
+    },
+  },
+  {
+    tema: 'Condomínios',
+    linkedin: {
+      titulo: 'Taxa condominial em atraso pesa para todos os moradores',
+      texto: 'Quando um morador deixa de pagar o condomínio, quem cobre a diferença são os vizinhos, com rateio extra ou corte de melhorias.\n\nPara síndicos e administradoras, uma cobrança organizada faz diferença:\n• comunicação padronizada e respeitosa;\n• histórico de cada contato;\n• acordos com regras claras, aprovadas pela administração;\n• prestação de contas para mostrar em assembleia.\n\nO Acorly ajuda a transformar inadimplência em processo.',
+      roteiro: 'Formato: texto + imagem. Público: síndicos profissionais e administradoras.',
+      hashtags: [...H_LI, '#Condominio', '#Sindico'],
+      arte: { titulo: 'Condomínio em atraso pesa para todos', subtitulo: 'Cobrança organizada e prestação de contas para a assembleia.' },
+    },
+    instagram: {
+      formato: 'Carrossel (3 cards)',
+      legenda: 'Síndico, sabe quem paga a conta da inadimplência no condomínio? Os vizinhos. 🏢 Veja como organizar a cobrança.',
+      roteiro: 'Card 1: pergunta. Card 2: o impacto no rateio. Card 3: 3 práticas de cobrança organizada + chamada.',
+      hashtags: [...H_IG, '#sindico', '#condominio'],
+      arte: { slides: [
+        { titulo: 'Quem paga a inadimplência?', texto: 'No condomínio, os vizinhos.' },
+        { titulo: 'Rateio extra e menos melhorias', texto: 'O atraso de um pesa para todos.' },
+        { titulo: 'Cobrança organizada', texto: 'Padrão, histórico, acordos claros e prestação de contas.' },
+      ] },
+    },
+  },
+  {
+    tema: 'Prescrição das dívidas',
+    linkedin: {
+      titulo: 'Dívida tem prazo para ser cobrada na Justiça',
+      texto: 'Muita empresa descobre tarde demais: há prazo para cobrar uma dívida judicialmente.\n\nPara a cobrança de dívidas líquidas constantes de instrumento público ou particular, o Código Civil prevê prazo de 5 anos (art. 206, § 5º, I). Outras situações têm prazos diferentes, e cada caso merece análise.\n\nA lição prática: não deixe a carteira envelhecer. Organize, cobre cedo e, quando for o caso, procure orientação jurídica antes que o prazo termine.',
+      roteiro: 'Formato: texto + imagem. Excelente para o perfil pessoal do fundador (advogado), com autoridade.',
+      hashtags: [...H_LI, '#Direito', '#Prescricao'],
+      arte: { titulo: 'Dívida tem prazo', subtitulo: 'Não deixe a sua carteira envelhecer.' },
+    },
+    instagram: {
+      formato: 'Imagem única',
+      legenda: 'Você sabia que existe prazo para cobrar uma dívida na Justiça? ⚖️ Não deixe a sua carteira envelhecer. (Conteúdo informativo; cada caso merece análise.)',
+      roteiro: 'Imagem com a frase. Na legenda, sem detalhar prazos para não gerar interpretações erradas; convidar a falar com a equipe.',
+      hashtags: [...H_IG, '#direito'],
+      arte: { slides: [{ titulo: 'Dívida tem prazo', texto: 'Cobre cedo. Não deixe a carteira envelhecer.' }] },
+    },
+  },
+  {
+    tema: 'Terceirizar a cobrança',
+    linkedin: {
+      titulo: 'Quando faz sentido terceirizar a cobrança',
+      texto: 'Nem toda empresa precisa terceirizar a cobrança. Mas faz sentido quando:\n• a equipe interna não tem tempo e a cobrança fica para depois;\n• as dívidas já estão mais antigas e exigem negociação especializada;\n• a empresa quer preservar a relação comercial e manter distância do conflito;\n• falta processo e histórico.\n\nNo Acorly, dá para combinar: parte das dívidas a sua equipe cobra pela plataforma; outra parte você encaminha para a equipe HS, com os seus limites e acompanhando tudo pelo painel.',
+      roteiro: 'Formato: lista em texto + imagem.',
+      hashtags: H_LI,
+      arte: { titulo: 'Cobrar internamente ou terceirizar?', subtitulo: 'No Acorly, você pode fazer os dois.' },
+    },
+    instagram: {
+      formato: 'Carrossel (4 cards)',
+      legenda: 'Sua equipe não dá conta da cobrança? Talvez seja hora de terceirizar uma parte. 🔄 Veja os sinais.',
+      roteiro: 'Card 1: pergunta. Card 2: sinais de que vale terceirizar. Card 3: o modelo híbrido. Card 4: chamada para o diagnóstico.',
+      hashtags: H_IG,
+      arte: { slides: [
+        { titulo: 'Hora de terceirizar a cobrança?', texto: 'Veja os sinais.' },
+        { titulo: 'Sinais', texto: 'Falta tempo, dívidas antigas, falta de processo.' },
+        { titulo: 'Modelo híbrido', texto: 'Parte com a sua equipe, parte com a equipe Acorly.' },
+        { titulo: 'Comece pelo diagnóstico', texto: 'acorly.com.br/diagnostico' },
+      ] },
+    },
+  },
+  {
+    tema: 'Teste grátis da plataforma',
+    linkedin: {
+      titulo: 'Teste o Acorly por 7 dias, sem cartão',
+      texto: 'Para quem prefere cobrar com a própria equipe, o Acorly oferece a plataforma completa por 7 dias grátis, sem cartão de crédito.\n\nNesse período você pode:\n• importar a planilha de inadimplentes;\n• enviar mensagens com modelos prontos e respeitosos;\n• registrar acordos e confirmar pagamentos;\n• ver no painel quanto já foi recuperado.\n\nAntes de criar a conta, assista ao vídeo de 1 minuto e meio ou explore a demonstração em acorly.com.br.',
+      roteiro: 'Formato: vídeo de apresentação do site (acorly.com.br/video/acorly-demo.mp4) com este texto.',
+      hashtags: H_LI,
+      arte: { titulo: 'Teste grátis por 7 dias', subtitulo: 'Sem cartão. Plataforma completa.' },
+    },
+    instagram: {
+      formato: 'Reels (vídeo de apresentação)',
+      legenda: 'Conheça o Acorly em 1 minuto e meio! 🎬 Teste grátis por 7 dias, sem cartão. Link na bio.',
+      roteiro: 'Usar o vídeo de apresentação do site, cortado em formato vertical se possível. Capa: "Conheça o Acorly".',
+      hashtags: H_IG,
+      arte: { slides: [{ titulo: 'Teste grátis por 7 dias', texto: 'Sem cartão. acorly.com.br' }] },
+    },
+  },
+];

@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import { hs, auth, onSessaoExpirada } from './api.js';
 
 const Ctx = createContext(null);
-const PERFIS_HS = ['SUPERADMIN_HS', 'GESTOR_OPERACOES_HS', 'OPERADOR_HS'];
+const PERFIS_HS = ['SUPERADMIN_HS', 'GESTOR_OPERACOES_HS', 'OPERADOR_HS', 'MARKETING_HS'];
 
 export function SessaoProvider({ children }) {
   const [estado, setEstado] = useState({ carregando: true, logado: false, perfil: null });

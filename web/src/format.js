@@ -68,7 +68,7 @@ const ROTULOS = {
   AUTOCONTRATADA: 'Própria', HS_GERENCIADA: 'Acorly gerenciada', EM_ABERTO: 'Em aberto', DEVEDOR_RESPONDEU: 'Devedor respondeu',
   RECUPERADO_INTEGRALMENTE: 'Recuperado', APROVADA_ALCADA: 'Aprovada (alçada)', APROVADA_CREDOR: 'Aprovada pelo credor',
   AGUARDANDO_APROVACAO_CREDOR: 'Aguardando credor', ACORDO_AGUARDANDO_PAGAMENTO: 'Acordo aguardando pagamento',
-  SUPERADMIN_HS: 'Superadmin Acorly', GESTOR_OPERACOES_HS: 'Gestor de operações', OPERADOR_HS: 'Operador Acorly',
+  SUPERADMIN_HS: 'Superadmin Acorly', GESTOR_OPERACOES_HS: 'Gestor de operações', OPERADOR_HS: 'Operador Acorly', MARKETING_HS: 'Marketing',
   ADMIN_EMPRESA: 'Administrador', FINANCEIRO_EMPRESA: 'Financeiro', VISUALIZADOR_EMPRESA: 'Visualizador',
   CONVERTIDA_EM_ACORDO: 'Virou acordo', PF: 'Pessoa física', PJ: 'Pessoa jurídica',
   AGUARDANDO_VALIDACAO: 'Aguardando validação', AGUARDANDO_AUTORIZACAO: 'Aguardando autorização', PRONTO_PARA_COBRANCA: 'Pronto para cobrança',

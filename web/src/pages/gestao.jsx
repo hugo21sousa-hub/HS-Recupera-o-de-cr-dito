@@ -31,7 +31,7 @@ export function Usuarios({ internos = false }) {
   const [editar, setEditar] = useState(null);
   const [link, setLink] = useState(null);
   const [r, setR] = useState(0);
-  const perfis = internos ? ['GESTOR_OPERACOES_HS', 'OPERADOR_HS', 'SUPERADMIN_HS'] : ['ADMIN_EMPRESA', 'FINANCEIRO_EMPRESA', 'VISUALIZADOR_EMPRESA'];
+  const perfis = internos ? ['GESTOR_OPERACOES_HS', 'OPERADOR_HS', 'MARKETING_HS', 'SUPERADMIN_HS'] : ['ADMIN_EMPRESA', 'FINANCEIRO_EMPRESA', 'VISUALIZADOR_EMPRESA'];
   const campos = [
     { nome: 'nome', rotulo: 'Nome', obrigatorio: true }, { nome: 'email', rotulo: 'E-mail', tipo: 'email', obrigatorio: true },
     { nome: 'perfil', rotulo: 'Perfil', tipo: 'select', opcoes: perfis, obrigatorio: true, padrao: perfis[1], semVazio: true },

@@ -9,7 +9,7 @@ export class AccessError extends Error {
   }
 }
 
-export const PERFIS_HS = ['SUPERADMIN_HS', 'GESTOR_OPERACOES_HS', 'OPERADOR_HS'];
+export const PERFIS_HS = ['SUPERADMIN_HS', 'GESTOR_OPERACOES_HS', 'OPERADOR_HS', 'MARKETING_HS'];
 export const PERFIS_EMPRESA = ['ADMIN_EMPRESA', 'FINANCEIRO_EMPRESA', 'VISUALIZADOR_EMPRESA'];
 export const PERFIS = [...PERFIS_HS, ...PERFIS_EMPRESA];
 
@@ -21,7 +21,7 @@ export const MATRIZ = {
     'assinatura.gerenciar', 'contrato.gerenciar', 'auditoria.ler', 'config.sistema', 'relatorio.hs',
     'carteira.validar', 'caso.distribuir', 'caso.ler_todos_hs', 'caso.suspender', 'operador.gerenciar',
     'interacao.registrar', 'tarefa.gerenciar', 'negociacao.propor', 'negociacao.revisar', 'pagamento.informar',
-    'documento.ler', 'prestacao.gerar', 'lgpd.gerenciar', 'lead.gerenciar',
+    'documento.ler', 'prestacao.gerar', 'lgpd.gerenciar', 'lead.gerenciar', 'conteudo.ler', 'conteudo.gerenciar', 'conteudo.publicar',
     // leitura global de dados de empresas — sempre auditada como ACESSO_ADMINISTRATIVO
     'empresa.ler', 'devedor.ler', 'divida.ler', 'carteira.ler', 'relatorio.empresa', 'contrato.ler', 'assinatura.ler', 'pagamento.ler',
   ],
@@ -30,6 +30,7 @@ export const MATRIZ = {
     'interacao.registrar', 'tarefa.gerenciar', 'negociacao.propor', 'negociacao.revisar', 'pagamento.informar',
     'relatorio.hs', 'documento.ler', 'prestacao.gerar', 'lead.gerenciar',
   ],
+  MARKETING_HS: ['conteudo.ler', 'conteudo.publicar'],
   OPERADOR_HS: [
     'caso.ler_atribuidos', 'caso.puxar_fila', 'interacao.registrar', 'tarefa.gerenciar', 'negociacao.propor',
     'pagamento.informar', 'documento.ler',

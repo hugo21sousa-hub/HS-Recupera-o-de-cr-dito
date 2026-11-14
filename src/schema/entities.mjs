@@ -202,6 +202,17 @@ export const ENTITIES = {
     properties: { ...EMP, pagamento_id: ref('Pagamento'), confirmado_por: ref('Usuário'), data_confirmacao: ts('Data'), evidencia: s('Evidência (extrato, file_uri)'), observacao: s('Observação'), valor_confirmado_centavos: c('Valor'), status: e(['VALIDA', 'DESCARTADA_DUPLICIDADE', 'DESCARTADA_CONCORRENCIA'], 'Status', 'VALIDA') },
     required: ['empresa_id', 'pagamento_id', 'confirmado_por'],
   },
+  PostSocial: {
+    description: 'Post sugerido para as redes sociais (nunca publicado automaticamente)',
+    properties: {
+      rede: e(['LINKEDIN', 'INSTAGRAM'], 'Rede'), data_prevista: dt('Data prevista'), tema: s('Tema'), titulo: s('Título/gancho'), formato: s('Formato (imagem, carrossel, reels)'),
+      texto: s('Texto/legenda'), roteiro: s('Roteiro e orientações'), hashtags: arr('Hashtags'), arte: { type: 'object', description: 'Conteúdo da arte {titulo, subtitulo} ou {slides:[{titulo, texto}]}' },
+      status: e(['SUGERIDO', 'APROVADO', 'PUBLICADO', 'DESCARTADO'], 'Situação', 'SUGERIDO'), origem: e(['BANCO', 'MANUAL'], 'Origem', 'MANUAL'),
+      aprovado_por: ref('Quem aprovou'), aprovado_em: ts('Aprovado em'), observacao_aprovacao: s('Observação ao marketing'),
+      publicado_por: ref('Quem publicou'), publicado_em: ts('Publicado em'), link_publicacao: s('Link do post publicado'), motivo_descarte: s('Motivo do descarte'),
+    },
+    required: ['rede', 'data_prevista', 'texto', 'status'],
+  },
   Lead: {
     description: 'Pedido de diagnóstico gratuito vindo do site (contato comercial)',
     properties: {
@@ -261,7 +272,7 @@ export const ENTITIES = {
   },
   ConfiguracaoHS: {
     description: 'Configurações gerais do Acorly (registro único), como a tabela padrão de comissão',
-    properties: { comissao_faixas: arr('Faixas de comissão [{ate_dias, bps}]', { type: 'object' }), atualizado_por: s('Usuário'), atualizado_em: ts('Atualização') },
+    properties: { comissao_faixas: arr('Faixas de comissão [{ate_dias, bps}]', { type: 'object' }), atualizado_por: s('Usuário'), atualizado_em: ts('Atualização'), redes_sociais: { type: 'object', description: 'Links das redes sociais (instagram, linkedin, facebook, youtube, tiktok)' }, conteudo_inicio: dt('Início da agenda de posts'), conteudo_proximo: n('Próximo tema do banco de posts'), conteudo_aviso_fim: b('Aviso de fim do banco enviado') },
     required: [],
   },
   EventoWebhook: {
