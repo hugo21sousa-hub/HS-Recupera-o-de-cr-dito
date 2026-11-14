@@ -197,7 +197,7 @@ export function Encaminhar() {
             <Tabela acao="listarDividas" payload={{ filtros: { modalidade_cobranca: 'AUTOCONTRATADA' } }} pageSize={10} colunas={[
               { titulo: '✓', render: (d) => <input type="checkbox" aria-label="Selecionar" checked={dividas.includes(d.id)} onChange={(e) => setDividas(e.target.checked ? [...dividas, d.id] : dividas.filter((x) => x !== d.id))} /> },
               { titulo: 'Devedor', campo: 'devedor_nome' }, { titulo: 'Vencimento', render: (d) => data(d.data_vencimento) }, { titulo: 'Saldo', num: true, render: (d) => brl(d.saldo_atual_centavos) }, { titulo: 'Status', render: (d) => <Badge status={d.status_financeiro} /> },
-            ]} />
+            ]} vazio={<Vazio titulo="Nenhuma dívida encontrada">Aqui aparecem as dívidas cadastradas que ainda estão com a sua empresa. Cadastre a dívida em <Link to="/dividas">Dívidas</Link> (o devedor sozinho não basta) ou confira se ela já foi encaminhada em <Link to="/cobranca-hs">Cobranças Acorly</Link>.</Vazio>} />
           )}
           <div className="row" style={{ justifyContent: 'flex-end' }}>
             <button className="btn prim" disabled={!contrato || enviando || (tipo === 'CARTEIRA' && !carteiras.length) || (tipo === 'DIVIDAS' && !dividas.length)} onClick={verPrevia}>{enviando && <Spinner />}Conferir seleção</button>

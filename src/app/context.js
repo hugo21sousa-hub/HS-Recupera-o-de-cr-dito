@@ -113,8 +113,12 @@ export async function notificar(ctx, empresa_id, { perfis, tipo, titulo, mensage
 export function paginar(rows, { page = 1, pageSize = 20, busca, camposBusca = [], ordenarPor, ordem = 'desc' } = {}) {
   let r = rows;
   if (busca && camposBusca.length) {
-    const b = String(busca).toLowerCase();
-    r = r.filter((x) => camposBusca.some((c) => String(x[c] ?? '').toLowerCase().includes(b)));
+    // Busca sem diferenciar acentos, maiúsculas e espaços extras; CPF/CNPJ com ou sem pontuação
+    const norm = (v) => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+    const b = norm(busca);
+    const digitos = String(busca).replace(/\D/g, '');
+    const soDigitos = digitos.length >= 3 && /^[\d.\-/\s]+$/.test(String(busca).trim());
+    r = r.filter((x) => camposBusca.some((c) => norm(x[c]).includes(b) || (soDigitos && String(x[c] ?? '').replace(/\D/g, '').includes(digitos))));
   }
   const campo = ordenarPor || 'created_date';
   r = [...r].sort((a, b) => {
