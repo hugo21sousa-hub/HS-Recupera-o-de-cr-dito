@@ -19,9 +19,11 @@ const URL = process.argv[3] || 'file://' + require('path').resolve(__dirname, 'd
     window.__capa = (h, linhas) => { let c = document.getElementById('capa'); if (h === null) { c && c.remove(); return; } if (!document.getElementById('legcss')) { const st = document.createElement('style'); st.id = 'legcss'; st.textContent = css; document.head.appendChild(st); } if (!c) { c = document.createElement('div'); c.id = 'capa'; document.body.appendChild(c); } c.innerHTML = '<img src="' + logo + '" style="height:120px;margin-bottom:28px">' + (h ? '<h1>' + h + '</h1>' : '') + linhas.map((l) => '<p>' + l + '</p>').join(''); };
   }, LOGO);
   const p = await ctx.newPage();
+  const t0 = Date.now();
+  const marcas = [];
   const espera = (ms) => p.waitForTimeout(ms);
-  const leg = (t) => p.evaluate((x) => window.__leg(x), t);
-  const capa = (h, l = []) => p.evaluate(([a, b]) => window.__capa(a, b), [h, l]);
+  const leg = (t) => { marcas.push({ t: (Date.now() - t0) / 1000, tipo: 'legenda', texto: t }); return p.evaluate((x) => window.__leg(x), t); };
+  const capa = (h, l = []) => { marcas.push({ t: (Date.now() - t0) / 1000, tipo: 'capa', texto: h }); return p.evaluate(([a, b]) => window.__capa(a, b), [h, l]); };
   const clicar = async (sel) => { const el = p.locator(sel).first(); await el.scrollIntoViewIfNeeded(); await el.evaluate((e) => e.classList.add('realce')); await espera(900); await el.evaluate((e) => e.classList.remove('realce')); await el.click(); };
   const rolar = async (y) => { await p.evaluate((v) => window.scrollTo({ top: v, behavior: 'smooth' }), y); await espera(1200); };
 
@@ -70,4 +72,5 @@ const URL = process.argv[3] || 'file://' + require('path').resolve(__dirname, 'd
 
   await capa('Teste grátis por 7 dias', ['Sem cartão · o devedor paga direto para a sua empresa', 'acorly.com.br']); await espera(5000);
   await ctx.close(); await b.close();
+  require('fs').writeFileSync(require('path').join(SP, 'marcas.json'), JSON.stringify(marcas, null, 1));
 })();

@@ -112,7 +112,7 @@ export function Site() {
       <section id="video" className="site-secao site-video">
         <div className="site-largura site-estreita" style={{ textAlign: 'center' }}>
           <h2 className="site-titulo">Veja o Acorly funcionando</h2>
-          <p className="site-sub">Um passeio de um minuto e meio: do cadastro da dívida ao acordo, ao boleto enviado ao devedor e à prestação de contas.</p>
+          <p className="site-sub">Um passeio narrado de um minuto e meio: do cadastro da dívida ao acordo, ao boleto enviado ao devedor e à prestação de contas.</p>
           <video className="site-video-player" controls preload="none" playsInline poster="/video/acorly-demo.jpg">
             <source src="/video/acorly-demo.mp4" type="video/mp4" />
           </video>
