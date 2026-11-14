@@ -1,20 +1,23 @@
 // Grava o vídeo de apresentação do site a partir da demonstração (Playwright).
 // Uso: npm run build:demo && node scripts-video-tour.cjs <pasta-de-saida>
-// Depois: ffmpeg -i <saida>/video/*.webm -vf "fps=30,format=yuv420p" -c:v libx264 -crf 26 -movflags +faststart -an public/video/acorly-demo.mp4
+// Trilha: python3 scripts-video-trilha.py trilha.wav <duração em segundos>
+// Montagem (logo no canto entre 5s e o fim-6s, trilha):
+//   ffmpeg -i <saida>/video/*.webm -i scripts-video-marca.png -i trilha.wav -filter_complex "[0:v]fps=30[v];[v][1:v]overlay=x=W-w-22:y=H-h-22:enable='between(t,5,FIM)',format=yuv420p[vo];[2:a]volume=0.85[ao]" -map "[vo]" -map "[ao]" -c:v libx264 -crf 26 -c:a aac -b:a 128k -movflags +faststart -shortest public/video/acorly-demo.mp4
 const { chromium } = require('playwright');
+const LOGO = 'data:image/png;base64,' + require('fs').readFileSync(require('path').resolve(__dirname, 'src/assets/acorly-logo-branco.png')).toString('base64');
 const SP = process.argv[2] || '.';
 const URL = process.argv[3] || 'file://' + require('path').resolve(__dirname, 'dist-demo/hs-demo.html');
 (async () => {
   const b = await chromium.launch();
   const ctx = await b.newContext({ viewport: { width: 1280, height: 720 }, recordVideo: { dir: SP + '/video', size: { width: 1280, height: 720 } } });
-  await ctx.addInitScript(() => {
+  await ctx.addInitScript((logo) => {
     const css = `#leg{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:99999;background:rgba(11,37,69,.94);color:#fff;font:600 21px/1.35 Inter,Arial,sans-serif;padding:14px 22px;border-radius:12px;max-width:82%;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.3);transition:opacity .3s}
 #capa{position:fixed;inset:0;z-index:100000;background:linear-gradient(135deg,#0b2545,#1d5fa7);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Inter,Arial,sans-serif;text-align:center;padding:40px}
-#capa h1{font-size:64px;margin:0 0 12px;letter-spacing:-1px}#capa p{font-size:26px;margin:6px 0;opacity:.92}
+#capa h1{font-size:54px;margin:0 0 12px;letter-spacing:-1px}#capa p{font-size:26px;margin:6px 0;opacity:.92}
 .realce{outline:4px solid #f59e0b !important;outline-offset:3px;border-radius:8px;transition:outline .2s}`;
     window.__leg = (t) => { let d = document.getElementById('leg'); if (!t) { d && d.remove(); return; } if (!d) { const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st); d = document.createElement('div'); d.id = 'leg'; document.body.appendChild(d); } d.textContent = t; };
-    window.__capa = (h, linhas) => { let c = document.getElementById('capa'); if (!h) { c && c.remove(); return; } if (!document.getElementById('legcss')) { const st = document.createElement('style'); st.id = 'legcss'; st.textContent = css; document.head.appendChild(st); } if (!c) { c = document.createElement('div'); c.id = 'capa'; document.body.appendChild(c); } c.innerHTML = '<h1>' + h + '</h1>' + linhas.map((l) => '<p>' + l + '</p>').join(''); };
-  });
+    window.__capa = (h, linhas) => { let c = document.getElementById('capa'); if (h === null) { c && c.remove(); return; } if (!document.getElementById('legcss')) { const st = document.createElement('style'); st.id = 'legcss'; st.textContent = css; document.head.appendChild(st); } if (!c) { c = document.createElement('div'); c.id = 'capa'; document.body.appendChild(c); } c.innerHTML = '<img src="' + logo + '" style="height:120px;margin-bottom:28px">' + (h ? '<h1>' + h + '</h1>' : '') + linhas.map((l) => '<p>' + l + '</p>').join(''); };
+  }, LOGO);
   const p = await ctx.newPage();
   const espera = (ms) => p.waitForTimeout(ms);
   const leg = (t) => p.evaluate((x) => window.__leg(x), t);
@@ -23,7 +26,7 @@ const URL = process.argv[3] || 'file://' + require('path').resolve(__dirname, 'd
   const rolar = async (y) => { await p.evaluate((v) => window.scrollTo({ top: v, behavior: 'smooth' }), y); await espera(1200); };
 
   await p.goto(URL); await espera(1500);
-  await capa('Acorly', ['Recuperação de crédito para empresas', 'HS Recuperação de Crédito']); await espera(3500);
+  await capa('', ['Recuperação de crédito para empresas', 'HS Recuperação de Crédito']); await espera(3500);
   await capa(null);
   await leg('O Acorly organiza toda a cobrança da sua empresa em um só lugar.'); await espera(4000);
 
