@@ -88,7 +88,7 @@ export function Contratos() {
         { titulo: 'Valor do serviço', num: true, render: (c) => (c.status === 'SOLICITADO' ? 'Aguardando proposta' : brl(c.valor_contratado_centavos)) },
         { titulo: 'Casos', num: true, render: (c) => c.quantidade_casos_contratada || '—' },
         { titulo: 'Comissão', render: (c) => (c.comissao_faixas?.length ? c.comissao_faixas.map((f) => pct(f.bps)).join(' / ') : 'Tabela padrão') },
-        { titulo: 'Vigência', render: (c) => (c.data_inicio ? `${data(c.data_inicio)} a ${data(c.data_fim)}` : '—') },
+        { titulo: 'Vigência', render: (c) => (c.data_inicio ? `${data(c.data_inicio)} a ${c.data_fim ? data(c.data_fim) : 'indeterminado'}` : '—') },
         { titulo: 'Aceite', render: (c) => (c.aceite ? dataHora(c.data_aceite) : '—') }, { titulo: 'Status', render: (c) => <Badge status={c.status} /> },
         { titulo: '', render: (c) => <div className="row" style={{ justifyContent: 'flex-end' }}>
           {c.status === 'PROPOSTO' && s.pode('contrato.contratar') && <button className="btn sm prim" onClick={() => setVer({ c, aceitar: true })}>Ler e aceitar</button>}

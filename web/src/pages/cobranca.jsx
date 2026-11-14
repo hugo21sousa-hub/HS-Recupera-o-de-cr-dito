@@ -180,7 +180,7 @@ export function Encaminhar() {
       {passo === 1 && (
         <div className="card stack">
           <div className="campo"><label>Contrato de cobrança gerenciada *</label>
-            <select value={contrato} onChange={(e) => setContrato(e.target.value)}><option value="">Selecione…</option>{ativos.map((c) => <option key={c.id} value={c.id}>{rotulo(c.modalidade)} · vigência até {data(c.data_fim)}{c.quantidade_casos_contratada ? ` · ${c.quantidade_casos_contratada} casos` : ''}</option>)}</select></div>
+            <select value={contrato} onChange={(e) => setContrato(e.target.value)}><option value="">Selecione…</option>{ativos.map((c) => <option key={c.id} value={c.id}>{rotulo(c.modalidade)} · {c.data_fim ? `vigência até ${data(c.data_fim)}` : 'prazo indeterminado'}{c.quantidade_casos_contratada ? ` · ${c.quantidade_casos_contratada} casos` : ''}</option>)}</select></div>
           <div className="escolha" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
             {[['CARTEIRA', 'Por carteira', 'Uma ou mais carteiras montadas por você'], ['DIVIDAS', 'Dívidas individuais', 'Escolha dívida a dívida'], ['TODOS_ELEGIVEIS', 'Todos os elegíveis', 'Todas as dívidas que cumprem os requisitos, dentro do contrato']].map(([v, t, d]) => (
               <button key={v} type="button" className={`opcao ${tipo === v ? 'sel' : ''}`} onClick={() => setTipo(v)} aria-pressed={tipo === v}><strong>{t}</strong><span className="muted small">{d}</span></button>

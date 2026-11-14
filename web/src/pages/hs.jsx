@@ -225,7 +225,7 @@ export function ContratosHS() {
     { nome: 'quantidade_casos_contratada', rotulo: 'Quantidade de casos', tipo: 'numero', min: 1, max: 1000000, mostrarSe: (v) => v.modalidade === 'PACOTE_CASOS' },
     { nome: 'valor_contratado_centavos', rotulo: 'Preço do serviço', tipo: 'dinheiro', permitirZero: true, obrigatorio: true },
     { nome: 'forma_cobranca_servico', rotulo: 'Forma de cobrança do serviço', padrao: 'Mensal' },
-    { nome: 'data_inicio', rotulo: 'Início da vigência', tipo: 'data', obrigatorio: true, padrao: hojeISO() }, { nome: 'data_fim', rotulo: 'Fim da vigência', tipo: 'data' },
+    { nome: 'data_inicio', rotulo: 'Início da vigência', tipo: 'data', obrigatorio: true, padrao: hojeISO() }, { nome: 'data_fim', rotulo: 'Fim da vigência (opcional)', tipo: 'data', ajuda: 'Deixe em branco: o contrato é por prazo indeterminado. Com data, o encaminhamento de dívidas para depois dela.' },
     { nome: 'escopo', rotulo: 'Escopo', tipo: 'textarea' }, { nome: 'limites', rotulo: 'Limites', tipo: 'textarea' },
   ];
   return (
@@ -234,7 +234,7 @@ export function ContratosHS() {
       <Tabela acao="listarContratos" busca={false} recarregar={r} filtros={[{ nome: 'status', rotulo: 'Status', opcoes: ['SOLICITADO', 'PROPOSTO', 'ATIVO', 'ENCERRADO'] }]} colunas={[
         { titulo: 'Empresa', render: (c) => nomes.get(c.empresa_id) || '—' }, { titulo: 'Modalidade', render: (c) => rotulo(c.modalidade) },
         { titulo: 'Preço', num: true, render: (c) => brl(c.valor_contratado_centavos) }, { titulo: 'Casos', num: true, render: (c) => c.quantidade_casos_contratada || '—' },
-        { titulo: 'Vigência', render: (c) => (c.data_inicio ? `${data(c.data_inicio)} a ${data(c.data_fim)}` : '—') }, { titulo: 'Status', render: (c) => <Badge status={c.status} /> },
+        { titulo: 'Vigência', render: (c) => (c.data_inicio ? `${data(c.data_inicio)} a ${c.data_fim ? data(c.data_fim) : 'indeterminado'}` : '—') }, { titulo: 'Status', render: (c) => <Badge status={c.status} /> },
         { titulo: '', render: (c) => <div className="row" style={{ justifyContent: 'flex-end' }}>
           {['SOLICITADO', 'PROPOSTO'].includes(c.status) && <button className="btn sm" onClick={() => setEditar(c)}>{c.status === 'SOLICITADO' ? 'Elaborar proposta' : 'Editar proposta'}</button>}
           {!['SOLICITADO'].includes(c.status) && <button className="btn sm" onClick={() => setVerContrato(c)}>{c.texto_aceito ? 'Ver contrato' : 'Ver minuta'}</button>}
