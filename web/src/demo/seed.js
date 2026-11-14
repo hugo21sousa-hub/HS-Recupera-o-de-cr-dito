@@ -66,6 +66,10 @@ export async function semear(db, como) {
   const proprio = await como('empresa@demo.hs', 'abrirCobrancaPropria', { divida_id: dividas[4].id });
   await como('empresa@demo.hs', 'registrarInteracao', { caso_id: proprio.id, canal: 'EMAIL', tipo_interacao: 'MENSAGEM_ENVIADA', mensagem: 'Lembrete de pagamento em aberto.', fora_horario_justificado: true });
   await como('empresa@demo.hs', 'informarPagamento', { divida_id: dividas[4].id, valor_centavos: 40000, data_informada: dia(-1), forma_pagamento: 'PIX' });
+  // Pedido de diagnóstico de exemplo (leads do site)
+  const { analisarPlanilha } = await import('../../../src/app/actions/leads.js');
+  const csv = 'nome;cpf_cnpj;valor_original;data_vencimento\n' + [['Ana', 1800, -40], ['Bruno', 950, -75], ['Carla', 3200, -130], ['Diego', 640, -220], ['Elisa', 2100, -400], ['Fábio', 780, -20]].map(([n, v, d]) => `${n};;${v},00;${dia(d).split('-').reverse().join('/')}`).join('\n');
+  await db.Lead.create({ nome: 'Joana Lima', empresa: 'Colégio Saber Mais', email: 'joana@colegiosaber.com.br', whatsapp: '71999990000', cidade: 'Salvador/BA', segmento: 'ESCOLA_CURSO', qtd_devedores: 45, valor_aberto_centavos: 6800000, mensagem: 'Temos muitas mensalidades atrasadas desde o começo do ano. Queremos entender como funciona a cobrança.', status: 'NOVO', analise: JSON.stringify(analisarPlanilha(csv, { hoje: dia(0) })), arquivo_nome: 'inadimplentes.csv', recebido_em: agora.toISOString(), observacoes: '' });
   // Prestação de contas de exemplo (mês corrente até hoje), já enviada à empresa
   await como('admin@demo.hs', 'gerarPrestacaoContas', { contrato_servico_id: contrato.id, periodo_inicio: dia(0).slice(0, 8) + '01', periodo_fim: dia(0), enviar: true });
 }

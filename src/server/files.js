@@ -2,13 +2,14 @@
 import { randomBytes, createHmac, timingSafeEqual } from 'node:crypto';
 import { armazenamentoDisco } from './armazenamento.js';
 
-export const TIPOS_PERMITIDOS = { 'application/pdf': 'pdf', 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'text/csv': 'csv', 'text/plain': 'txt' };
+export const TIPOS_PERMITIDOS = { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx', 'application/pdf': 'pdf', 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'text/csv': 'csv', 'text/plain': 'txt' };
 export const TAMANHO_MAX = 10 * 1024 * 1024;
 
 // Confere a assinatura do arquivo (não confia só no Content-Type enviado)
 function conferirConteudo(buf, mime) {
   const h = buf.subarray(0, 12);
   if (mime === 'application/pdf') return h.toString('latin1', 0, 5) === '%PDF-';
+  if (mime.includes('spreadsheetml')) return h[0] === 0x50 && h[1] === 0x4b; // .xlsx (zip)
   if (mime === 'image/png') return h[0] === 0x89 && h.toString('latin1', 1, 4) === 'PNG';
   if (mime === 'image/jpeg') return h[0] === 0xff && h[1] === 0xd8;
   if (mime === 'image/webp') return h.toString('latin1', 0, 4) === 'RIFF' && h.toString('latin1', 8, 12) === 'WEBP';

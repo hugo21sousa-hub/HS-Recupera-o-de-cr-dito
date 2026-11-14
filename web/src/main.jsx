@@ -16,6 +16,8 @@ import { MinhasCobrancas, CobrancasHS, Carteiras, CarteiraDetalhe, Encaminhar, A
 import { CasoDetalhe } from './pages/caso.jsx';
 import { Negociacoes, Acordos, Pagamentos, Relatorios } from './pages/financeiro.jsx';
 import { CentralMensagens } from './pages/central.jsx';
+import { Diagnostico } from './pages/diagnostico.jsx';
+import { Leads } from './pages/leads.jsx';
 import { IndicadoresNegocio } from './pages/negocio.jsx';
 import { Usuarios, Contratos, Assinatura, Configuracoes, MinhaConta, Modelos } from './pages/gestao.jsx';
 import { TriagemWhatsApp } from './pages/hs.jsx';
@@ -43,12 +45,14 @@ function Raiz() {
         <Route path="/convite/:token" element={<Convite />} />
         <Route path="/termos" element={<Documento tipo="termos" />} />
         <Route path="/privacidade" element={<Documento tipo="privacidade" />} />
+        <Route path="/diagnostico" element={<Diagnostico />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
   }
   if (ehConvite) return <Routes><Route path="/convite/:token" element={<Convite />} /></Routes>;
   if (loc.pathname === '/termos' || loc.pathname === '/privacidade') return <Documento tipo={loc.pathname.slice(1)} />;
+  if (loc.pathname === '/diagnostico') return <Diagnostico />;
   if (s.perfil?.seguranca?.exige_2fa && !s.perfil?.seguranca?.dois_fatores_ativo) return <Exigir2FA />;
   if (s.perfil?.precisa_onboarding && !s.ehHS) return <Routes><Route path="*" element={<Onboarding />} /></Routes>;
   if (s.usuario?.status && s.usuario.status !== 'ATIVO') return <Vazio titulo="Acesso bloqueado">Fale com o administrador da sua empresa.</Vazio>;
@@ -94,6 +98,7 @@ function Raiz() {
           <Route path="/hs/distribuicao" element={P('caso.distribuir', <Distribuicao />)} />
           <Route path="/hs/meus" element={P(['caso.ler_atribuidos', 'caso.ler_todos_hs'], <MeusCasos />)} />
           <Route path="/hs/casos" element={P('caso.ler_todos_hs', <TodosCasos />)} />
+          <Route path="/hs/leads" element={P('lead.gerenciar', <Leads />)} />
           <Route path="/hs/negocio" element={P('plano.gerenciar', <IndicadoresNegocio />)} />
           <Route path="/hs/mensagens" element={P('interacao.registrar', <CentralMensagens />)} />
           <Route path="/hs/interacoes" element={<Navigate to="/hs/mensagens" replace />} />

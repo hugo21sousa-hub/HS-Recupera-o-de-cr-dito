@@ -202,6 +202,18 @@ export const ENTITIES = {
     properties: { ...EMP, pagamento_id: ref('Pagamento'), confirmado_por: ref('Usuário'), data_confirmacao: ts('Data'), evidencia: s('Evidência (extrato, file_uri)'), observacao: s('Observação'), valor_confirmado_centavos: c('Valor'), status: e(['VALIDA', 'DESCARTADA_DUPLICIDADE', 'DESCARTADA_CONCORRENCIA'], 'Status', 'VALIDA') },
     required: ['empresa_id', 'pagamento_id', 'confirmado_por'],
   },
+  Lead: {
+    description: 'Pedido de diagnóstico gratuito vindo do site (contato comercial)',
+    properties: {
+      nome: s('Nome do contato'), empresa: s('Empresa'), cnpj: s('CNPJ (opcional)'), email: s('E-mail'), whatsapp: s('WhatsApp'), cidade: s('Cidade'),
+      segmento: e(['ESCOLA_CURSO', 'SAUDE', 'ACADEMIA', 'CONDOMINIO', 'VAREJO', 'DISTRIBUIDORA', 'SERVICOS', 'IMOBILIARIA', 'OUTRO'], 'Segmento', 'OUTRO'),
+      qtd_devedores: n('Quantidade aproximada de devedores'), valor_aberto_centavos: c('Valor aproximado em aberto'), mensagem: s('Mensagem'), origem: s('Origem (página/campanha)'),
+      arquivo_uri: s('Planilha enviada (privada)'), arquivo_nome: s('Nome do arquivo'), analise: s('JSON da análise automática'), erro_analise: s('Por que a análise não foi feita'),
+      status: e(['NOVO', 'EM_CONTATO', 'DIAGNOSTICO_ENVIADO', 'CONVERTIDO', 'PERDIDO'], 'Situação', 'NOVO'), responsavel_id: ref('Responsável na HS'), observacoes: s('Anotações'),
+      aceite_privacidade_em: ts('Aceite da Política de Privacidade'), recebido_em: ts('Recebido em'), ip: s('IP do envio'),
+    },
+    required: ['nome', 'empresa', 'email', 'status'],
+  },
   PagamentoParcela: {
     description: 'Forma de pagamento de uma parcela de acordo informada pelo credor (boleto, Pix ou link). O dinheiro vai direto ao credor.',
     properties: {

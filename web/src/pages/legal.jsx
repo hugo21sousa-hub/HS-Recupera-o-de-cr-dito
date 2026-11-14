@@ -114,6 +114,7 @@ function privacidade({ email, dpo }) {
     ['8. Retenção', [
       'Dados de devedores: pelo prazo configurado pela credora (padrão de 60 meses após a quitação ou o encerramento) ou pelo prazo exigido em lei; depois disso, são anonimizados ou eliminados automaticamente.',
       'Registros de acesso: no mínimo 6 meses (Marco Civil da Internet). Dados fiscais e contratuais: pelos prazos legais.',
+      'Pedidos de diagnóstico enviados pelo site que não resultarem em contratação: até 12 meses, com eliminação da planilha enviada.',
     ]],
     ['9. Segurança', [
       'Acesso por perfil, isolamento entre empresas, verificação em duas etapas, senhas protegidas por hash, arquivos privados com links temporários, comunicação criptografada (HTTPS), trilha de auditoria e backups diários.',

@@ -63,7 +63,7 @@ export function Site() {
   const ano = new Date().getFullYear();
   const contato = dados?.contato || {};
   const ir = (id) => (e) => { e.preventDefault(); setMenu(false); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
-  const links = [['video', 'Vídeo'], ['como-funciona', 'Como funciona'], ['servicos', 'Serviços'], ['planos', 'Planos'], ['seguranca', 'Segurança'], ['duvidas', 'Dúvidas']];
+  const links = [['video', 'Vídeo'], ['como-funciona', 'Como funciona'], ['diagnostico', 'Diagnóstico grátis'], ['servicos', 'Serviços'], ['planos', 'Planos'], ['seguranca', 'Segurança'], ['duvidas', 'Dúvidas']];
 
   return (
     <div className="site">
@@ -143,6 +143,15 @@ export function Site() {
               </article>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section id="diagnostico" className="site-secao site-chamada">
+        <div className="site-largura site-estreita" style={{ textAlign: 'center' }}>
+          <span className="site-selo" style={{ background: 'var(--azul-claro)', color: 'var(--azul)' }}>Gratuito e sem compromisso</span>
+          <h2 className="site-titulo">Quanto da sua inadimplência dá para recuperar?</h2>
+          <p className="site-sub">Envie a planilha dos seus clientes em atraso. Em até 2 dias úteis, a equipe da HS devolve um diagnóstico: quanto pode ser recuperado, em quanto tempo e quanto custaria.</p>
+          <div className="row" style={{ justifyContent: 'center' }}><Link className="btn prim site-btn-grande" to="/diagnostico">Quero meu diagnóstico gratuito</Link></div>
         </div>
       </section>
 

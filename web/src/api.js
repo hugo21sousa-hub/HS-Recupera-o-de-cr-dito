@@ -38,6 +38,7 @@ const wrapDemo = (fn) => async (...a) => {
   }
 };
 export const publico = DEMO ? wrapDemo(demo.publico) : () => req('/api/publico');
+export const enviarDiagnostico = (dados) => (DEMO ? Promise.reject(new ApiError('Na demonstração o formulário não é enviado.', 422)) : req('/api/publico/diagnostico', dados));
 export const hs = DEMO ? wrapDemo(demo.rpc) : (action, payload = {}) => req('/api/rpc', { action, payload });
 const authServidor = {
   login: (email, senha) => req('/api/auth/login', { email, senha }),

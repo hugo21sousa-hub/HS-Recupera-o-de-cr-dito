@@ -4,6 +4,7 @@ import { DIAS_TESTE } from '../app/acesso.js';
 import { confirmarPorDecursoDePrazo } from '../app/actions/pagamentos.js';
 import { garantirModelosPadrao } from '../app/actions/mensagens.js';
 import { rodarLembretes } from '../app/lembretes.js';
+import { registrarLead } from '../app/actions/leads.js';
 import { readFileSync, existsSync, statSync, writeFileSync, mkdirSync, createReadStream } from 'node:fs';
 import { join, extname, resolve, sep } from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -54,6 +55,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
   const whatsapp = criarWhatsApp({ config: whatsCfg, fetchImpl: fetchImpl || fetch });
   const asaas = criarAsaas({ config: configAsaas(env), fetchImpl: fetchImpl || fetch });
   const descadastro = criarDescadastro({ segredo, urlBase });
+  const enviosDiagnostico = new Map();
   const integracoes = { email, descadastro, urlBase, whatsapp: whatsapp.disponivel ? whatsapp : null, asaas: asaas.disponivel ? asaas : null };
 
   /** Executa em transação; efeitos externos (e-mails) só depois do COMMIT. */
@@ -82,6 +84,14 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
     return transacao(async (pos) => {
       const r = await executarRetencao(ctxSistema(pos));
       r.pagamentos_confirmados_por_decurso = (await confirmarPorDecursoDePrazo(ctxSistema(pos))).confirmados;
+      // Pedidos de diagnóstico que não viraram clientes: apagados (com a planilha) após 12 meses
+      const limiteLeads = new Date(Date.now() - 365 * 864e5).toISOString();
+      for (const l of await db.Lead.filter({})) {
+        if (l.status === 'CONVERTIDO' || !l.recebido_em || l.recebido_em >= limiteLeads) continue;
+        if (l.arquivo_uri) await arquivos.remover(l.arquivo_uri).catch(() => {});
+        await db.Lead.delete(l.id);
+        r.leads_apagados = (r.leads_apagados || 0) + 1;
+      }
       const agoraISO = new Date().toISOString();
       for (const ent of ['Sessao', 'Convite', 'Desafio2FA']) for (const x of await db[ent].filter({})) if (x.expira_em < agoraISO) await db[ent].delete(x.id);
       return r;
@@ -207,6 +217,41 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
       // Também mantém o banco "acordado" (o Supabase grátis pausa projetos sem uso)
       const ok = await exclusivo(() => db.Plano.filter({ id: '_' })).then(() => true).catch(() => false);
       return json(res, ok ? 200 : 503, { ok });
+    }
+    if (rota === 'POST /api/publico/diagnostico') {
+      // Pedido de diagnóstico gratuito (formulário público do site), com planilha opcional em base64
+      const agoraMs = Date.now();
+      const envios = (enviosDiagnostico.get(ip) || []).filter((t) => agoraMs - t < 3600e3);
+      if (envios.length >= 5) return json(res, 429, { ok: false, error: 'Muitos envios em pouco tempo. Tente de novo mais tarde ou escreva para contato@acorly.com.br.' });
+      const corpo = await lerCorpo(req, 8 * 1024 * 1024).catch((e) => e);
+      if (corpo instanceof Error) return json(res, corpo.status || 400, { ok: false, error: 'Arquivo muito grande: envie até 5 MB.' });
+      let d;
+      try { d = JSON.parse(corpo.toString('utf8') || '{}'); } catch { return json(res, 400, { ok: false, error: 'Envio inválido' }); }
+      // Anti-robô: campo invisível preenchido ou envio rápido demais
+      if (d.site || Number(d.tempo_ms) < 2500) return json(res, 200, { ok: true, data: { recebido: true } });
+      enviosDiagnostico.set(ip, [...envios, agoraMs]);
+      const TIPOS = { csv: 'text/csv', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', pdf: 'application/pdf' };
+      const r = await transacao(async (pos) => {
+        let planilha = null;
+        if (d.arquivo?.conteudo) {
+          const ext = String(d.arquivo.nome || '').toLowerCase().split('.').pop();
+          if (!TIPOS[ext]) return { status: 422, body: { ok: false, error: 'Envie a planilha em CSV, XLSX ou PDF.' }, __rollback: true };
+          const buffer = Buffer.from(String(d.arquivo.conteudo), 'base64');
+          if (buffer.length > 5 * 1024 * 1024) return { status: 413, body: { ok: false, error: 'Arquivo muito grande: envie até 5 MB.' }, __rollback: true };
+          const salvo = await arquivos.salvar({ buffer, mime: TIPOS[ext], nome: d.arquivo.nome, email: 'diagnostico@site' });
+          if (salvo.erro) return { status: 422, body: { ok: false, error: salvo.erro }, __rollback: true };
+          await arquivos.reivindicar(salvo.file_uri, 'diagnostico@site');
+          planilha = { file_uri: salvo.file_uri, nome: String(d.arquivo.nome).slice(0, 150), texto: ext === 'csv' ? buffer.toString('utf8') : null };
+        }
+        try {
+          const out = await registrarLead({ ...ctxSistema(pos), urlBase }, { ...d, __ip: ip }, planilha);
+          return { status: 200, body: { ok: true, data: { recebido: true, id: out.id } } };
+        } catch (e) {
+          if (e.status && e.status < 500) return { status: e.status, body: { ok: false, error: e.message }, __rollback: true };
+          throw e;
+        }
+      });
+      return json(res, r.status, r.body);
     }
     if (rota === 'GET /api/publico') {
       // Dados do site de apresentação (sem login): planos ativos e contato configurado

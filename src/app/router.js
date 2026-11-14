@@ -15,8 +15,9 @@ import { actions as whatsapp } from './actions/whatsapp.js';
 import { actions as mensagens } from './actions/mensagens.js';
 import { actions as negocio } from './actions/negocio.js';
 import { actions as boletos } from './actions/boletos.js';
+import { actions as leads } from './actions/leads.js';
 
-export const ACTIONS = { ...empresa, ...devedores, ...carteiras, ...operacoes, ...negociacao, ...pagamentos, ...relatorios, ...comercial, ...lgpd, ...whatsapp, ...mensagens, ...negocio, ...boletos };
+export const ACTIONS = { ...empresa, ...devedores, ...carteiras, ...operacoes, ...negociacao, ...pagamentos, ...relatorios, ...comercial, ...lgpd, ...whatsapp, ...mensagens, ...negocio, ...boletos, ...leads };
 
 // Ações permitidas mesmo com empresa suspensa/cancelada (somente consulta essencial)
 const LIBERADAS_EMPRESA_BLOQUEADA = new Set(['meuPerfil', 'minhaAssinatura', 'listarNotificacoes', 'marcarNotificacaoLida', 'listarContratos', 'exportarDadosTitular']);

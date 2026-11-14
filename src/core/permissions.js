@@ -21,14 +21,14 @@ export const MATRIZ = {
     'assinatura.gerenciar', 'contrato.gerenciar', 'auditoria.ler', 'config.sistema', 'relatorio.hs',
     'carteira.validar', 'caso.distribuir', 'caso.ler_todos_hs', 'caso.suspender', 'operador.gerenciar',
     'interacao.registrar', 'tarefa.gerenciar', 'negociacao.propor', 'negociacao.revisar', 'pagamento.informar',
-    'documento.ler', 'prestacao.gerar', 'lgpd.gerenciar',
+    'documento.ler', 'prestacao.gerar', 'lgpd.gerenciar', 'lead.gerenciar',
     // leitura global de dados de empresas — sempre auditada como ACESSO_ADMINISTRATIVO
     'empresa.ler', 'devedor.ler', 'divida.ler', 'carteira.ler', 'relatorio.empresa', 'contrato.ler', 'assinatura.ler', 'pagamento.ler',
   ],
   GESTOR_OPERACOES_HS: [
     'carteira.validar', 'caso.distribuir', 'caso.ler_todos_hs', 'caso.suspender', 'operador.ver',
     'interacao.registrar', 'tarefa.gerenciar', 'negociacao.propor', 'negociacao.revisar', 'pagamento.informar',
-    'relatorio.hs', 'documento.ler', 'prestacao.gerar',
+    'relatorio.hs', 'documento.ler', 'prestacao.gerar', 'lead.gerenciar',
   ],
   OPERADOR_HS: [
     'caso.ler_atribuidos', 'caso.puxar_fila', 'interacao.registrar', 'tarefa.gerenciar', 'negociacao.propor',
