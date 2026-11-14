@@ -1,6 +1,6 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { criarApp } from '../src/server/app.js';
@@ -207,5 +207,31 @@ test('domínio oficial: páginas pelo www ou pelo Render vão para acorly.com.br
     assert.notEqual((await pedir('/', 'acorly.com.br')).status, 301, 'endereço oficial não redireciona');
   } finally {
     a.server.closeAllConnections?.(); a.server.close(); await a.banco.fechar(); rmSync(d, { recursive: true, force: true });
+  }
+});
+
+test('demonstração pública em /demonstracao e vídeo com suporte a Range', async () => {
+  const d = mkdtempSync(join(tmpdir(), 'hs-demo-'));
+  const web = join(d, 'web');
+  mkdirSync(join(web, 'video'), { recursive: true });
+  writeFileSync(join(web, 'index.html'), '<!doctype html><title>site</title>');
+  writeFileSync(join(web, 'demonstracao.html'), '<!doctype html><title>demo</title><script>1</script>');
+  writeFileSync(join(web, 'video', 'v.mp4'), Buffer.alloc(5000, 7));
+  const a = criarApp({ dataDir: d, webDir: web, env: envBanco() });
+  await new Promise((ok) => a.server.listen(0, ok));
+  const b = `http://127.0.0.1:${a.server.address().port}`;
+  try {
+    const r = await fetch(`${b}/demonstracao`);
+    assert.equal(r.status, 200);
+    assert.match(await r.text(), /<title>demo/);
+    assert.match(r.headers.get('content-security-policy'), /script-src 'self' 'unsafe-inline'/);
+    const site = await fetch(`${b}/`);
+    assert.doesNotMatch(site.headers.get('content-security-policy'), /unsafe-inline'; connect/, 'o resto do site continua sem script inline');
+    const parte = await fetch(`${b}/video/v.mp4`, { headers: { Range: 'bytes=100-199' } });
+    assert.equal(parte.status, 206);
+    assert.equal(parte.headers.get('content-range'), 'bytes 100-199/5000');
+    assert.equal((await parte.arrayBuffer()).byteLength, 100);
+  } finally {
+    a.server.close(); await a.banco.fechar(); rmSync(d, { recursive: true, force: true });
   }
 });

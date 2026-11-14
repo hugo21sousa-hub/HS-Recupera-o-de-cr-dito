@@ -66,4 +66,6 @@ export async function semear(db, como) {
   const proprio = await como('empresa@demo.hs', 'abrirCobrancaPropria', { divida_id: dividas[4].id });
   await como('empresa@demo.hs', 'registrarInteracao', { caso_id: proprio.id, canal: 'EMAIL', tipo_interacao: 'MENSAGEM_ENVIADA', mensagem: 'Lembrete de pagamento em aberto.', fora_horario_justificado: true });
   await como('empresa@demo.hs', 'informarPagamento', { divida_id: dividas[4].id, valor_centavos: 40000, data_informada: dia(-1), forma_pagamento: 'PIX' });
+  // Prestação de contas de exemplo (mês corrente até hoje), já enviada à empresa
+  await como('admin@demo.hs', 'gerarPrestacaoContas', { contrato_servico_id: contrato.id, periodo_inicio: dia(0).slice(0, 8) + '01', periodo_fim: dia(0), enviar: true });
 }

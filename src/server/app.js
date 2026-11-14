@@ -4,7 +4,7 @@ import { DIAS_TESTE } from '../app/acesso.js';
 import { confirmarPorDecursoDePrazo } from '../app/actions/pagamentos.js';
 import { garantirModelosPadrao } from '../app/actions/mensagens.js';
 import { rodarLembretes } from '../app/lembretes.js';
-import { readFileSync, existsSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, existsSync, statSync, writeFileSync, mkdirSync, createReadStream } from 'node:fs';
 import { join, extname, resolve, sep } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { abrirBanco } from './db.js';
@@ -25,7 +25,7 @@ import { executarRetencao } from '../app/retencao.js';
 import { PERFIS_HS } from '../core/permissions.js';
 import { TABELA_PADRAO, rotuloFaixa } from '../core/comissao.js';
 
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8', '.xml': 'application/xml; charset=utf-8', '.webp': 'image/webp' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8', '.xml': 'application/xml; charset=utf-8', '.webp': 'image/webp', '.mp4': 'video/mp4', '.webm': 'video/webm', '.jpg': 'image/jpeg' };
 const COOKIE = 'hs_sessao';
 
 const SISTEMA = { id: 'sistema', nome: 'Sistema', email: 'sistema', perfil: 'SISTEMA', status: 'ATIVO' };
@@ -159,7 +159,23 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
     if (!existsSync(p) || statSync(p).isDirectory()) p = join(raiz, 'index.html');
     if (!existsSync(p)) { res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('Frontend não compilado. Rode: npm run build'); }
     const ext = extname(p);
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': p.includes(`${sep}assets${sep}`) ? 'public, max-age=31536000, immutable' : 'no-cache' });
+    const tipo = MIME[ext] || 'application/octet-stream';
+    // Vídeos: suporte a Range (o Safari exige para tocar e para avançar o vídeo)
+    if (ext === '.mp4' || ext === '.webm') {
+      const tamanho = statSync(p).size;
+      const m = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range || ''));
+      const cache = 'public, max-age=86400';
+      if (m) {
+        let ini = m[1] === '' ? Math.max(0, tamanho - Number(m[2])) : Number(m[1]);
+        let fim = m[1] !== '' && m[2] !== '' ? Math.min(Number(m[2]), tamanho - 1) : tamanho - 1;
+        if (ini > fim || ini >= tamanho) { res.writeHead(416, { 'Content-Range': `bytes */${tamanho}` }); return res.end(); }
+        res.writeHead(206, { 'Content-Type': tipo, 'Content-Range': `bytes ${ini}-${fim}/${tamanho}`, 'Accept-Ranges': 'bytes', 'Content-Length': fim - ini + 1, 'Cache-Control': cache });
+        return req.method === 'HEAD' ? res.end() : createReadStream(p, { start: ini, end: fim }).pipe(res);
+      }
+      res.writeHead(200, { 'Content-Type': tipo, 'Accept-Ranges': 'bytes', 'Content-Length': tamanho, 'Cache-Control': cache });
+      return req.method === 'HEAD' ? res.end() : createReadStream(p).pipe(res);
+    }
+    res.writeHead(200, { 'Content-Type': tipo, 'Cache-Control': p.includes(`${sep}assets${sep}`) ? 'public, max-age=31536000, immutable' : 'no-cache' });
     res.end(readFileSync(p));
   }
 
@@ -329,6 +345,14 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
         }
       });
       return html(200, { titulo: 'Pronto', texto: 'Você não receberá mais e-mails sobre esta cobrança.' });
+    }
+    // Demonstração pública (página única com dados fictícios e regras rodando no navegador)
+    if ((req.method === 'GET' || req.method === 'HEAD') && /^\/demonstracao\/?$/.test(url.pathname)) {
+      const arq = join(resolve(webDir), 'demonstracao.html');
+      if (!existsSync(arq)) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('Demonstração indisponível'); }
+      res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+      return res.end(req.method === 'HEAD' ? undefined : readFileSync(arq));
     }
     if (rota === 'POST /api/rpc') {
       const b = await lerJSON(req);

@@ -244,6 +244,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 .site-check { list-style: none; padding: 0; margin: 4px 0 8px; display: grid; gap: 8px; }
 .site-check li { padding-left: 24px; position: relative; line-height: 1.45; }
 .site-check li::before { content: '✓'; position: absolute; left: 0; color: var(--ok); font-weight: 800; }
+.site-video-player { width: 100%; max-width: 880px; aspect-ratio: 16 / 9; border-radius: 12px; border: 1px solid var(--borda); box-shadow: 0 12px 30px rgba(11, 37, 69, .12); background: #0b2545; margin: 8px auto 12px; display: block; }
 .site-planos { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 20px; align-items: stretch; }
 .site-plano { position: relative; }
 .site-plano .btn { margin-top: auto; }

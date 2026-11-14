@@ -122,7 +122,7 @@ const Roteador = DEMO ? MemoryRouter : BrowserRouter;
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <Roteador>
+    <Roteador {...(DEMO && window.location.pathname.startsWith('/demonstracao') ? { initialEntries: ['/entrar'] } : {})}>
       <ToastProvider><ConfirmProvider><SessaoProvider><Raiz /></SessaoProvider></ConfirmProvider></ToastProvider>
     </Roteador>
   </StrictMode>,

@@ -201,8 +201,11 @@ export function Layout() {
         <main className="conteudo">
           {DEMO && (
             <div className="aviso info row between" style={{ marginBottom: 16 }}>
-              <span>Você está na <strong>demonstração</strong>: as alterações ficam só neste navegador. Downloads e anexos ficam desativados.</span>
-              <button className="btn sm" onClick={() => restaurarDemo()}>Restaurar dados de exemplo</button>
+              <span>Você está na <strong>demonstração</strong>, com dados fictícios: as alterações ficam só neste navegador. Downloads e anexos ficam desativados.</span>
+              <div className="row" style={{ flexWrap: 'nowrap' }}>
+                {window.location.pathname.startsWith('/demonstracao') && <a className="btn sm prim" href="/cadastro">Criar minha conta grátis</a>}
+                <button className="btn sm" onClick={() => restaurarDemo()}>Restaurar dados de exemplo</button>
+              </div>
             </div>
           )}
           {!s.ehHS && <AvisoAssinatura />}

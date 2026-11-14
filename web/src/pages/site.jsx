@@ -63,7 +63,7 @@ export function Site() {
   const ano = new Date().getFullYear();
   const contato = dados?.contato || {};
   const ir = (id) => (e) => { e.preventDefault(); setMenu(false); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
-  const links = [['como-funciona', 'Como funciona'], ['servicos', 'Serviços'], ['planos', 'Planos'], ['seguranca', 'Segurança'], ['duvidas', 'Dúvidas']];
+  const links = [['video', 'Vídeo'], ['como-funciona', 'Como funciona'], ['servicos', 'Serviços'], ['planos', 'Planos'], ['seguranca', 'Segurança'], ['duvidas', 'Dúvidas']];
 
   return (
     <div className="site">
@@ -89,7 +89,7 @@ export function Site() {
             <p>O Acorly reúne em um só lugar o cadastro de dívidas, a cobrança, as negociações e a confirmação de pagamentos. Use a plataforma com a sua equipe ou deixe a cobrança com a equipe Acorly, acompanhando tudo pelo seu painel.</p>
             <div className="row">
               <Link className="btn prim site-btn-grande" to="/cadastro">Criar conta da empresa</Link>
-              <Link className="btn site-btn-grande site-btn-claro" to="/entrar">Acessar o sistema</Link>
+              <a className="btn site-btn-grande site-btn-claro" href="/demonstracao">Ver demonstração</a>
             </div>
             <p className="site-nota">Teste grátis por {dados?.dias_teste || 7} dias, sem cartão. O devedor paga direto para a sua empresa. Sem comissão no uso da plataforma.</p>
           </div>
@@ -106,6 +106,17 @@ export function Site() {
               </ul>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section id="video" className="site-secao site-video">
+        <div className="site-largura site-estreita" style={{ textAlign: 'center' }}>
+          <h2 className="site-titulo">Veja o Acorly funcionando</h2>
+          <p className="site-sub">Um passeio de um minuto e meio: do cadastro da dívida ao acordo, ao boleto enviado ao devedor e à prestação de contas.</p>
+          <video className="site-video-player" controls preload="none" playsInline poster="/video/acorly-demo.jpg">
+            <source src="/video/acorly-demo.mp4" type="video/mp4" />
+          </video>
+          <p className="small muted">Prefere explorar sozinho? <a href="/demonstracao">Abra a demonstração</a>, com dados fictícios e sem cadastro.</p>
         </div>
       </section>
 
