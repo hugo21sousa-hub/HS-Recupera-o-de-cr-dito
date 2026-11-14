@@ -212,6 +212,10 @@ A empresa abre o relatório completo e baixa o PDF em **Relatórios**.
 - usar **Gerar o mês para todos os clientes**;
 - reenviar uma prestação já gerada.
 
+## Encarregado de dados (LGPD)
+
+No Render (**Environment**), adicione `DPO_NOME` com o nome do encarregado pelo tratamento de dados. Ele aparece na **Política de Privacidade** (acorly.com.br/privacidade) junto com o e-mail `contato@acorly.com.br`.
+
 ## Contato no site
 
 O endereço principal mostra o site de apresentação da HS, com os planos atualizados automaticamente. Para exibir o seu e-mail e WhatsApp no rodapé, adicione no Render (**Environment**) as variáveis `CONTATO_EMAIL` e `CONTATO_WHATSAPP` (ex.: `5511999999999`).

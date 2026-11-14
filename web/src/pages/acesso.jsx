@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { auth, hs, sair } from '../api.js';
 import { useSessao } from '../sessao.jsx';
 import { Marca } from '../layout.jsx';
+import { VERSAO_TERMOS } from './legal.jsx';
+export { Documento } from './legal.jsx';
 import { DEMO } from '../api.js';
 import { USUARIOS_DEMO, SENHA_DEMO } from '../demo/seed.js';
 import { Campos, useFormulario, useToast, Spinner, Carregando, Badge } from '../ui.jsx';
@@ -235,7 +237,7 @@ export function Onboarding() {
     const d = f.validar();
     if (!d) return;
     setEnviando(true);
-    try { await hs('registrarEmpresa', d); await s.recarregar(); toast.ok('Empresa cadastrada'); } catch (err) { toast.erro(err); } finally { setEnviando(false); }
+    try { await hs('registrarEmpresa', { ...d, versao_termos: VERSAO_TERMOS }); await s.recarregar(); toast.ok('Empresa cadastrada'); } catch (err) { toast.erro(err); } finally { setEnviando(false); }
   };
   const escolher = async () => {
     setEnviando(true);
@@ -286,33 +288,3 @@ export function Onboarding() {
   );
 }
 
-export function Documento({ tipo }) {
-  const termos = tipo === 'termos';
-  return (
-    <div style={{ maxWidth: 800, margin: '0 auto', padding: '32px 16px' }} className="stack">
-      <div className="row between"><Link to="/" aria-label="Voltar ao site"><Marca escura /></Link><Link className="btn sm" to="/">Voltar</Link></div>
-      <div className="card stack">
-        <h1>{termos ? 'Termos de Uso' : 'Política de Privacidade'}</h1>
-        <div className="aviso alerta">Modelo-base. O texto definitivo deve ser revisado pelo jurídico da HS antes da comercialização.</div>
-        {termos ? (
-          <>
-            <p>1. A HS Recuperação de Crédito fornece (a) o Acorly, plataforma para a empresa gerir as próprias cobranças e (b), mediante contrato específico, um serviço de cobrança extrajudicial administrativa executado pela equipe HS.</p>
-            <p>2. A HS não é titular dos créditos, não recebe valores em nome das empresas, não mantém saldo de devedores e não faz repasses. Os pagamentos são feitos diretamente à empresa credora, que é a única responsável por confirmá-los.</p>
-            <p>3. A empresa declara que os créditos cadastrados são legítimos, exigíveis e documentados, e que tem base legal para tratar os dados dos devedores.</p>
-            <p>4. É proibido usar a plataforma para ameaçar, constranger, expor ou cobrar de forma abusiva, conforme o Código de Defesa do Consumidor (arts. 42 e 71).</p>
-            <p>5. A assinatura da plataforma e o serviço de cobrança gerenciada são cobrados separadamente, conforme o plano e o contrato.</p>
-          </>
-        ) : (
-          <>
-            <p><strong>Papéis.</strong> A empresa credora é a controladora dos dados dos seus devedores. A HS atua como operadora quando executa a cobrança gerenciada, nos limites da autorização dada pela empresa. A HS é controladora dos dados cadastrais de empresas e usuários da plataforma.</p>
-            <p><strong>Dados tratados.</strong> Identificação e contato dos devedores, informações das dívidas, histórico de contatos, negociações e pagamentos.</p>
-            <p><strong>Bases legais.</strong> Exercício regular de direitos e proteção do crédito (LGPD, art. 7º, VI e X), além da execução de contrato.</p>
-            <p><strong>Direitos do titular.</strong> Acesso, correção, portabilidade, informação sobre compartilhamento, oposição e eliminação quando aplicável. As solicitações são registradas pela empresa credora e respondidas em até 15 dias.</p>
-            <p><strong>Segurança.</strong> Acesso por perfil, isolamento entre empresas, arquivos privados, senhas protegidas por hash e trilha de auditoria.</p>
-            <p><strong>Retenção.</strong> Pelo prazo configurado pela empresa (padrão: 60 meses após a quitação) ou pelo exigido em lei.</p>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}

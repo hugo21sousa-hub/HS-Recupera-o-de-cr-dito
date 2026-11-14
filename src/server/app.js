@@ -198,6 +198,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
       return json(res, 200, { ok: true, data: {
         planos: planos.sort((a, b) => (a.ordem || 0) - (b.ordem || 0)).map((p) => ({ nome: p.nome, preco_mensal_centavos: p.preco_mensal_centavos, limite_devedores: p.limite_devedores, limite_usuarios: p.limite_usuarios, funcionalidades: p.funcionalidades || [] })),
         contato: { email: env.CONTATO_EMAIL || 'contato@acorly.com.br', whatsapp: env.CONTATO_WHATSAPP || null },
+        dpo: env.DPO_NOME || null,
         dias_teste: DIAS_TESTE,
         comissao: await exclusivo(async () => { const cfg = (await db.ConfiguracaoHS.filter({}))[0]; const f = cfg?.comissao_faixas?.length ? cfg.comissao_faixas : TABELA_PADRAO; return f.map((x, i) => ({ ...x, faixa: rotuloFaixa(f, i) })); }),
       } });
