@@ -5,6 +5,8 @@ import { Tabela, Badge, Cabecalho, Modal, Vazio, Abas, Carregando, useApi, useEx
 import { brl, dataHora, mascaraFone, mascaraDoc, pct } from '../format.js';
 
 const SEGMENTOS = { ESCOLA_CURSO: 'Escola ou curso', SAUDE: 'Saúde', ACADEMIA: 'Academia', CONDOMINIO: 'Condomínio', VAREJO: 'Varejo', DISTRIBUIDORA: 'Distribuidora', SERVICOS: 'Serviços', IMOBILIARIA: 'Imobiliária', OUTRO: 'Outro' };
+const SEGMENTOS_PROSPECT = { ...SEGMENTOS, CONTABILIDADE: 'Contabilidade' };
+const CANAL = { EMAIL: 'E-mail', WHATSAPP: 'WhatsApp', TELEFONE: 'Ligação' };
 const STATUS = { NOVO: 'Novo', EM_CONTATO: 'Em contato', DIAGNOSTICO_ENVIADO: 'Diagnóstico enviado', CONVERTIDO: 'Virou cliente', PERDIDO: 'Perdido' };
 const TOM = { NOVO: 'PENDENTE', EM_CONTATO: 'info', DIAGNOSTICO_ENVIADO: 'info', CONVERTIDO: 'ATIVA', PERDIDO: 'CANCELADA' };
 
@@ -29,9 +31,10 @@ function Analise({ a }) {
 const AJUDA_MARCACOES = 'Marcações: "## Título", "- item de lista", "**negrito**", "[[botao:Texto|https://...]]", "[[link:Texto|https://...]]". Variáveis: {{nome}}, {{empresa}}, {{segmento}}, {{remetente}}, {{whatsapp_linha}}.';
 
 /** Envio de e-mail de apresentação (prospecção), com prévia. */
-function Abordar({ lead, onClose, onFeito }) {
+function Abordar({ lead, prospect, onClose, onFeito }) {
   const modelos = useApi('listarModelosComerciais', {});
-  const [v, setV] = useState({ para: lead?.email || '', nome: lead?.nome || '', empresa: lead?.empresa || '', segmento: lead?.segmento || '', whatsapp: lead?.whatsapp || '', modelo_id: '', assunto: '', corpo: '' });
+  const base = lead || (prospect ? { email: prospect.email, nome: prospect.contato_nome, empresa: prospect.empresa, segmento: prospect.segmento === 'CONTABILIDADE' ? 'SERVICOS' : prospect.segmento, whatsapp: prospect.whatsapp || prospect.telefone } : null);
+  const [v, setV] = useState({ para: base?.email || '', nome: base?.nome || '', empresa: base?.empresa || '', segmento: base?.segmento || '', whatsapp: base?.whatsapp || '', modelo_id: '', assunto: '', corpo: '' });
   const [previa, setPrevia] = useState(null);
   const [editar, setEditar] = useState(false);
   const { executar, enviando } = useExecutar();
@@ -39,6 +42,7 @@ function Abordar({ lead, onClose, onFeito }) {
   const set = (k) => (e) => { if (k === 'assunto' || k === 'corpo') setEditado(true); setV({ ...v, [k]: e.target.value }); };
   const ativos = (modelos.data || []).filter((m) => m.ativo !== false);
   const modeloDoSegmento = (seg) => ativos.find((x) => x.nome === (seg === 'ESCOLA_CURSO' ? 'Escolas e cursos' : seg === 'SAUDE' ? 'Clínicas e consultórios' : 'Apresentação dos serviços'));
+  const travado = !!lead || !!prospect;
   const mudarSegmento = (e) => {
     const seg = e.target.value;
     const m = !editado && !lead?.ultimo_email_em ? modeloDoSegmento(seg) : null;
@@ -58,19 +62,19 @@ function Abordar({ lead, onClose, onFeito }) {
   const escolher = (id) => { const m = ativos.find((x) => x.id === id); if (m) { setEditado(false); setV({ ...v, modelo_id: id, assunto: m.assunto, corpo: m.corpo }); } };
   const enviar = async () => {
     try {
-      const r = await executar('enviarEmailComercial', { lead_id: lead?.id, para: v.para, nome: v.nome, empresa: v.empresa, segmento: v.segmento || undefined, whatsapp: v.whatsapp, modelo_id: v.modelo_id || undefined, assunto: v.assunto, corpo: v.corpo }, 'E-mail enviado');
+      const r = await executar('enviarEmailComercial', { lead_id: lead?.id, prospect_id: prospect?.id, para: v.para, nome: v.nome, empresa: v.empresa, segmento: v.segmento || undefined, whatsapp: v.whatsapp, modelo_id: v.modelo_id || undefined, assunto: v.assunto, corpo: v.corpo }, 'E-mail enviado');
       onFeito?.(r); onClose();
     } catch { /* aviso já mostrado */ }
   };
   return (
-    <Modal grande titulo={lead ? `E-mail para ${lead.empresa}` : 'Nova abordagem por e-mail'} onClose={onClose} rodape={<><button className="btn" onClick={onClose}>Cancelar</button><button className="btn prim" disabled={enviando || !v.para || !v.empresa} onClick={enviar}>Enviar e-mail</button></>}>
+    <Modal grande titulo={base ? `E-mail para ${base.empresa}` : 'Nova abordagem por e-mail'} onClose={onClose} rodape={<><button className="btn" onClick={onClose}>Cancelar</button><button className="btn prim" disabled={enviando || !v.para || !v.empresa} onClick={enviar}>Enviar e-mail</button></>}>
       <div className="stack">
         <div className="form-grid">
-          <div className="campo"><label>E-mail do contato *</label><input type="email" value={v.para} onChange={set('para')} disabled={!!lead} /></div>
+          <div className="campo"><label>E-mail do contato *</label><input type="email" value={v.para} onChange={set('para')} disabled={travado} /></div>
           <div className="campo"><label>Nome do contato</label><input value={v.nome} onChange={set('nome')} /></div>
           <div className="campo"><label>Empresa *</label><input value={v.empresa} onChange={set('empresa')} /></div>
           <div className="campo"><label>Segmento</label><select value={v.segmento} onChange={mudarSegmento}><option value="">—</option>{Object.entries(SEGMENTOS).map(([k, r]) => <option key={k} value={k}>{r}</option>)}</select></div>
-          {!lead && <div className="campo"><label>WhatsApp (opcional)</label><input value={v.whatsapp} onChange={set('whatsapp')} /></div>}
+          {!travado && <div className="campo"><label>WhatsApp (opcional)</label><input value={v.whatsapp} onChange={set('whatsapp')} /></div>}
           <div className="campo"><label>Modelo</label><select value={v.modelo_id} onChange={(e) => escolher(e.target.value)}>{ativos.map((m) => <option key={m.id} value={m.id}>{m.nome}</option>)}</select></div>
         </div>
         <div className="row between"><span className="small muted">O e-mail sai de contato@acorly.com.br, com a marca Acorly e o link "não quero mais receber". Respostas chegam no webmail.</span><button type="button" className="btn sm" onClick={() => setEditar(!editar)}>{editar ? 'Ver prévia' : 'Ajustar texto deste envio'}</button></div>
@@ -166,19 +170,81 @@ function Detalhe({ lead, onClose, onFeito, onEmail }) {
   );
 }
 
+/** Registrar abordagem feita por WhatsApp ou ligação: o contato sai da lista e vira lead. */
+function RegistrarAbordagem({ p, canalInicial, onClose, onFeito }) {
+  const [canal, setCanal] = useState(canalInicial || 'WHATSAPP');
+  const [obs, setObs] = useState('');
+  const { executar, enviando } = useExecutar();
+  const salvar = async () => {
+    try { await executar('registrarAbordagemProspect', { id: p.id, canal, observacao: obs }, 'Abordagem registrada: o contato foi para "Pedidos e contatos"'); onFeito(); onClose(); } catch { /* aviso já mostrado */ }
+  };
+  return (
+    <Modal titulo={`Registrar abordagem: ${p.empresa}`} onClose={onClose} rodape={<><button className="btn" onClick={onClose}>Ainda não abordei</button><button className="btn prim" disabled={enviando} onClick={salvar}>Registrar</button></>}>
+      <div className="stack">
+        <div className="campo"><label>Como foi o contato</label><select value={canal} onChange={(e) => setCanal(e.target.value)}><option value="WHATSAPP">WhatsApp</option><option value="TELEFONE">Ligação</option><option value="EMAIL">E-mail enviado por fora do sistema</option></select></div>
+        <div className="campo"><label>Anotação (opcional)</label><textarea rows={3} value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Ex.: falei com a secretária, pediu para enviar a apresentação ao financeiro" /></div>
+        <p className="small muted" style={{ margin: 0 }}>Ao registrar, o contato sai da Lista do dia e vira um lead em "Pedidos e contatos", com a anotação e a fonte.</p>
+      </div>
+    </Modal>
+  );
+}
+
+/** Lista do dia: contatos encontrados pela busca diária que ainda não foram abordados. */
+function ListaDoDia({ recarregar, onMudou, onEmail }) {
+  const [r, setR] = useState(0);
+  const [info, setInfo] = useState(null);
+  const [registrar, setRegistrar] = useState(null);
+  const { executar } = useExecutar();
+  const toast = useToast();
+  const mudou = () => { setR(r + 1); onMudou(); };
+  const whatsapp = async (p) => {
+    const janela = window.open('about:blank', '_blank');
+    try { const w = await hs('whatsappProspect', { id: p.id }); if (janela && !janela.closed) janela.location.replace(w.link); else window.open(w.link, '_blank', 'noopener'); setRegistrar({ p, canal: 'WHATSAPP' }); } catch (e) { janela?.close(); toast.erro(e); }
+  };
+  const descartar = async (p) => {
+    const motivo = window.prompt(`Descartar ${p.empresa} da lista? Informe o motivo (opcional):`, 'Não é o perfil');
+    if (motivo === null) return;
+    try { await executar('descartarProspect', { id: p.id, motivo }, 'Contato descartado'); mudou(); } catch { /* aviso já mostrado */ }
+  };
+  return (
+    <div className="stack">
+      <p className="small muted" style={{ margin: 0 }}>
+        Empresas com contato público (site, diretórios) encontradas todos os dias. Quem não foi abordado continua aqui; ao abordar por e-mail, WhatsApp ou ligação, o contato sai da lista e vira lead em "Pedidos e contatos".
+        {info ? <> <strong>{info.total} para abordar{info.novos_hoje ? `, ${info.novos_hoje} novo(s) hoje` : ''}.</strong></> : null}
+      </p>
+      <Tabela acao="listarProspects" recarregar={recarregar + r} aoCarregar={setInfo} filtros={[{ nome: 'segmento', rotulo: 'Segmento', opcoes: Object.entries(SEGMENTOS_PROSPECT).map(([valor, rotulo]) => ({ valor, rotulo })) }]} colunas={[
+        { titulo: 'Encontrado', render: (p) => <>{(p.lote || '').split('-').reverse().join('/')}{info && p.lote === new Date().toISOString().slice(0, 10) && <div><Badge status="info">novo</Badge></div>}</> },
+        { titulo: 'Empresa', render: (p) => <><strong>{p.empresa}</strong><div className="small muted">{SEGMENTOS_PROSPECT[p.segmento] || '—'}{p.bairro || p.cidade ? ` · ${[p.bairro, p.cidade].filter(Boolean).join(', ')}` : ''}</div>{p.observacao && <div className="small muted">{p.observacao}</div>}</> },
+        { titulo: 'Contato', render: (p) => <>{p.contato_nome && <div>{p.contato_nome}</div>}{p.email && <div className="small">{p.email}</div>}{(p.whatsapp || p.telefone) && <div className="small">{mascaraFone(p.whatsapp || p.telefone)}{p.whatsapp ? ' (WhatsApp)' : ''}</div>}<div className="small">{p.site && <a href={p.site} target="_blank" rel="noreferrer">site</a>}{p.site && ' · '}<a href={p.fonte_url} target="_blank" rel="noreferrer">fonte</a></div></> },
+        { titulo: 'Abordar', render: (p) => (
+          <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
+            {p.email && <button className="btn sm prim" onClick={() => onEmail(p)}>E-mail</button>}
+            {(p.whatsapp || p.telefone) && <button className="btn sm" onClick={() => whatsapp(p)}>WhatsApp</button>}
+            {p.telefone && <button className="btn sm" onClick={() => setRegistrar({ p, canal: 'TELEFONE' })}>Liguei</button>}
+            <button className="btn sm" title="Já abordei por outro meio" onClick={() => setRegistrar({ p })}>Registrar</button>
+            <button className="btn sm" onClick={() => descartar(p)}>Descartar</button>
+          </div>
+        ) },
+      ]} vazio={<Vazio titulo="Nenhum contato para abordar">A busca diária adiciona novos contatos toda manhã. Os já abordados estão em "Pedidos e contatos".</Vazio>} />
+      {registrar && <RegistrarAbordagem p={registrar.p} canalInicial={registrar.canal} onClose={() => setRegistrar(null)} onFeito={mudou} />}
+    </div>
+  );
+}
+
 export function Leads() {
   const [r, setR] = useState(0);
   const [aberto, setAberto] = useState(null);
   const [email, setEmail] = useState(null);
-  const [aba, setAba] = useState('leads');
+  const [aba, setAba] = useState('dia');
+  const [prospect, setProspect] = useState(null);
   return (
     <div className="stack">
-      <Cabecalho titulo="Diagnósticos e prospecção" sub="Pedidos de diagnóstico do site e contatos abordados por e-mail. Responda os pedidos em até 2 dias úteis, como prometido.">
+      <Cabecalho titulo="Diagnósticos e prospecção" sub="Lista do dia com empresas para abordar, pedidos de diagnóstico do site e contatos já abordados. Responda os pedidos em até 2 dias úteis, como prometido.">
         <button className="btn prim" onClick={() => setEmail({})}>Nova abordagem por e-mail</button>
       </Cabecalho>
       <div className="card">
-      <Abas ativa={aba} onChange={setAba} abas={[{ id: 'leads', rotulo: 'Pedidos e contatos' }, { id: 'modelos', rotulo: 'Modelos de e-mail' }]} />
-      {aba === 'modelos' ? <Modelos /> : <Tabela acao="listarLeads" recarregar={r} filtros={[{ nome: 'status', rotulo: 'Situação', opcoes: Object.keys(STATUS) }]} colunas={[
+      <Abas ativa={aba} onChange={setAba} abas={[{ id: 'dia', rotulo: 'Lista do dia' }, { id: 'leads', rotulo: 'Pedidos e contatos' }, { id: 'modelos', rotulo: 'Modelos de e-mail' }]} />
+      {aba === 'dia' ? <ListaDoDia recarregar={r} onMudou={() => setR(r + 1)} onEmail={setProspect} /> : aba === 'modelos' ? <Modelos /> : <Tabela acao="listarLeads" recarregar={r} filtros={[{ nome: 'status', rotulo: 'Situação', opcoes: Object.keys(STATUS) }]} colunas={[
         { titulo: 'Recebido', render: (l) => dataHora(l.recebido_em) },
         { titulo: 'Empresa', render: (l) => <button className="btn link" onClick={() => setAberto(l)}><strong>{l.empresa}</strong></button> },
         { titulo: 'Contato', render: (l) => <><div>{l.nome}</div><div className="small muted">{l.email}{l.whatsapp ? ` · ${mascaraFone(l.whatsapp)}` : ''}</div>{l.origem === 'PROSPECCAO' && <div className="small" style={{ color: 'var(--azul)' }}>Abordado por e-mail{l.ultimo_email_em ? ` · ${dataHora(l.ultimo_email_em)}` : ''}</div>}</> },
@@ -190,6 +256,7 @@ export function Leads() {
       </div>
       {aberto && <Detalhe lead={aberto} onClose={() => setAberto(null)} onFeito={() => setR(r + 1)} onEmail={(l) => setEmail(l)} />}
       {email && <Abordar lead={email.id ? email : null} onClose={() => setEmail(null)} onFeito={() => setR(r + 1)} />}
+      {prospect && <Abordar lead={null} prospect={prospect} onClose={() => setProspect(null)} onFeito={() => setR(r + 1)} />}
     </div>
   );
 }

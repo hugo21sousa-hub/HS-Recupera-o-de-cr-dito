@@ -3,6 +3,7 @@
 import { renderizarEmailComercial, preencher } from '../../core/emailComercial.js';
 import { emailValido, somenteDigitos } from '../../core/documento.js';
 import { AccessError, ValidationError, getById, find, criar, alterar, exigir, notificar } from '../context.js';
+import { marcarAbordado } from './prospects.js';
 
 export const LIMITE_DIARIO_COMERCIAL = 50;
 const SEGMENTO_TEXTO = { ESCOLA_CURSO: 'escolas e cursos', SAUDE: 'clínicas e consultórios', ACADEMIA: 'academias', CONDOMINIO: 'condomínios', VAREJO: 'lojas e varejo', DISTRIBUIDORA: 'distribuidoras', SERVICOS: 'prestadores de serviço', IMOBILIARIA: 'imobiliárias', OUTRO: 'empresas' };
@@ -192,6 +193,10 @@ export const actions = {
       if (!r.ok) throw new ValidationError(`Não foi possível enviar agora${r.erro ? ` (${r.erro})` : ''}. Tente novamente.`);
       await ctx.db.EnvioComercial.create({ lead_id: lead.id, email: para, assunto: m.assunto, modelo_id: input.modelo_id || null, enviado_em: agora, enviado_por: ctx.user.id, mensagem_id: r.id || null });
       await alterar(ctx, 'Lead', lead, { ultimo_email_em: agora, status: lead.status === 'NOVO' ? 'EM_CONTATO' : lead.status }, 'ENVIAR_EMAIL_COMERCIAL');
+      if (input.prospect_id) {
+        const pr = await getById(ctx, 'Prospect', input.prospect_id);
+        if (pr?.status === 'A_ABORDAR') await marcarAbordado(ctx, pr, { canal: 'EMAIL', lead_id: lead.id });
+      }
       return { lead_id: lead.id, assunto: m.assunto, enviados_hoje: envios.filter((e) => (e.enviado_em || '').slice(0, 10) === hoje).length + 1 };
     },
   },

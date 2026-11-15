@@ -276,3 +276,19 @@ Quando o negócio crescer, basta trocar para um plano pago do Render ou do Supab
 ## Novo link de acesso para o superadmin
 
 Se perder o link antes de criar a senha, reinicie o serviço no Render (**Manual Deploy › Restart service**): um novo link aparece nos logs. Para outras pessoas, use **Usuários › Link de acesso** dentro do próprio sistema.
+
+## Lista do dia (prospecção diária)
+
+Todos os dias, uma busca automática encontra empresas com contato público (site, diretórios) e as envia para **Diagnósticos e prospecção → Lista do dia**.
+
+- Contatos não abordados continuam na lista.
+- Ao abordar por e-mail (pelo sistema), WhatsApp ou ligação, o contato sai da lista e vira lead em "Pedidos e contatos".
+- Abordados e descartados são apagados após 12 meses.
+
+Para ligar a busca automática:
+
+1. No Render, crie a variável `LEADS_API_TOKEN` com um texto aleatório de pelo menos 24 caracteres. Não envie esse valor por chat.
+2. A busca envia os contatos para `POST https://acorly.com.br/api/integracao/prospects` com o cabeçalho `Authorization: Bearer <token>` e o corpo `{ "contatos": [ { "empresa", "segmento", "cidade", "bairro", "site", "email", "telefone", "whatsapp", "fonte_url", "observacao" } ] }`.
+   - São até 200 contatos por envio.
+   - `fonte_url` (https) é obrigatória.
+   - Repetidos (mesmo e-mail, telefone ou domínio de lead ou contato já existente) são ignorados.

@@ -202,6 +202,17 @@ export const ENTITIES = {
     properties: { ...EMP, pagamento_id: ref('Pagamento'), confirmado_por: ref('Usuário'), data_confirmacao: ts('Data'), evidencia: s('Evidência (extrato, file_uri)'), observacao: s('Observação'), valor_confirmado_centavos: c('Valor'), status: e(['VALIDA', 'DESCARTADA_DUPLICIDADE', 'DESCARTADA_CONCORRENCIA'], 'Status', 'VALIDA') },
     required: ['empresa_id', 'pagamento_id', 'confirmado_por'],
   },
+  Prospect: {
+    description: 'Contato de empresa encontrado na busca diária (prospecção ativa), com contato público e fonte',
+    properties: {
+      empresa: s('Empresa'), segmento: e(['ESCOLA_CURSO', 'SAUDE', 'ACADEMIA', 'CONDOMINIO', 'VAREJO', 'DISTRIBUIDORA', 'SERVICOS', 'IMOBILIARIA', 'CONTABILIDADE', 'OUTRO'], 'Segmento', 'OUTRO'),
+      cidade: s('Cidade'), bairro: s('Bairro'), site: s('Site'), email: s('E-mail público'), telefone: s('Telefone'), whatsapp: s('WhatsApp'), contato_nome: s('Nome do contato (se público)'),
+      fonte_url: s('Onde o contato foi encontrado'), observacao: s('Observação'), lote: dt('Dia em que entrou na lista'), encontrado_em: ts('Encontrado em'), origem: s('BUSCA_DIARIA ou MANUAL'),
+      status: e(['A_ABORDAR', 'ABORDADO', 'DESCARTADO'], 'Situação', 'A_ABORDAR'), abordado_em: ts('Abordado em'), abordado_por: ref('Quem abordou'), canal: s('Canal da abordagem'),
+      lead_id: ref('Lead criado'), motivo_descarte: s('Motivo do descarte'), descartado_em: ts('Descartado em'),
+    },
+    required: ['empresa', 'status'],
+  },
   ModeloComercial: {
     description: 'Modelo de e-mail comercial (apresentação dos serviços) para prospecção',
     properties: { nome: s('Nome'), assunto: s('Assunto'), corpo: s('Mensagem com marcações e {{variáveis}}'), ativo: b('Ativo', true), ordem: n('Ordem') },
@@ -234,7 +245,7 @@ export const ENTITIES = {
       aceite_privacidade_em: ts('Aceite da Política de Privacidade'), recebido_em: ts('Recebido em'), ip: s('IP do envio'),
       ultimo_email_em: ts('Último e-mail comercial enviado'), nao_receber_comercial: b('Pediu para não receber e-mails comerciais'),
     },
-    required: ['nome', 'empresa', 'email', 'status'],
+    required: ['nome', 'empresa', 'status'],
   },
   PagamentoParcela: {
     description: 'Forma de pagamento de uma parcela de acordo informada pelo credor (boleto, Pix ou link). O dinheiro vai direto ao credor.',

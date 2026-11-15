@@ -7,6 +7,8 @@ import { rodarLembretes } from '../app/lembretes.js';
 import { registrarLead } from '../app/actions/leads.js';
 import { garantirAgenda, redesSociaisPublicas } from '../app/actions/conteudo.js';
 import { sairDaListaComercial } from '../app/actions/prospeccao.js';
+import { importarProspects } from '../app/actions/prospects.js';
+import { timingSafeEqual } from 'node:crypto';
 import { readFileSync, existsSync, statSync, writeFileSync, mkdirSync, createReadStream } from 'node:fs';
 import { join, extname, resolve, sep } from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -94,6 +96,11 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
         if (l.arquivo_uri) await arquivos.remover(l.arquivo_uri).catch(() => {});
         await db.Lead.delete(l.id);
         r.leads_apagados = (r.leads_apagados || 0) + 1;
+      }
+      // Lista do dia: contatos abordados (já registrados como lead) ou descartados saem de vez após 12 meses
+      for (const p of await db.Prospect.filter({})) {
+        if (p.status === 'A_ABORDAR') continue;
+        if ((p.abordado_em || p.descartado_em || p.encontrado_em || '') < limiteLeads) await db.Prospect.delete(p.id);
       }
       const agoraISO = new Date().toISOString();
       for (const ent of ['Sessao', 'Convite', 'Desafio2FA']) for (const x of await db[ent].filter({})) if (x.expira_em < agoraISO) await db[ent].delete(x.id);
@@ -213,13 +220,30 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
 
     if (url.pathname.startsWith('/api/')) {
       // Proteção CSRF: cookie SameSite=Strict + cabeçalho customizado obrigatório
-      if (req.method !== 'GET' && req.headers['x-hs'] !== '1') return json(res, 403, { ok: false, error: 'Requisição recusada' });
+      if (req.method !== 'GET' && req.headers['x-hs'] !== '1' && !url.pathname.startsWith('/api/integracao/')) return json(res, 403, { ok: false, error: 'Requisição recusada' });
     }
 
     if (rota === 'GET /api/saude') {
       // Também mantém o banco "acordado" (o Supabase grátis pausa projetos sem uso)
       const ok = await exclusivo(() => db.Plano.filter({ id: '_' })).then(() => true).catch(() => false);
       return json(res, ok ? 200 : 503, { ok });
+    }
+    if (rota === 'POST /api/integracao/prospects') {
+      // Busca diária de contatos (robô): autenticada por token próprio (LEADS_API_TOKEN), sem sessão
+      const token = String(env.LEADS_API_TOKEN || '');
+      const recebido = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+      const ok = token.length >= 24 && recebido.length === token.length && timingSafeEqual(Buffer.from(recebido), Buffer.from(token));
+      if (!ok) return json(res, 401, { ok: false, error: 'Token inválido' });
+      const corpo = await lerCorpo(req, 1024 * 1024).catch(() => null);
+      let d;
+      try { d = JSON.parse(corpo?.toString('utf8') || '{}'); } catch { return json(res, 400, { ok: false, error: 'JSON inválido' }); }
+      const r = await transacao(async (pos) => {
+        try { return { status: 200, body: { ok: true, data: await importarProspects(ctxSistema(pos), d.contatos) } }; } catch (e) {
+          if (e.status && e.status < 500) return { status: e.status, body: { ok: false, error: e.message }, __rollback: true };
+          throw e;
+        }
+      });
+      return json(res, r.status, r.body);
     }
     if (rota === 'POST /api/publico/diagnostico') {
       // Pedido de diagnóstico gratuito (formulário público do site), com planilha opcional em base64

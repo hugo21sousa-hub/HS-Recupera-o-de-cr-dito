@@ -152,7 +152,7 @@ export function Layout() {
   const loc = useLocation();
   useEffect(() => setAberta(false), [loc.pathname]);
   useEffect(() => {
-    if (s.ehHS && s.pode('lead.gerenciar')) { hs('listarLeads', { pageSize: 1, filtros: { status: 'NOVO' } }).then((r) => setContadores({ leads: r.total })).catch(() => {}); return; }
+    if (s.ehHS && s.pode('lead.gerenciar')) { Promise.all([hs('listarLeads', { pageSize: 1, filtros: { status: 'NOVO' } }), hs('listarProspects', { pageSize: 1 }).catch(() => ({ total: 0 }))]).then(([a, b]) => setContadores({ leads: a.total + b.total })).catch(() => {}); return; }
     if (s.ehHS) return;
     (async () => {
       const c = {};
