@@ -100,8 +100,23 @@ ${botao ? `<p style="margin:20px 0"><a href="${esc(botao.url)}" style="backgroun
     }
   }
 
+  /** E-mail comercial (prospecção) com HTML já montado, do remetente principal (contato@). */
+  async function comercial({ para, assunto, html, texto, sair }) {
+    if (!t) return { ok: false, erro: 'envio de e-mail não configurado' };
+    const headers = sair ? { 'List-Unsubscribe': `<${sair}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } : {};
+    try {
+      const info = await t.sendMail({ from: remetente, to: para, subject: assunto, text: texto, html, headers });
+      enviados.push({ para, assunto, comercial: true, info });
+      return { ok: true, id: info?.messageId || null };
+    } catch (e) {
+      console.error('[email] falha no e-mail comercial para', para, e.message);
+      return { ok: false, erro: 'o provedor de e-mail recusou o envio' };
+    }
+  }
+
   return {
     disponivel: !!t,
+    comercial,
     cobrancaDisponivel: !!t && !!enderecoCobranca,
     paraDevedor,
     enviados,

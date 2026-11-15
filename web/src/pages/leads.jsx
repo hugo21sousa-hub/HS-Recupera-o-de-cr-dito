@@ -1,7 +1,7 @@
 // Pedidos de diagnóstico gratuito (leads do site): acompanhamento comercial da equipe.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { hs, abrirLink } from '../api.js';
-import { Tabela, Badge, Cabecalho, Modal, Vazio, useExecutar, useToast } from '../ui.jsx';
+import { Tabela, Badge, Cabecalho, Modal, Vazio, Abas, Carregando, useApi, useExecutar, useToast } from '../ui.jsx';
 import { brl, dataHora, mascaraFone, mascaraDoc, pct } from '../format.js';
 
 const SEGMENTOS = { ESCOLA_CURSO: 'Escola ou curso', SAUDE: 'Saúde', ACADEMIA: 'Academia', CONDOMINIO: 'Condomínio', VAREJO: 'Varejo', DISTRIBUIDORA: 'Distribuidora', SERVICOS: 'Serviços', IMOBILIARIA: 'Imobiliária', OUTRO: 'Outro' };
@@ -26,7 +26,103 @@ function Analise({ a }) {
   );
 }
 
-function Detalhe({ lead, onClose, onFeito }) {
+const AJUDA_MARCACOES = 'Marcações: "## Título", "- item de lista", "**negrito**", "[[botao:Texto|https://...]]", "[[link:Texto|https://...]]". Variáveis: {{nome}}, {{empresa}}, {{segmento}}, {{remetente}}, {{whatsapp_linha}}.';
+
+/** Envio de e-mail de apresentação (prospecção), com prévia. */
+function Abordar({ lead, onClose, onFeito }) {
+  const modelos = useApi('listarModelosComerciais', {});
+  const [v, setV] = useState({ para: lead?.email || '', nome: lead?.nome || '', empresa: lead?.empresa || '', segmento: lead?.segmento || '', whatsapp: lead?.whatsapp || '', modelo_id: '', assunto: '', corpo: '' });
+  const [previa, setPrevia] = useState(null);
+  const [editar, setEditar] = useState(false);
+  const { executar, enviando } = useExecutar();
+  const [editado, setEditado] = useState(false);
+  const set = (k) => (e) => { if (k === 'assunto' || k === 'corpo') setEditado(true); setV({ ...v, [k]: e.target.value }); };
+  const ativos = (modelos.data || []).filter((m) => m.ativo !== false);
+  const modeloDoSegmento = (seg) => ativos.find((x) => x.nome === (seg === 'ESCOLA_CURSO' ? 'Escolas e cursos' : seg === 'SAUDE' ? 'Clínicas e consultórios' : 'Apresentação dos serviços'));
+  const mudarSegmento = (e) => {
+    const seg = e.target.value;
+    const m = !editado && !lead?.ultimo_email_em ? modeloDoSegmento(seg) : null;
+    setV({ ...v, segmento: seg, ...(m ? { modelo_id: m.id, assunto: m.assunto, corpo: m.corpo } : {}) });
+  };
+  useEffect(() => {
+    if (!v.modelo_id && ativos.length) {
+      const m = ativos.find((x) => (lead?.status === 'EM_CONTATO' && lead?.ultimo_email_em ? x.nome.startsWith('Retorno') : false)) || ativos.find((x) => x.nome === (v.segmento === 'ESCOLA_CURSO' ? 'Escolas e cursos' : v.segmento === 'SAUDE' ? 'Clínicas e consultórios' : 'Apresentação dos serviços')) || ativos[0];
+      setV((x) => ({ ...x, modelo_id: m.id, assunto: m.assunto, corpo: m.corpo }));
+    }
+  }, [ativos.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!v.assunto || !v.corpo) return undefined;
+    const t = setTimeout(() => { hs('previaEmailComercial', { assunto: v.assunto, corpo: v.corpo, nome: v.nome, empresa: v.empresa, segmento: v.segmento }).then(setPrevia).catch(() => setPrevia(null)); }, 350);
+    return () => clearTimeout(t);
+  }, [v.assunto, v.corpo, v.nome, v.empresa, v.segmento]);
+  const escolher = (id) => { const m = ativos.find((x) => x.id === id); if (m) { setEditado(false); setV({ ...v, modelo_id: id, assunto: m.assunto, corpo: m.corpo }); } };
+  const enviar = async () => {
+    try {
+      const r = await executar('enviarEmailComercial', { lead_id: lead?.id, para: v.para, nome: v.nome, empresa: v.empresa, segmento: v.segmento || undefined, whatsapp: v.whatsapp, modelo_id: v.modelo_id || undefined, assunto: v.assunto, corpo: v.corpo }, 'E-mail enviado');
+      onFeito?.(r); onClose();
+    } catch { /* aviso já mostrado */ }
+  };
+  return (
+    <Modal grande titulo={lead ? `E-mail para ${lead.empresa}` : 'Nova abordagem por e-mail'} onClose={onClose} rodape={<><button className="btn" onClick={onClose}>Cancelar</button><button className="btn prim" disabled={enviando || !v.para || !v.empresa} onClick={enviar}>Enviar e-mail</button></>}>
+      <div className="stack">
+        <div className="form-grid">
+          <div className="campo"><label>E-mail do contato *</label><input type="email" value={v.para} onChange={set('para')} disabled={!!lead} /></div>
+          <div className="campo"><label>Nome do contato</label><input value={v.nome} onChange={set('nome')} /></div>
+          <div className="campo"><label>Empresa *</label><input value={v.empresa} onChange={set('empresa')} /></div>
+          <div className="campo"><label>Segmento</label><select value={v.segmento} onChange={mudarSegmento}><option value="">—</option>{Object.entries(SEGMENTOS).map(([k, r]) => <option key={k} value={k}>{r}</option>)}</select></div>
+          {!lead && <div className="campo"><label>WhatsApp (opcional)</label><input value={v.whatsapp} onChange={set('whatsapp')} /></div>}
+          <div className="campo"><label>Modelo</label><select value={v.modelo_id} onChange={(e) => escolher(e.target.value)}>{ativos.map((m) => <option key={m.id} value={m.id}>{m.nome}</option>)}</select></div>
+        </div>
+        <div className="row between"><span className="small muted">O e-mail sai de contato@acorly.com.br, com a marca Acorly e o link "não quero mais receber". Respostas chegam no webmail.</span><button type="button" className="btn sm" onClick={() => setEditar(!editar)}>{editar ? 'Ver prévia' : 'Ajustar texto deste envio'}</button></div>
+        {editar ? (
+          <>
+            <div className="campo"><label>Assunto</label><input value={v.assunto} onChange={set('assunto')} /></div>
+            <div className="campo"><label>Mensagem</label><textarea rows={14} value={v.corpo} onChange={set('corpo')} /><span className="small muted">{AJUDA_MARCACOES}</span></div>
+          </>
+        ) : previa ? (
+          <div className="stack" style={{ gap: 6 }}>
+            <div className="small"><strong>Assunto:</strong> {previa.assunto}</div>
+            <div className="previa-email" dangerouslySetInnerHTML={{ __html: previa.html }} />
+          </div>
+        ) : <Carregando />}
+      </div>
+    </Modal>
+  );
+}
+
+function Modelos() {
+  const { data, carregando, recarregar } = useApi('listarModelosComerciais', {});
+  const [ed, setEd] = useState(null);
+  const { executar, enviando } = useExecutar();
+  if (carregando && !data) return <Carregando />;
+  const salvar = async () => { try { await executar('salvarModeloComercial', ed, 'Modelo salvo'); setEd(null); recarregar(); } catch { /* aviso já mostrado */ } };
+  return (
+    <div className="stack">
+      <div className="row between"><p className="small muted" style={{ margin: 0 }}>Modelos de e-mail de apresentação. {AJUDA_MARCACOES}</p><button className="btn prim" onClick={() => setEd({ nome: '', assunto: '', corpo: '', ativo: true })}>Novo modelo</button></div>
+      <div className="grid g2">{(data || []).map((m) => (
+        <div key={m.id} className="card stack" style={{ gap: 6 }}>
+          <div className="row between"><strong>{m.nome}</strong>{m.ativo === false && <Badge status="CANCELADA">Inativo</Badge>}</div>
+          <span className="small"><strong>Assunto:</strong> {m.assunto}</span>
+          <span className="small muted" style={{ whiteSpace: 'pre-wrap' }}>{m.corpo.slice(0, 220)}…</span>
+          <div><button className="btn sm" onClick={() => setEd({ ...m })}>Editar</button></div>
+        </div>
+      ))}</div>
+      {ed && (
+        <Modal grande titulo={ed.id ? 'Editar modelo' : 'Novo modelo'} onClose={() => setEd(null)} rodape={<><button className="btn" onClick={() => setEd(null)}>Cancelar</button><button className="btn prim" disabled={enviando} onClick={salvar}>Salvar</button></>}>
+          <div className="stack">
+            <div className="form-grid"><div className="campo"><label>Nome</label><input value={ed.nome} onChange={(e) => setEd({ ...ed, nome: e.target.value })} /></div>
+              <div className="campo"><label>Situação</label><select value={ed.ativo === false ? 'n' : 's'} onChange={(e) => setEd({ ...ed, ativo: e.target.value === 's' })}><option value="s">Ativo</option><option value="n">Inativo</option></select></div></div>
+            <div className="campo"><label>Assunto</label><input value={ed.assunto} onChange={(e) => setEd({ ...ed, assunto: e.target.value })} /></div>
+            <div className="campo"><label>Mensagem</label><textarea rows={16} value={ed.corpo} onChange={(e) => setEd({ ...ed, corpo: e.target.value })} /><span className="small muted">{AJUDA_MARCACOES}</span></div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function Detalhe({ lead, onClose, onFeito, onEmail }) {
+  const envios = useApi('enviosDoLead', { lead_id: lead.id });
   const [status, setStatus] = useState(lead.status);
   const [obs, setObs] = useState(lead.observacoes || '');
   const { executar, enviando } = useExecutar();
@@ -56,6 +152,11 @@ function Detalhe({ lead, onClose, onFeito }) {
         {lead.mensagem && <div className="card small" style={{ whiteSpace: 'pre-wrap' }}>{lead.mensagem}</div>}
         {lead.analise ? <><h3 style={{ margin: 0 }}>Análise automática da planilha</h3><Analise a={lead.analise} /></>
           : lead.arquivo_uri ? <div className="aviso info small">{lead.erro_analise ? `A análise automática não foi possível (${lead.erro_analise}).` : 'A análise automática só é feita em planilhas CSV.'} Baixe o arquivo para analisar. Se quiser, importe a planilha numa empresa de teste para ver os números no sistema.</div> : null}
+        <div className="stack" style={{ gap: 6 }}>
+          <div className="row between"><h3 style={{ margin: 0 }}>E-mails enviados</h3>{!lead.nao_receber_comercial && <button className="btn sm prim" onClick={() => { onClose(); onEmail(lead); }}>Enviar e-mail de apresentação</button>}</div>
+          {lead.nao_receber_comercial && <div className="aviso alerta small">Este contato pediu para não receber e-mails comerciais.</div>}
+          {(envios.data || []).length ? <ul className="small" style={{ margin: 0, paddingLeft: 18 }}>{envios.data.map((e) => <li key={e.id}>{dataHora(e.enviado_em)} · {e.assunto}</li>)}</ul> : <span className="small muted">Nenhum e-mail enviado ainda.</span>}
+        </div>
         <div className="form-grid">
           <div className="campo"><label>Situação</label><select value={status} onChange={(e) => setStatus(e.target.value)}>{Object.entries(STATUS).map(([k, r]) => <option key={k} value={k}>{r}</option>)}</select></div>
         </div>
@@ -68,19 +169,27 @@ function Detalhe({ lead, onClose, onFeito }) {
 export function Leads() {
   const [r, setR] = useState(0);
   const [aberto, setAberto] = useState(null);
+  const [email, setEmail] = useState(null);
+  const [aba, setAba] = useState('leads');
   return (
     <div className="stack">
-      <Cabecalho titulo="Diagnósticos (leads)" sub="Pedidos de diagnóstico gratuito feitos no site. Responda em até 2 dias úteis, como prometido ao contato." />
-      <Tabela acao="listarLeads" recarregar={r} filtros={[{ nome: 'status', rotulo: 'Situação', opcoes: Object.keys(STATUS) }]} colunas={[
+      <Cabecalho titulo="Diagnósticos e prospecção" sub="Pedidos de diagnóstico do site e contatos abordados por e-mail. Responda os pedidos em até 2 dias úteis, como prometido.">
+        <button className="btn prim" onClick={() => setEmail({})}>Nova abordagem por e-mail</button>
+      </Cabecalho>
+      <div className="card">
+      <Abas ativa={aba} onChange={setAba} abas={[{ id: 'leads', rotulo: 'Pedidos e contatos' }, { id: 'modelos', rotulo: 'Modelos de e-mail' }]} />
+      {aba === 'modelos' ? <Modelos /> : <Tabela acao="listarLeads" recarregar={r} filtros={[{ nome: 'status', rotulo: 'Situação', opcoes: Object.keys(STATUS) }]} colunas={[
         { titulo: 'Recebido', render: (l) => dataHora(l.recebido_em) },
         { titulo: 'Empresa', render: (l) => <button className="btn link" onClick={() => setAberto(l)}><strong>{l.empresa}</strong></button> },
-        { titulo: 'Contato', render: (l) => <><div>{l.nome}</div><div className="small muted">{l.email}{l.whatsapp ? ` · ${mascaraFone(l.whatsapp)}` : ''}</div></> },
+        { titulo: 'Contato', render: (l) => <><div>{l.nome}</div><div className="small muted">{l.email}{l.whatsapp ? ` · ${mascaraFone(l.whatsapp)}` : ''}</div>{l.origem === 'PROSPECCAO' && <div className="small" style={{ color: 'var(--azul)' }}>Abordado por e-mail{l.ultimo_email_em ? ` · ${dataHora(l.ultimo_email_em)}` : ''}</div>}</> },
         { titulo: 'Segmento', render: (l) => SEGMENTOS[l.segmento] || '—' },
         { titulo: 'Carteira', num: true, render: (l) => (l.analise ? <>{brl(l.analise.vencido_centavos)}<div className="small muted">{l.analise.devedores} devedor(es)</div></> : l.valor_aberto_centavos ? <span className="muted">≈ {brl(l.valor_aberto_centavos)}</span> : '—') },
         { titulo: 'Situação', render: (l) => <Badge status={TOM[l.status]}>{STATUS[l.status]}</Badge> },
         { titulo: '', render: (l) => <button className="btn sm" onClick={() => setAberto(l)}>Abrir</button> },
-      ]} vazio={<Vazio titulo="Nenhum pedido ainda">Os pedidos feitos em acorly.com.br/diagnostico aparecem aqui e você recebe um aviso por e-mail.</Vazio>} />
-      {aberto && <Detalhe lead={aberto} onClose={() => setAberto(null)} onFeito={() => setR(r + 1)} />}
+      ]} vazio={<Vazio titulo="Nenhum pedido ainda">Os pedidos feitos em acorly.com.br/diagnostico e os contatos abordados por e-mail aparecem aqui.</Vazio>} />}
+      </div>
+      {aberto && <Detalhe lead={aberto} onClose={() => setAberto(null)} onFeito={() => setR(r + 1)} onEmail={(l) => setEmail(l)} />}
+      {email && <Abordar lead={email.id ? email : null} onClose={() => setEmail(null)} onFeito={() => setR(r + 1)} />}
     </div>
   );
 }

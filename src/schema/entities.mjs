@@ -202,6 +202,16 @@ export const ENTITIES = {
     properties: { ...EMP, pagamento_id: ref('Pagamento'), confirmado_por: ref('Usuário'), data_confirmacao: ts('Data'), evidencia: s('Evidência (extrato, file_uri)'), observacao: s('Observação'), valor_confirmado_centavos: c('Valor'), status: e(['VALIDA', 'DESCARTADA_DUPLICIDADE', 'DESCARTADA_CONCORRENCIA'], 'Status', 'VALIDA') },
     required: ['empresa_id', 'pagamento_id', 'confirmado_por'],
   },
+  ModeloComercial: {
+    description: 'Modelo de e-mail comercial (apresentação dos serviços) para prospecção',
+    properties: { nome: s('Nome'), assunto: s('Assunto'), corpo: s('Mensagem com marcações e {{variáveis}}'), ativo: b('Ativo', true), ordem: n('Ordem') },
+    required: ['nome', 'assunto', 'corpo'],
+  },
+  EnvioComercial: {
+    description: 'Registro de cada e-mail comercial enviado',
+    properties: { lead_id: ref('Lead'), email: s('Destino'), assunto: s('Assunto'), modelo_id: ref('ModeloComercial'), enviado_em: ts('Enviado em'), enviado_por: ref('Quem enviou'), mensagem_id: s('ID no provedor') },
+    required: ['email', 'enviado_em'],
+  },
   PostSocial: {
     description: 'Post sugerido para as redes sociais (nunca publicado automaticamente)',
     properties: {
@@ -222,6 +232,7 @@ export const ENTITIES = {
       arquivo_uri: s('Planilha enviada (privada)'), arquivo_nome: s('Nome do arquivo'), analise: s('JSON da análise automática'), erro_analise: s('Por que a análise não foi feita'),
       status: e(['NOVO', 'EM_CONTATO', 'DIAGNOSTICO_ENVIADO', 'CONVERTIDO', 'PERDIDO'], 'Situação', 'NOVO'), responsavel_id: ref('Responsável na HS'), observacoes: s('Anotações'),
       aceite_privacidade_em: ts('Aceite da Política de Privacidade'), recebido_em: ts('Recebido em'), ip: s('IP do envio'),
+      ultimo_email_em: ts('Último e-mail comercial enviado'), nao_receber_comercial: b('Pediu para não receber e-mails comerciais'),
     },
     required: ['nome', 'empresa', 'email', 'status'],
   },

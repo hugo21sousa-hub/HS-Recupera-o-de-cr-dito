@@ -2,8 +2,18 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 export function criarDescadastro({ segredo, urlBase }) {
-  const assinar = (id) => createHmac('sha256', segredo).update(`descadastro:${id}`).digest('base64url').slice(0, 32);
+  const assinar = (id, proposito = 'descadastro') => createHmac('sha256', segredo).update(`${proposito}:${id}`).digest('base64url').slice(0, 32);
+  const conferir = (token, proposito) => {
+    const m = /^([A-Za-z0-9_-]{1,80})\.([A-Za-z0-9_-]{32})$/.exec(String(token || ''));
+    if (!m) return null;
+    const esperado = Buffer.from(assinar(m[1], proposito));
+    const recebido = Buffer.from(m[2]);
+    return esperado.length === recebido.length && timingSafeEqual(esperado, recebido) ? m[1] : null;
+  };
   return {
+    /** E-mails comerciais (prospecção): link para o contato sair da lista. */
+    linkComercial: (lead_id) => `${urlBase}/sair/${encodeURIComponent(lead_id)}.${assinar(lead_id, 'comercial')}`,
+    validarComercial: (token) => conferir(token, 'comercial'),
     link: (devedor_id) => `${urlBase}/descadastrar/${encodeURIComponent(devedor_id)}.${assinar(devedor_id)}`,
     /** Devolve o id do devedor se o token for válido; senão, null. */
     validar(token) {

@@ -6,6 +6,7 @@ import { garantirModelosPadrao } from '../app/actions/mensagens.js';
 import { rodarLembretes } from '../app/lembretes.js';
 import { registrarLead } from '../app/actions/leads.js';
 import { garantirAgenda, redesSociaisPublicas } from '../app/actions/conteudo.js';
+import { sairDaListaComercial } from '../app/actions/prospeccao.js';
 import { readFileSync, existsSync, statSync, writeFileSync, mkdirSync, createReadStream } from 'node:fs';
 import { join, extname, resolve, sep } from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -57,7 +58,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
   const asaas = criarAsaas({ config: configAsaas(env), fetchImpl: fetchImpl || fetch });
   const descadastro = criarDescadastro({ segredo, urlBase });
   const enviosDiagnostico = new Map();
-  const integracoes = { email, descadastro, urlBase, whatsapp: whatsapp.disponivel ? whatsapp : null, asaas: asaas.disponivel ? asaas : null };
+  const integracoes = { email, descadastro, urlBase, contato: { email: env.CONTATO_EMAIL || 'contato@acorly.com.br', whatsapp: env.CONTATO_WHATSAPP || null }, whatsapp: whatsapp.disponivel ? whatsapp : null, asaas: asaas.disponivel ? asaas : null };
 
   /** Executa em transação; efeitos externos (e-mails) só depois do COMMIT. */
   async function transacao(fn) {
@@ -194,7 +195,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
   // Endereço oficial (ex.: https://acorly.com.br): páginas abertas pelo www ou pelo endereço do Render
   // são redirecionadas para ele. API, webhooks, arquivos e descadastro continuam respondendo em qualquer endereço.
   const hostOficial = (() => { try { const u = new URL(urlBase); return /\.onrender\.com$|^localhost$|^127\./.test(u.hostname) ? null : u; } catch { return null; } })();
-  const LIVRES = /^\/(api|webhooks|arquivos|descadastrar)(\/|$)/;
+  const LIVRES = /^\/(api|webhooks|arquivos|descadastrar|sair)(\/|$)/;
 
   async function rotear(req, res) {
     headersSeguranca(res);
@@ -393,6 +394,15 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
         }
       });
       return html(200, { titulo: 'Pronto', texto: 'Você não receberá mais e-mails sobre esta cobrança.' });
+    }
+    if (url.pathname.startsWith('/sair/') && (req.method === 'GET' || req.method === 'POST')) {
+      const id = descadastro.validarComercial(decodeURIComponent(url.pathname.slice('/sair/'.length)));
+      const html = (status, p) => { res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(paginaDescadastro(p)); };
+      if (!id) return html(404, { titulo: 'Link inválido', texto: 'Este link não é válido. Para sair da lista, responda o e-mail pedindo o descadastro.' });
+      if (req.method === 'GET') return html(200, { titulo: 'Sair da lista', texto: 'Confirme abaixo para não receber mais e-mails comerciais da Acorly (HS Recuperação de Crédito).', botao: 'Não quero mais receber' });
+      await lerCorpo(req, 4096).catch(() => null);
+      await transacao((pos) => sairDaListaComercial(ctxSistema(pos), id));
+      return html(200, { titulo: 'Pronto', texto: 'Você não receberá mais e-mails comerciais da Acorly.' });
     }
     // Demonstração pública (página única com dados fictícios e regras rodando no navegador)
     if ((req.method === 'GET' || req.method === 'HEAD') && /^\/demonstracao\/?$/.test(url.pathname)) {

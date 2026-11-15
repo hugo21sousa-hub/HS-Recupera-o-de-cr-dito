@@ -249,6 +249,8 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 .conteudo-card:hover { border-color: var(--azul); }
 .conteudo-previas { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; }
 .conteudo-previas img { height: 260px; width: auto; border-radius: 8px; border: 1px solid var(--borda); flex: none; }
+.previa-email { border: 1px solid var(--borda); border-radius: 8px; max-height: 520px; overflow: auto; background: #f5f7fa; }
+.previa-email table { max-width: 100%; }
 .site-redes { display: flex; gap: 10px; flex-wrap: wrap; }
 .site-planos { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 20px; align-items: stretch; }
 .site-plano { position: relative; }
