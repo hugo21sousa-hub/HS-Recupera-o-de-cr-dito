@@ -7,7 +7,7 @@ const js = arquivos.filter((f) => f.endsWith('.js')).map((f) => readFileSync(`${
 const favicon = 'data:image/png;base64,' + Buffer.from(readFileSync('public/favicon.png')).toString('base64');
 const seguro = js.replace(/<\/script/gi, '<\\/script');
 const html = `<title>Acorly | Recuperação de crédito</title>
-<meta name="theme-color" content="#0B2545">
+<meta name="theme-color" content="#001452">
 <link rel="icon" href="${favicon}">
 <style>${css}</style>
 <div id="root"></div>

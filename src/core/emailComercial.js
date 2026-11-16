@@ -24,7 +24,7 @@ export function renderizarEmailComercial({ corpo, urlBase = '', rodape = '', sai
     if (!l) { fechaLista(); texto.push(''); continue; }
     if (l.startsWith('## ')) {
       fechaLista();
-      html.push(`<h2 style="font-size:17px;color:#0b2545;margin:22px 0 10px">${inline(l.slice(3))}</h2>`);
+      html.push(`<h2 style="font-size:17px;color:#001452;margin:22px 0 10px">${inline(l.slice(3))}</h2>`);
       texto.push(l.slice(3).toUpperCase());
     } else if (l.startsWith('- ')) {
       fechaParagrafo();
@@ -34,8 +34,8 @@ export function renderizarEmailComercial({ corpo, urlBase = '', rodape = '', sai
       fechaLista();
       const [, tipo, rotulo, url] = botao;
       html.push(tipo === 'botao'
-        ? `<p style="margin:18px 0"><a href="${esc(url.trim())}" style="background:#1d5fa7;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">${esc(rotulo.trim())}</a></p>`
-        : `<p style="margin:0 0 14px"><a href="${esc(url.trim())}" style="color:#1d5fa7;font-weight:bold">${esc(rotulo.trim())} →</a></p>`);
+        ? `<p style="margin:18px 0"><a href="${esc(url.trim())}" style="background:#0043ff;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">${esc(rotulo.trim())}</a></p>`
+        : `<p style="margin:0 0 14px"><a href="${esc(url.trim())}" style="color:#0043ff;font-weight:bold">${esc(rotulo.trim())} →</a></p>`);
       texto.push(`${rotulo.trim()}: ${url.trim()}`);
     } else {
       if (lista) fechaLista();
@@ -48,7 +48,8 @@ export function renderizarEmailComercial({ corpo, urlBase = '', rodape = '', sai
   const corpoHtml = `<!doctype html><html><body style="margin:0;background:#f5f7fa;font-family:Arial,Helvetica,sans-serif;color:#1f2937">
 <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px">
 <table width="620" cellpadding="0" cellspacing="0" style="max-width:620px;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0">
-<tr><td style="background:linear-gradient(135deg,#0b2545,#1d5fa7);background-color:#0b2545;color:#fff;padding:20px 28px">${logo}</td></tr>
+<tr><td style="background:linear-gradient(135deg,#001452,#0043ff);background-color:#001452;color:#fff;padding:20px 28px">${logo}</td></tr>
+<tr><td style="height:4px;line-height:4px;font-size:0;background:#0043ff;background-image:linear-gradient(90deg,#0043ff,#31d6ff,#31ff5e,#ff31ff,#ff8c00)">&nbsp;</td></tr>
 <tr><td style="padding:26px 28px">${html.join('\n')}</td></tr>
 <tr><td style="padding:14px 28px;font-size:11px;color:#6b7280;border-top:1px solid #e2e8f0">${esc(rodape)}${sair ? `<br><a href="${esc(sair)}" style="color:#6b7280">Não quero mais receber e-mails comerciais da Acorly</a>` : ''}</td></tr>
 </table></td></tr></table></body></html>`;

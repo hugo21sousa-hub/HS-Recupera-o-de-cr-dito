@@ -54,10 +54,11 @@ export function criarEmail({ config, transporte, urlBase = '', env = process.env
     const html = `<!doctype html><html><body style="margin:0;background:#f5f7fa;font-family:Arial,Helvetica,sans-serif;color:#1f2937">
 <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px">
 <table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:10px;overflow:hidden;border:1px solid #e2e8f0">
-<tr><td style="background:#0b2545;color:#fff;padding:16px 24px;font-weight:bold;font-size:16px">${urlBase ? `<img src="${urlBase}/email-logo.png" alt="Acorly" height="32" style="display:block;height:32px;border:0">` : 'Acorly'}</td></tr>
+<tr><td style="background:#001452;color:#fff;padding:16px 24px;font-weight:bold;font-size:16px">${urlBase ? `<img src="${urlBase}/email-logo.png" alt="Acorly" height="32" style="display:block;height:32px;border:0">` : 'Acorly'}</td></tr>
+<tr><td style="height:4px;line-height:4px;font-size:0;background:#0043ff;background-image:linear-gradient(90deg,#0043ff,#31d6ff,#31ff5e,#ff31ff,#ff8c00)">&nbsp;</td></tr>
 <tr><td style="padding:24px"><h1 style="font-size:18px;margin:0 0 12px">${esc(titulo)}</h1>
 ${paragrafos.map((p) => `<p style="font-size:14px;line-height:1.5;margin:0 0 12px">${esc(p)}</p>`).join('')}
-${botao ? `<p style="margin:20px 0"><a href="${esc(botao.url)}" style="background:#1d5fa7;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold">${esc(botao.texto)}</a></p><p style="font-size:12px;color:#6b7280;word-break:break-all">Ou copie o endereço: ${esc(botao.url)}</p>` : ''}
+${botao ? `<p style="margin:20px 0"><a href="${esc(botao.url)}" style="background:#0043ff;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold">${esc(botao.texto)}</a></p><p style="font-size:12px;color:#6b7280;word-break:break-all">Ou copie o endereço: ${esc(botao.url)}</p>` : ''}
 </td></tr><tr><td style="padding:12px 24px;font-size:11px;color:#6b7280;border-top:1px solid #e2e8f0">Acorly · HS Recuperação de Crédito. Mensagem automática, não responda este e-mail.</td></tr></table></td></tr></table></body></html>`;
     const texto = [titulo, '', ...paragrafos, ...(botao ? ['', `${botao.texto}: ${botao.url}`] : [])].join('\n');
     return { html, texto };

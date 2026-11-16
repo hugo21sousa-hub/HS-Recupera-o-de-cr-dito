@@ -20,7 +20,7 @@ export function Configurar2FA({ aoConcluir }) {
     try {
       const d = await auth.iniciar2fa();
       setDados(d);
-      setQr(await QRCode.toDataURL(d.otpauth, { margin: 1, width: 220, color: { dark: '#0b2545', light: '#ffffff' } }));
+      setQr(await QRCode.toDataURL(d.otpauth, { margin: 1, width: 220, color: { dark: '#001452', light: '#ffffff' } }));
       setEtapa('ler');
     } catch (e) { toast.erro(e); } finally { setEnviando(false); }
   };

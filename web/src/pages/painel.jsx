@@ -6,8 +6,8 @@ import { brl, pct, rotulo, data } from '../format.js';
 
 const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const SERIES = [
-  { chave: 'recuperado_confirmado_centavos', nome: 'Recebido e confirmado', cor: '#15803d' },
-  { chave: 'informado_centavos', nome: 'Total informado pelos devedores', cor: '#1d5fa7' },
+  { chave: 'recuperado_confirmado_centavos', nome: 'Recebido e confirmado', cor: '#0043ff' },
+  { chave: 'informado_centavos', nome: 'Total informado pelos devedores', cor: '#31d6ff' },
 ];
 const compacto = (c) => {
   const v = c / 100;

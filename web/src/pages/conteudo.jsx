@@ -35,9 +35,12 @@ export async function desenharArte({ rede, titulo, texto, indice = 0, total = 1 
   const W = rede === 'INSTAGRAM' ? 1080 : 1200, H = rede === 'INSTAGRAM' ? 1350 : 1200;
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const g = c.getContext('2d');
-  const grad = g.createLinearGradient(0, 0, W, H); grad.addColorStop(0, '#0b2545'); grad.addColorStop(1, '#1d5fa7');
+  const grad = g.createLinearGradient(0, 0, W, H); grad.addColorStop(0, '#001452'); grad.addColorStop(1, '#0043ff');
   g.fillStyle = grad; g.fillRect(0, 0, W, H);
-  g.fillStyle = 'rgba(255,255,255,0.06)'; g.beginPath(); g.arc(W - 120, H * 0.28, W * 0.38, 0, Math.PI * 2); g.fill();
+  const brilho = g.createRadialGradient(W - 120, H * 0.28, 0, W - 120, H * 0.28, W * 0.45); brilho.addColorStop(0, 'rgba(49,214,255,0.35)'); brilho.addColorStop(1, 'rgba(49,214,255,0)');
+  g.fillStyle = brilho; g.fillRect(0, 0, W, H);
+  const faixa = g.createLinearGradient(0, 0, W, 0); ['#0043ff', '#31d6ff', '#31ff5e', '#ff31ff', '#ff8c00'].forEach((cor, i) => faixa.addColorStop(i / 4, cor));
+  g.fillStyle = faixa; g.fillRect(0, H - 18, W, 18);
   const logo = await carregarLogo();
   if (logo) { const lh = 64, lw = (logo.width / logo.height) * lh; g.drawImage(logo, 80, 80, lw, lh); }
   g.fillStyle = 'rgba(255,255,255,0.85)'; g.font = '600 32px Inter, Arial, sans-serif'; g.textAlign = 'right';
@@ -52,7 +55,7 @@ export async function desenharArte({ rede, titulo, texto, indice = 0, total = 1 
   const ls = quebrar(g, texto, largura);
   const alturaBloco = lt.length * tam * 1.12 + (ls.length ? 40 + ls.length * 56 : 0);
   let y = Math.max(260, (H - alturaBloco) / 2);
-  g.fillStyle = '#f59e0b'; g.fillRect(80, y - 40, 120, 10);
+  g.fillStyle = '#ff8c00'; g.fillRect(80, y - 40, 120, 10);
   g.fillStyle = '#ffffff'; g.font = `800 ${tam}px Inter, Arial, sans-serif`;
   for (const l of lt) { y += tam * 1.12; g.fillText(l, 80, y); }
   if (ls.length) {

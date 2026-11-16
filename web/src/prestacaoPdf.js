@@ -10,9 +10,9 @@ export function montarPDFPrestacao(p) {
   const rel = JSON.parse(p.relatorio);
   const doc = new jsPDF();
   const azul = [29, 95, 167];
-  const titulo = (t, y) => { doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.setTextColor(11, 37, 69); doc.text(t, 14, y); doc.setFont('helvetica', 'normal'); doc.setTextColor(31, 41, 55); };
+  const titulo = (t, y) => { doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.setTextColor(0, 20, 82); doc.text(t, 14, y); doc.setFont('helvetica', 'normal'); doc.setTextColor(31, 41, 55); };
   const proximo = (extra = 12) => { let y = doc.lastAutoTable.finalY + extra; if (y > 265) { doc.addPage(); y = 20; } return y; };
-  doc.setFillColor(11, 37, 69); doc.rect(0, 0, 210, 28, 'F');
+  doc.setFillColor(0, 20, 82); doc.rect(0, 0, 210, 28, 'F');
   doc.setTextColor(255); doc.setFontSize(16); doc.setFont('helvetica', 'bold'); doc.text('Acorly', 14, 13);
   doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.text('Prestação de contas — cobrança gerenciada · HS Recuperação de Crédito', 14, 21);
   doc.setTextColor(31, 41, 55); doc.setFontSize(11);

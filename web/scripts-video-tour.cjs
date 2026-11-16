@@ -12,9 +12,9 @@ const URL = process.argv[3] || 'file://' + require('path').resolve(__dirname, 'd
   const ctx = await b.newContext({ viewport: { width: 1280, height: 720 }, recordVideo: { dir: SP + '/video', size: { width: 1280, height: 720 } } });
   await ctx.addInitScript((logo) => {
     const css = `#leg{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:99999;background:rgba(11,37,69,.94);color:#fff;font:600 21px/1.35 Inter,Arial,sans-serif;padding:14px 22px;border-radius:12px;max-width:82%;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.3);transition:opacity .3s}
-#capa{position:fixed;inset:0;z-index:100000;background:linear-gradient(135deg,#0b2545,#1d5fa7);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Inter,Arial,sans-serif;text-align:center;padding:40px}
+#capa{position:fixed;inset:0;z-index:100000;background:linear-gradient(135deg,#001452,#0043ff);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Inter,Arial,sans-serif;text-align:center;padding:40px}
 #capa h1{font-size:54px;margin:0 0 12px;letter-spacing:-1px}#capa p{font-size:26px;margin:6px 0;opacity:.92}
-.realce{outline:4px solid #f59e0b !important;outline-offset:3px;border-radius:8px;transition:outline .2s}`;
+.realce{outline:4px solid #ff8c00 !important;outline-offset:3px;border-radius:8px;transition:outline .2s}`;
     window.__leg = (t) => { let d = document.getElementById('leg'); if (!t) { d && d.remove(); return; } if (!d) { const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st); d = document.createElement('div'); d.id = 'leg'; document.body.appendChild(d); } d.textContent = t; };
     window.__capa = (h, linhas) => { let c = document.getElementById('capa'); if (h === null) { c && c.remove(); return; } if (!document.getElementById('legcss')) { const st = document.createElement('style'); st.id = 'legcss'; st.textContent = css; document.head.appendChild(st); } if (!c) { c = document.createElement('div'); c.id = 'capa'; document.body.appendChild(c); } c.innerHTML = '<img src="' + logo + '" style="height:120px;margin-bottom:28px">' + (h ? '<h1>' + h + '</h1>' : '') + linhas.map((l) => '<p>' + l + '</p>').join(''); };
   }, LOGO);
