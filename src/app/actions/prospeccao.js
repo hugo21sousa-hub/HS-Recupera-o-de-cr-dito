@@ -118,7 +118,7 @@ function variaveis(ctx, d) {
   const w = somenteDigitos(ctx.contato?.whatsapp || '');
   const fone = w ? `+${w.length <= 11 ? '55' : ''}${w}` : '';
   return {
-    nome: String(d.nome || '').trim().split(' ')[0] || 'tudo bem', empresa: String(d.empresa || '').trim() || 'sua empresa',
+    nome: String(d.nome || '').trim().split(' ')[0], empresa: String(d.empresa || '').trim() || 'sua empresa',
     segmento: SEGMENTO_TEXTO[d.segmento] || 'empresas', remetente: ctx.user.nome || 'Equipe Acorly', whatsapp: fone, whatsapp_linha: fone ? `\nWhatsApp: ${fone}` : '',
   };
 }

@@ -5,7 +5,10 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const urlOk = (u) => /^https:\/\/[^\s"'<>]{3,500}$/.test(u);
 
 export function preencher(texto, vars) {
-  return String(texto || '').replace(/\{\{\s*(\w+)\s*\}\}/g, (_, k) => (vars[k] ?? '')).replace(/[ \t]+\n/g, '\n');
+  return String(texto || '').replace(/\{\{\s*(\w+)\s*\}\}/g, (_, k) => (vars[k] ?? ''))
+    // variável vazia (ex.: sem nome do contato): "Olá, , tudo bem?" → "Olá, tudo bem?"; "Olá, !" → "Olá!"
+    .replace(/,\s*,/g, ',').replace(/,\s*([!?.])/g, '$1').replace(/[ \t]+([,!?.])/g, '$1')
+    .replace(/[ \t]+\n/g, '\n');
 }
 
 function inline(t) {

@@ -30,6 +30,15 @@ function Analise({ a }) {
 
 const AJUDA_MARCACOES = 'Marcações: "## Título", "- item de lista", "**negrito**", "[[botao:Texto|https://...]]", "[[link:Texto|https://...]]". Variáveis: {{nome}}, {{empresa}}, {{segmento}}, {{remetente}}, {{whatsapp_linha}}.';
 
+const GRATUITOS = /@(gmail|hotmail|outlook|yahoo|live|bol|uol|icloud|terra|ig)\./i;
+/** Sugere o nome da empresa pelo domínio do e-mail (contato@colegio-sophia.com.br → Colegio Sophia). */
+function empresaDoEmail(email) {
+  const m = /@([^@\s]+)$/.exec(String(email || '').trim());
+  if (!m || GRATUITOS.test(email)) return '';
+  const nome = m[1].toLowerCase().replace(/^www\./, '').split('.')[0];
+  return nome.split(/[-_]+/).filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
+}
+
 /** Envio de e-mail de apresentação (prospecção), com prévia. */
 function Abordar({ lead, prospect, onClose, onFeito }) {
   const modelos = useApi('listarModelosComerciais', {});
@@ -39,7 +48,14 @@ function Abordar({ lead, prospect, onClose, onFeito }) {
   const [editar, setEditar] = useState(false);
   const { executar, enviando } = useExecutar();
   const [editado, setEditado] = useState(false);
-  const set = (k) => (e) => { if (k === 'assunto' || k === 'corpo') setEditado(true); setV({ ...v, [k]: e.target.value }); };
+  const [empresaManual, setEmpresaManual] = useState(false);
+  const set = (k) => (e) => {
+    if (k === 'assunto' || k === 'corpo') setEditado(true);
+    if (k === 'empresa') setEmpresaManual(true);
+    const novo = { ...v, [k]: e.target.value };
+    if (k === 'para' && !empresaManual) novo.empresa = empresaDoEmail(e.target.value);
+    setV(novo);
+  };
   const ativos = (modelos.data || []).filter((m) => m.ativo !== false);
   const modeloDoSegmento = (seg) => ativos.find((x) => x.nome === (seg === 'ESCOLA_CURSO' ? 'Escolas e cursos' : seg === 'SAUDE' ? 'Clínicas e consultórios' : 'Apresentação dos serviços'));
   const travado = !!lead || !!prospect;
@@ -67,12 +83,12 @@ function Abordar({ lead, prospect, onClose, onFeito }) {
     } catch { /* aviso já mostrado */ }
   };
   return (
-    <Modal grande titulo={base ? `E-mail para ${base.empresa}` : 'Nova abordagem por e-mail'} onClose={onClose} rodape={<><button className="btn" onClick={onClose}>Cancelar</button><button className="btn prim" disabled={enviando || !v.para || !v.empresa} onClick={enviar}>Enviar e-mail</button></>}>
+    <Modal grande titulo={base ? `E-mail para ${base.empresa}` : 'Enviar e-mail marketing'} onClose={onClose} rodape={<><button className="btn" onClick={onClose}>Cancelar</button><button className="btn prim" disabled={enviando || !v.para || !v.empresa} onClick={enviar}>Enviar e-mail</button></>}>
       <div className="stack">
         <div className="form-grid">
           <div className="campo"><label>E-mail do contato *</label><input type="email" value={v.para} onChange={set('para')} disabled={travado} /></div>
           <div className="campo"><label>Nome do contato</label><input value={v.nome} onChange={set('nome')} /></div>
-          <div className="campo"><label>Empresa *</label><input value={v.empresa} onChange={set('empresa')} /></div>
+          <div className="campo"><label>Empresa *</label><input value={v.empresa} onChange={set('empresa')} placeholder={!travado && v.para && GRATUITOS.test(v.para) ? 'Digite o nome da empresa' : 'Preenchido pelo e-mail'} /></div>
           <div className="campo"><label>Segmento</label><select value={v.segmento} onChange={mudarSegmento}><option value="">—</option>{Object.entries(SEGMENTOS).map(([k, r]) => <option key={k} value={k}>{r}</option>)}</select></div>
           {!travado && <div className="campo"><label>WhatsApp (opcional)</label><input value={v.whatsapp} onChange={set('whatsapp')} /></div>}
           <div className="campo"><label>Modelo</label><select value={v.modelo_id} onChange={(e) => escolher(e.target.value)}>{ativos.map((m) => <option key={m.id} value={m.id}>{m.nome}</option>)}</select></div>
@@ -240,7 +256,7 @@ export function Leads() {
   return (
     <div className="stack">
       <Cabecalho titulo="Diagnósticos e prospecção" sub="Lista do dia com empresas para abordar, pedidos de diagnóstico do site e contatos já abordados. Responda os pedidos em até 2 dias úteis, como prometido.">
-        <button className="btn prim" onClick={() => setEmail({})}>Nova abordagem por e-mail</button>
+        <button className="btn prim" onClick={() => setEmail({})}>Enviar e-mail marketing</button>
       </Cabecalho>
       <div className="card">
       <Abas ativa={aba} onChange={setAba} abas={[{ id: 'dia', rotulo: 'Lista do dia' }, { id: 'leads', rotulo: 'Pedidos e contatos' }, { id: 'modelos', rotulo: 'Modelos de e-mail' }]} />
