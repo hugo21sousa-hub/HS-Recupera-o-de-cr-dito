@@ -80,3 +80,13 @@ test('busca diária envia pela integração com token; sem token é recusado', a
     a.server.close(); await a.banco.fechar(); rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('diagnósticos e prospecção: só o superadmin acessa', async () => {
+  const t = await base();
+  await t.db.UsuarioPlataforma.create({ nome: 'Gil', email: 'gestor@hs.com', perfil: 'GESTOR_OPERACOES_HS', empresa_id: null, status: 'ATIVO' });
+  await t.db.UsuarioPlataforma.create({ nome: 'Olga', email: 'oper@hs.com', perfil: 'OPERADOR_HS', empresa_id: null, status: 'ATIVO' });
+  for (const quem of ['gestor@hs.com', 'oper@hs.com']) {
+    for (const acao of ['listarProspects', 'listarLeads', 'listarModelosComerciais']) await t.falha(quem, acao, {}, 403);
+  }
+  await t.ok('super@hs.com', 'listarLeads', {});
+});

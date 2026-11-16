@@ -89,7 +89,7 @@ export async function registrarLead(ctx, dados, planilha = null) {
   const resumo = analise
     ? `${analise.devedores} devedor(es), ${formatBRL(analise.vencido_centavos)} vencido. Comissão estimada: ${formatBRL(analise.comissao_estimada_centavos)}.`
     : pedido.valor_aberto_centavos ? `Informou cerca de ${formatBRL(pedido.valor_aberto_centavos)} em aberto.` : 'Sem planilha.';
-  await notificar(ctx, null, { perfis: ['SUPERADMIN_HS', 'GESTOR_OPERACOES_HS'], tipo: 'LEAD', titulo: `Novo pedido de diagnóstico: ${pedido.empresa}`, mensagem: `${pedido.nome} · ${pedido.email}${pedido.whatsapp ? ` · ${pedido.whatsapp}` : ''}\n${resumo}`, link: '/hs/leads' });
+  await notificar(ctx, null, { perfis: ['SUPERADMIN_HS'], tipo: 'LEAD', titulo: `Novo pedido de diagnóstico: ${pedido.empresa}`, mensagem: `${pedido.nome} · ${pedido.email}${pedido.whatsapp ? ` · ${pedido.whatsapp}` : ''}\n${resumo}`, link: '/hs/leads' });
   if (ctx.aposConfirmar && ctx.email?.disponivel) {
     ctx.aposConfirmar.push(() => ctx.email.enviar({
       para: pedido.email, assunto: 'Recebemos seu pedido de diagnóstico — Acorly', titulo: 'Pedido de diagnóstico recebido',

@@ -28,7 +28,7 @@ export const MATRIZ = {
   GESTOR_OPERACOES_HS: [
     'carteira.validar', 'caso.distribuir', 'caso.ler_todos_hs', 'caso.suspender', 'operador.ver',
     'interacao.registrar', 'tarefa.gerenciar', 'negociacao.propor', 'negociacao.revisar', 'pagamento.informar',
-    'relatorio.hs', 'documento.ler', 'prestacao.gerar', 'lead.gerenciar',
+    'relatorio.hs', 'documento.ler', 'prestacao.gerar',
   ],
   MARKETING_HS: ['conteudo.ler', 'conteudo.publicar'],
   OPERADOR_HS: [
