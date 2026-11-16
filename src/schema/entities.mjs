@@ -206,7 +206,7 @@ export const ENTITIES = {
     description: 'Contato de empresa encontrado na busca diária (prospecção ativa), com contato público e fonte',
     properties: {
       empresa: s('Empresa'), segmento: e(['ESCOLA_CURSO', 'SAUDE', 'ACADEMIA', 'CONDOMINIO', 'VAREJO', 'DISTRIBUIDORA', 'SERVICOS', 'IMOBILIARIA', 'CONTABILIDADE', 'OUTRO'], 'Segmento', 'OUTRO'),
-      cidade: s('Cidade'), bairro: s('Bairro'), site: s('Site'), email: s('E-mail público'), telefone: s('Telefone'), whatsapp: s('WhatsApp'), contato_nome: s('Nome do contato (se público)'),
+      cidade: s('Cidade'), bairro: s('Bairro'), site: s('Site'), email: s('E-mail público'), telefone: s('Telefone'), whatsapp: s('WhatsApp'), contato_nome: s('Nome do contato (se público)'), contato_cargo: s('Cargo do contato (se público)'),
       fonte_url: s('Onde o contato foi encontrado'), observacao: s('Observação'), lote: dt('Dia em que entrou na lista'), encontrado_em: ts('Encontrado em'), origem: s('BUSCA_DIARIA ou MANUAL'),
       status: e(['A_ABORDAR', 'ABORDADO', 'DESCARTADO'], 'Situação', 'A_ABORDAR'), abordado_em: ts('Abordado em'), abordado_por: ref('Quem abordou'), canal: s('Canal da abordagem'),
       lead_id: ref('Lead criado'), motivo_descarte: s('Motivo do descarte'), descartado_em: ts('Descartado em'),
@@ -244,8 +244,25 @@ export const ENTITIES = {
       status: e(['NOVO', 'EM_CONTATO', 'DIAGNOSTICO_ENVIADO', 'CONVERTIDO', 'PERDIDO'], 'Situação', 'NOVO'), responsavel_id: ref('Responsável na HS'), observacoes: s('Anotações'),
       aceite_privacidade_em: ts('Aceite da Política de Privacidade'), recebido_em: ts('Recebido em'), ip: s('IP do envio'),
       ultimo_email_em: ts('Último e-mail comercial enviado'), nao_receber_comercial: b('Pediu para não receber e-mails comerciais'),
+      decisor_nome: s('Pessoa que decide'), decisor_cargo: s('Cargo de quem decide'), decisor_contato: s('Contato direto de quem decide'),
+      cadencia_inicio: dt('Início da cadência de follow-up'), cadencia_etapa: n('Follow-ups feitos (0 a 3)'), proximo_followup: dt('Próximo follow-up'), cadencia_fim: s('Como a cadência terminou'),
+      parceiro_id: ref('Parceiro que indicou'),
     },
     required: ['nome', 'empresa', 'status'],
+  },
+  Parceiro: {
+    description: 'Parceiro do programa de indicação (ex.: escritório de contabilidade), com link próprio',
+    properties: {
+      nome: s('Nome'), empresa: s('Escritório/empresa'), email: s('E-mail'), whatsapp: s('WhatsApp'), tipo: e(['CONTABILIDADE', 'OUTRO'], 'Tipo', 'CONTABILIDADE'),
+      codigo: s('Código do link de indicação'), regra_comissao: s('Regra de comissão combinada'), chave_pix: s('Chave Pix para pagamento'),
+      status: e(['ATIVO', 'INATIVO'], 'Situação', 'ATIVO'), observacoes: s('Anotações'), criado_em: ts('Criado em'),
+    },
+    required: ['nome', 'codigo', 'status'],
+  },
+  PagamentoParceiro: {
+    description: 'Comissão paga a um parceiro por indicação',
+    properties: { parceiro_id: ref('Parceiro'), lead_id: ref('Cliente indicado'), valor_centavos: c('Valor pago'), pago_em: dt('Data do pagamento'), descricao: s('Descrição'), registrado_por: ref('Quem registrou'), registrado_em: ts('Registrado em') },
+    required: ['parceiro_id', 'valor_centavos'],
   },
   PagamentoParcela: {
     description: 'Forma de pagamento de uma parcela de acordo informada pelo credor (boleto, Pix ou link). O dinheiro vai direto ao credor.',
@@ -294,7 +311,7 @@ export const ENTITIES = {
   },
   ConfiguracaoHS: {
     description: 'Configurações gerais do Acorly (registro único), como a tabela padrão de comissão',
-    properties: { comissao_faixas: arr('Faixas de comissão [{ate_dias, bps}]', { type: 'object' }), atualizado_por: s('Usuário'), atualizado_em: ts('Atualização'), redes_sociais: { type: 'object', description: 'Links das redes sociais (instagram, linkedin, facebook, youtube, tiktok)' }, conteudo_inicio: dt('Início da agenda de posts'), conteudo_proximo: n('Próximo tema do banco de posts'), conteudo_aviso_fim: b('Aviso de fim do banco enviado') },
+    properties: { comissao_faixas: arr('Faixas de comissão [{ate_dias, bps}]', { type: 'object' }), atualizado_por: s('Usuário'), atualizado_em: ts('Atualização'), redes_sociais: { type: 'object', description: 'Links das redes sociais (instagram, linkedin, facebook, youtube, tiktok)' }, conteudo_inicio: dt('Início da agenda de posts'), conteudo_proximo: n('Próximo tema do banco de posts'), conteudo_aviso_fim: b('Aviso de fim do banco enviado'), aviso_followup_em: dt('Último aviso diário de follow-ups'), },
     required: [],
   },
   EventoWebhook: {

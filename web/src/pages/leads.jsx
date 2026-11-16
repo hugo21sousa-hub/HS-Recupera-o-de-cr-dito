@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { hs, abrirLink } from '../api.js';
 import { Tabela, Badge, Cabecalho, Modal, Vazio, Abas, Carregando, useApi, useExecutar, useToast } from '../ui.jsx';
 import { brl, dataHora, mascaraFone, mascaraDoc, pct } from '../format.js';
+import { useSessao } from '../sessao.jsx';
+import { roteiro } from '../roteiros.js';
 
 const SEGMENTOS = { ESCOLA_CURSO: 'Escola ou curso', SAUDE: 'Saúde', ACADEMIA: 'Academia', CONDOMINIO: 'Condomínio', VAREJO: 'Varejo', DISTRIBUIDORA: 'Distribuidora', SERVICOS: 'Serviços', IMOBILIARIA: 'Imobiliária', OUTRO: 'Outro' };
 const SEGMENTOS_PROSPECT = { ...SEGMENTOS, CONTABILIDADE: 'Contabilidade' };
@@ -42,6 +44,7 @@ function empresaDoEmail(email) {
 /** Envio de e-mail de apresentação (prospecção), com prévia. */
 function Abordar({ lead, prospect, onClose, onFeito }) {
   const modelos = useApi('listarModelosComerciais', {});
+  const epoca = useApi('epocaComercial', {});
   const base = lead || (prospect ? { email: prospect.email, nome: prospect.contato_nome, empresa: prospect.empresa, segmento: prospect.segmento === 'CONTABILIDADE' ? 'SERVICOS' : prospect.segmento, whatsapp: prospect.whatsapp || prospect.telefone } : null);
   const [v, setV] = useState({ para: base?.email || '', nome: base?.nome || '', empresa: base?.empresa || '', segmento: base?.segmento || '', whatsapp: base?.whatsapp || '', modelo_id: '', assunto: '', corpo: '' });
   const [previa, setPrevia] = useState(null);
@@ -65,11 +68,11 @@ function Abordar({ lead, prospect, onClose, onFeito }) {
     setV({ ...v, segmento: seg, ...(m ? { modelo_id: m.id, assunto: m.assunto, corpo: m.corpo } : {}) });
   };
   useEffect(() => {
-    if (!v.modelo_id && ativos.length) {
-      const m = ativos.find((x) => (lead?.status === 'EM_CONTATO' && lead?.ultimo_email_em ? x.nome.startsWith('Retorno') : false)) || ativos.find((x) => x.nome === (v.segmento === 'ESCOLA_CURSO' ? 'Escolas e cursos' : v.segmento === 'SAUDE' ? 'Clínicas e consultórios' : 'Apresentação dos serviços')) || ativos[0];
+    if (!v.modelo_id && ativos.length && (epoca.data || epoca.erro)) {
+      const m = ativos.find((x) => (lead?.status === 'EM_CONTATO' && lead?.ultimo_email_em ? x.nome.startsWith('Retorno') : false)) || (prospect?.segmento === 'CONTABILIDADE' ? ativos.find((x) => /parceria|contab/i.test(x.nome)) : null) || (epoca.data?.decimo_terceiro && prospect?.segmento !== 'CONTABILIDADE' ? ativos.find((x) => x.nome.startsWith('13º')) : null) || ativos.find((x) => x.nome === (v.segmento === 'ESCOLA_CURSO' ? 'Escolas e cursos' : v.segmento === 'SAUDE' ? 'Clínicas e consultórios' : 'Apresentação dos serviços')) || ativos[0];
       setV((x) => ({ ...x, modelo_id: m.id, assunto: m.assunto, corpo: m.corpo }));
     }
-  }, [ativos.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [ativos.length, epoca.data]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!v.assunto || !v.corpo) return undefined;
     const t = setTimeout(() => { hs('previaEmailComercial', { assunto: v.assunto, corpo: v.corpo, nome: v.nome, empresa: v.empresa, segmento: v.segmento }).then(setPrevia).catch(() => setPrevia(null)); }, 350);
@@ -141,25 +144,87 @@ function Modelos() {
   );
 }
 
-function Detalhe({ lead, onClose, onFeito, onEmail }) {
-  const envios = useApi('enviosDoLead', { lead_id: lead.id });
-  const [status, setStatus] = useState(lead.status);
-  const [obs, setObs] = useState(lead.observacoes || '');
+function Cadencia({ lead, onMudou, onEmail }) {
+  const epoca = useApi('epocaComercial', {});
   const { executar, enviando } = useExecutar();
   const toast = useToast();
+  const [registrar, setRegistrar] = useState(false);
+  const [canal, setCanal] = useState('WHATSAPP');
+  const [obs, setObs] = useState('');
+  const passos = epoca.data?.passos || [];
+  const etapa = Number(lead.cadencia_etapa || 0);
+  const ativa = !!lead.proximo_followup && !['CONVERTIDO', 'PERDIDO', 'DIAGNOSTICO_ENVIADO'].includes(lead.status);
+  const hoje = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
+  const acao = (nome, dados, msg) => executar(nome, dados, msg).then(onMudou).catch(() => {});
+  const whats = async () => {
+    const janela = window.open('about:blank', '_blank');
+    try { const w = await hs('whatsappLead', { id: lead.id }); if (janela && !janela.closed) janela.location.replace(w.link); else window.open(w.link, '_blank', 'noopener'); setCanal('WHATSAPP'); setRegistrar(true); } catch (e) { janela?.close(); toast.erro(e); }
+  };
+  if (!ativa) {
+    return (
+      <div className="card stack" style={{ gap: 6 }}>
+        <div className="row between"><strong>Follow-up</strong>{!['CONVERTIDO', 'PERDIDO', 'DIAGNOSTICO_ENVIADO'].includes(lead.status) && <button className="btn sm" disabled={enviando} onClick={() => acao('iniciarCadenciaLead', { id: lead.id }, 'Cadência iniciada: próximo contato em 3 dias')}>{lead.cadencia_inicio ? 'Reiniciar cadência' : 'Iniciar cadência (dias 3, 7 e 14)'}</button>}</div>
+        <span className="small muted">{lead.cadencia_fim ? `Cadência encerrada: ${lead.cadencia_fim}.` : 'Sem cadência ativa. Ela começa sozinha na primeira abordagem (e-mail, WhatsApp ou ligação).'}</span>
+      </div>
+    );
+  }
+  const passo = passos[etapa] || {};
+  const atrasado = lead.proximo_followup <= hoje;
+  return (
+    <div className="card stack" style={{ gap: 8, borderLeft: `4px solid ${atrasado ? 'var(--laranja)' : 'var(--azul)'}` }}>
+      <div className="row between">
+        <strong>Follow-up {etapa + 1} de 3: {passo.titulo}</strong>
+        <Badge status={atrasado ? 'PENDENTE' : 'info'}>{lead.proximo_followup === hoje ? 'hoje' : atrasado ? `atrasado (${lead.proximo_followup.split('-').reverse().join('/')})` : `em ${lead.proximo_followup.split('-').reverse().join('/')}`}</Badge>
+      </div>
+      <span className="small muted">{passo.descricao} Cadência: dias {passos.map((x) => x.dia).join(', ')} depois da primeira abordagem.</span>
+      <div className="row" style={{ gap: 6 }}>
+        {(lead.whatsapp || lead.decisor_contato) && <button className="btn sm prim" onClick={whats}>WhatsApp com a mensagem pronta</button>}
+        {!lead.nao_receber_comercial && lead.email && <button className="btn sm" onClick={() => onEmail(lead)}>E-mail de retorno</button>}
+        <button className="btn sm" onClick={() => { setCanal('TELEFONE'); setRegistrar(true); }}>Liguei</button>
+        <button className="btn sm" disabled={enviando} onClick={() => { const m = window.prompt('Por que encerrar? (ex.: respondeu, sem interesse)', 'Respondeu'); if (m !== null) acao('encerrarCadenciaLead', { id: lead.id, motivo: m }, 'Cadência encerrada'); }}>Encerrar cadência</button>
+      </div>
+      {registrar && (
+        <div className="stack" style={{ gap: 6 }}>
+          <div className="form-grid">
+            <div className="campo"><label>Follow-up feito por</label><select value={canal} onChange={(e) => setCanal(e.target.value)}><option value="WHATSAPP">WhatsApp</option><option value="TELEFONE">Ligação</option><option value="EMAIL">E-mail por fora do sistema</option></select></div>
+            <div className="campo"><label>Anotação (opcional)</label><input value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Ex.: visualizou, pediu para ligar sexta" /></div>
+          </div>
+          <div className="row" style={{ gap: 6 }}><button className="btn sm prim" disabled={enviando} onClick={() => acao('registrarFollowupLead', { id: lead.id, canal, observacao: obs }, 'Follow-up registrado').then(() => setRegistrar(false))}>Registrar follow-up</button><button className="btn sm" onClick={() => setRegistrar(false)}>Ainda não fiz</button></div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Detalhe({ lead: inicial, onClose, onFeito, onEmail }) {
+  const [lead, setLead] = useState(inicial);
+  const envios = useApi('enviosDoLead', { lead_id: lead.id });
+  const parceiros = useApi('listarParceiros', {});
+  const [status, setStatus] = useState(lead.status);
+  const [obs, setObs] = useState(lead.observacoes || '');
+  const [dec, setDec] = useState({ decisor_nome: lead.decisor_nome || '', decisor_cargo: lead.decisor_cargo || '', decisor_contato: lead.decisor_contato || '', parceiro_id: lead.parceiro_id || '' });
+  const [verRoteiro, setVerRoteiro] = useState(false);
+  const { executar, enviando } = useExecutar();
+  const toast = useToast();
+  const recarregarLead = async () => {
+    try { const r = await hs('listarLeads', { busca: lead.email || lead.empresa, pageSize: 50 }); const novo = r.itens.find((x) => x.id === lead.id); if (novo) { setLead(novo); setObs(novo.observacoes || ''); setStatus(novo.status); } } catch { /* mantém */ }
+    onFeito();
+  };
   const salvar = async () => {
-    try { await executar('atualizarLead', { id: lead.id, status, observacoes: obs }, 'Pedido atualizado'); onFeito(); onClose(); } catch { /* aviso já mostrado */ }
+    try { await executar('atualizarLead', { id: lead.id, status, observacoes: obs, ...dec }, 'Contato atualizado'); onFeito(); onClose(); } catch { /* aviso já mostrado */ }
   };
   const nome = lead.nome.split(' ')[0];
   const textoWhats = `Olá, ${nome}! Aqui é da HS Recuperação de Crédito (Acorly). Recebemos o seu pedido de diagnóstico da carteira da ${lead.empresa}. Podemos conversar sobre o resultado?`;
+  const setD = (k) => (e) => setDec({ ...dec, [k]: e.target.value });
   return (
-    <Modal grande titulo={lead.empresa} onClose={onClose} rodape={<><button className="btn" onClick={onClose}>Fechar</button><button className="btn prim" disabled={enviando} onClick={salvar}>Salvar</button></>}>
+    <Modal grande titulo={lead.empresa} onClose={onClose} rodape={<><button className="btn" onClick={() => setVerRoteiro(true)}>Roteiro de abordagem</button><div style={{ flex: 1 }} /><button className="btn" onClick={onClose}>Fechar</button><button className="btn prim" disabled={enviando} onClick={salvar}>Salvar</button></>}>
       <div className="stack">
         <div className="grid g2">
           <div className="stack" style={{ gap: 4 }}>
             <strong>{lead.nome}</strong>
             <a href={`mailto:${lead.email}`}>{lead.email}</a>
             {lead.whatsapp && <a href={`https://wa.me/${lead.whatsapp.length <= 11 ? '55' : ''}${lead.whatsapp}?text=${encodeURIComponent(textoWhats)}`} target="_blank" rel="noreferrer">WhatsApp {mascaraFone(lead.whatsapp)}</a>}
+            {lead.parceiro_id && <span className="small" style={{ color: 'var(--azul)' }}>Indicado por {(parceiros.data || []).find((x) => x.id === lead.parceiro_id)?.nome || 'parceiro'}</span>}
             <span className="small muted">{SEGMENTOS[lead.segmento] || '—'}{lead.cidade ? ` · ${lead.cidade}` : ''}{lead.cnpj ? ` · CNPJ ${mascaraDoc(lead.cnpj)}` : ''}</span>
             <span className="small muted">Recebido em {dataHora(lead.recebido_em)}</span>
           </div>
@@ -177,10 +242,50 @@ function Detalhe({ lead, onClose, onFeito, onEmail }) {
           {lead.nao_receber_comercial && <div className="aviso alerta small">Este contato pediu para não receber e-mails comerciais.</div>}
           {(envios.data || []).length ? <ul className="small" style={{ margin: 0, paddingLeft: 18 }}>{envios.data.map((e) => <li key={e.id}>{dataHora(e.enviado_em)} · {e.assunto}</li>)}</ul> : <span className="small muted">Nenhum e-mail enviado ainda.</span>}
         </div>
+        <Cadencia lead={lead} onMudou={recarregarLead} onEmail={(l) => { onClose(); onEmail(l); }} />
+        <div className="stack" style={{ gap: 6 }}>
+          <h3 style={{ margin: 0 }}>Quem decide</h3>
+          <div className="form-grid">
+            <div className="campo"><label>Nome</label><input value={dec.decisor_nome} onChange={setD('decisor_nome')} placeholder="Quem decide sobre a cobrança" /></div>
+            <div className="campo"><label>Cargo</label><input value={dec.decisor_cargo} onChange={setD('decisor_cargo')} placeholder="Ex.: mantenedora, sócio, diretor financeiro" /></div>
+            <div className="campo"><label>Contato direto (WhatsApp ou e-mail)</label><input value={dec.decisor_contato} onChange={setD('decisor_contato')} /></div>
+            <div className="campo"><label>Indicado por (parceiro)</label><select value={dec.parceiro_id} onChange={setD('parceiro_id')}><option value="">Ninguém</option>{(parceiros.data || []).map((x) => <option key={x.id} value={x.id}>{x.nome}{x.empresa ? ` · ${x.empresa}` : ''}</option>)}</select></div>
+          </div>
+          <span className="small muted">Com o contato direto de quem decide, o WhatsApp do follow-up vai para essa pessoa.</span>
+        </div>
         <div className="form-grid">
           <div className="campo"><label>Situação</label><select value={status} onChange={(e) => setStatus(e.target.value)}>{Object.entries(STATUS).map(([k, r]) => <option key={k} value={k}>{r}</option>)}</select></div>
         </div>
         <div className="campo"><label>Anotações da equipe</label><textarea rows={4} value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Contatos feitos, proposta enviada, próximos passos…" /></div>
+      </div>
+      {verRoteiro && <RoteiroModal segmento={lead.segmento} empresa={lead.empresa} onClose={() => setVerRoteiro(false)} />}
+    </Modal>
+  );
+}
+
+/** Roteiro de ligação e respostas às objeções do segmento. */
+function RoteiroModal({ segmento, empresa, onClose }) {
+  const s = useSessao();
+  const epoca = useApi('epocaComercial', {});
+  const r = roteiro(segmento, { nomeRemetente: (s.usuario?.nome || 'Hugo').split(' ')[0], decimoTerceiro: !!epoca.data?.decimo_terceiro });
+  const Bloco = ({ t, children }) => <div className="stack" style={{ gap: 4 }}><strong>{t}</strong><div style={{ whiteSpace: 'pre-wrap' }}>{children}</div></div>;
+  return (
+    <Modal grande titulo={`Roteiro de abordagem${empresa ? `: ${empresa}` : ''}`} onClose={onClose} rodape={<button className="btn prim" onClick={onClose}>Fechar</button>}>
+      <div className="stack">
+        {epoca.data && <div className="aviso info small"><strong>Época: {epoca.data.tema}.</strong> {epoca.data.dica}</div>}
+        <div className="grid g2">
+          <Bloco t="Quem decide">{r.quem}</Bloco>
+          <Bloco t="Porta de entrada">{r.porta}</Bloco>
+        </div>
+        <Bloco t="1. Ligação para a porta de entrada (descobrir quem decide)"><div className="card small" style={{ padding: 12 }}>{r.secretaria}</div></Bloco>
+        <Bloco t="2. Abertura com quem decide"><div className="card small" style={{ padding: 12 }}>{r.abertura}</div></Bloco>
+        <Bloco t="3. Perguntas para entender a carteira"><ul className="small" style={{ margin: 0, paddingLeft: 18 }}>{r.perguntas.map((q) => <li key={q}>{q}</li>)}</ul></Bloco>
+        <Bloco t="4. Fechamento"><div className="card small" style={{ padding: 12 }}>{r.fechamento}</div></Bloco>
+        <div className="stack" style={{ gap: 6 }}>
+          <strong>Objeções e respostas</strong>
+          <table className="small"><tbody>{r.objecoes.map(([o, resp]) => <tr key={o}><td style={{ width: '32%', verticalAlign: 'top' }}><strong>{o}</strong></td><td>{resp}</td></tr>)}</tbody></table>
+        </div>
+        <span className="small muted">Depois: anote nome e cargo de quem decide no contato e siga a cadência (dias 3, 7 e 14). Fale com até 15 empresas por dia, com calma: qualidade rende mais que volume.</span>
       </div>
     </Modal>
   );
@@ -210,6 +315,7 @@ function ListaDoDia({ recarregar, onMudou, onEmail }) {
   const [r, setR] = useState(0);
   const [info, setInfo] = useState(null);
   const [registrar, setRegistrar] = useState(null);
+  const [roteiroDe, setRoteiroDe] = useState(null);
   const { executar } = useExecutar();
   const toast = useToast();
   const mudou = () => { setR(r + 1); onMudou(); };
@@ -228,22 +334,107 @@ function ListaDoDia({ recarregar, onMudou, onEmail }) {
         Empresas com contato público (site, diretórios) encontradas todos os dias. Quem não foi abordado continua aqui; ao abordar por e-mail, WhatsApp ou ligação, o contato sai da lista e vira lead em "Pedidos e contatos".
         {info ? <> <strong>{info.total} para abordar{info.novos_hoje ? `, ${info.novos_hoje} novo(s) hoje` : ''}.</strong></> : null}
       </p>
+      {info?.epoca && <div className="aviso info small"><strong>Época: {info.epoca.tema}.</strong> {info.epoca.dica} Os segmentos prioritários aparecem primeiro, marcados com <em>prioridade</em>.</div>}
       <Tabela acao="listarProspects" recarregar={recarregar + r} aoCarregar={setInfo} filtros={[{ nome: 'segmento', rotulo: 'Segmento', opcoes: Object.entries(SEGMENTOS_PROSPECT).map(([valor, rotulo]) => ({ valor, rotulo })) }]} colunas={[
-        { titulo: 'Encontrado', render: (p) => <>{(p.lote || '').split('-').reverse().join('/')}{info && p.lote === new Date().toISOString().slice(0, 10) && <div><Badge status="info">novo</Badge></div>}</> },
+        { titulo: 'Encontrado', render: (p) => <>{(p.lote || '').split('-').reverse().join('/')}{info && p.lote === new Date().toISOString().slice(0, 10) && <div><Badge status="info">novo</Badge></div>}{p.prioridade && <div><Badge status="PENDENTE">prioridade</Badge></div>}</> },
         { titulo: 'Empresa', render: (p) => <><strong>{p.empresa}</strong><div className="small muted">{SEGMENTOS_PROSPECT[p.segmento] || '—'}{p.bairro || p.cidade ? ` · ${[p.bairro, p.cidade].filter(Boolean).join(', ')}` : ''}</div>{p.observacao && <div className="small muted">{p.observacao}</div>}</> },
-        { titulo: 'Contato', render: (p) => <>{p.contato_nome && <div>{p.contato_nome}</div>}{p.email && <div className="small">{p.email}</div>}{(p.whatsapp || p.telefone) && <div className="small">{mascaraFone(p.whatsapp || p.telefone)}{p.whatsapp ? ' (WhatsApp)' : ''}</div>}<div className="small">{p.site && <a href={p.site} target="_blank" rel="noreferrer">site</a>}{p.site && ' · '}<a href={p.fonte_url} target="_blank" rel="noreferrer">fonte</a></div></> },
+        { titulo: 'Contato', render: (p) => <>{p.contato_nome && <div>{p.contato_nome}{p.contato_cargo ? <span className="small muted"> · {p.contato_cargo}</span> : ''}</div>}{p.email && <div className="small">{p.email}</div>}{(p.whatsapp || p.telefone) && <div className="small">{mascaraFone(p.whatsapp || p.telefone)}{p.whatsapp ? ' (WhatsApp)' : ''}</div>}<div className="small">{p.site && <a href={p.site} target="_blank" rel="noreferrer">site</a>}{p.site && ' · '}<a href={p.fonte_url} target="_blank" rel="noreferrer">fonte</a></div></> },
         { titulo: 'Abordar', render: (p) => (
           <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
             {p.email && <button className="btn sm prim" onClick={() => onEmail(p)}>E-mail</button>}
             {(p.whatsapp || p.telefone) && <button className="btn sm" onClick={() => whatsapp(p)}>WhatsApp</button>}
             {p.telefone && <button className="btn sm" onClick={() => setRegistrar({ p, canal: 'TELEFONE' })}>Liguei</button>}
             <button className="btn sm" title="Já abordei por outro meio" onClick={() => setRegistrar({ p })}>Registrar</button>
+            <button className="btn sm" onClick={() => setRoteiroDe(p)}>Roteiro</button>
             <button className="btn sm" onClick={() => descartar(p)}>Descartar</button>
           </div>
         ) },
       ]} vazio={<Vazio titulo="Nenhum contato para abordar">A busca diária adiciona novos contatos toda manhã. Os já abordados estão em "Pedidos e contatos".</Vazio>} />
+      {roteiroDe && <RoteiroModal segmento={roteiroDe.segmento} empresa={roteiroDe.empresa} onClose={() => setRoteiroDe(null)} />}
       {registrar && <RegistrarAbordagem p={registrar.p} canalInicial={registrar.canal} onClose={() => setRegistrar(null)} onFeito={mudou} />}
     </div>
+  );
+}
+
+/** Programa de indicação: parceiros (ex.: contadores) com link próprio e controle das comissões pagas. */
+function Parceiros() {
+  const { data, carregando, recarregar } = useApi('listarParceiros', {});
+  const [ed, setEd] = useState(null);
+  const [ver, setVer] = useState(null);
+  const { executar, enviando } = useExecutar();
+  const toast = useToast();
+  const copiar = (t, msg) => { try { navigator.clipboard.writeText(t).then(() => toast.ok(msg), () => window.prompt('Copie:', t)); } catch { window.prompt('Copie:', t); } };
+  const salvar = async () => { try { await executar('salvarParceiro', ed, 'Parceiro salvo'); setEd(null); recarregar(); } catch { /* aviso já mostrado */ } };
+  const set = (k) => (e) => setEd({ ...ed, [k]: e.target.value });
+  if (carregando && !data) return <Carregando />;
+  return (
+    <div className="stack">
+      <div className="row between">
+        <p className="small muted" style={{ margin: 0, maxWidth: '75ch' }}>Cada parceiro tem um link próprio para o diagnóstico gratuito. Quem pedir pelo link fica marcado como indicado por ele. Contadores são os melhores parceiros: cada escritório atende dezenas de empresas.</p>
+        <button className="btn prim" onClick={() => setEd({ nome: '', empresa: '', email: '', whatsapp: '', tipo: 'CONTABILIDADE', regra_comissao: '', chave_pix: '', status: 'ATIVO', observacoes: '' })}>Novo parceiro</button>
+      </div>
+      {(data || []).length ? (
+        <table><thead><tr><th>Parceiro</th><th>Link de indicação</th><th className="num">Indicados</th><th className="num">Viraram clientes</th><th className="num">Comissões pagas</th><th /></tr></thead><tbody>
+          {data.map((p) => (
+            <tr key={p.id}>
+              <td><strong>{p.nome}</strong>{p.status === 'INATIVO' && <> <Badge status="CANCELADA">Inativo</Badge></>}<div className="small muted">{p.empresa}{p.whatsapp ? ` · ${mascaraFone(p.whatsapp)}` : ''}</div></td>
+              <td><div className="small" style={{ wordBreak: 'break-all' }}>{p.link}</div><div className="row" style={{ gap: 4, marginTop: 4 }}><button className="btn sm" onClick={() => copiar(p.link, 'Link copiado')}>Copiar link</button><button className="btn sm" onClick={() => copiar(p.texto_divulgacao, 'Texto copiado: o parceiro pode repassar aos clientes')}>Copiar texto para divulgar</button>{p.whatsapp && <a className="btn sm" target="_blank" rel="noreferrer" href={`https://wa.me/${p.whatsapp.length <= 11 ? '55' : ''}${p.whatsapp}?text=${encodeURIComponent(`Olá, ${p.nome.split(' ')[0]}! Segue o seu link de indicação da Acorly: ${p.link}\n\nTexto pronto para repassar aos seus clientes:\n\n${p.texto_divulgacao}`)}`}>Enviar ao parceiro</a>}</div></td>
+              <td className="num">{p.indicados}</td><td className="num">{p.convertidos}</td><td className="num">{brl(p.pago_centavos)}</td>
+              <td><div className="row" style={{ gap: 4 }}><button className="btn sm" onClick={() => setVer(p)}>Indicações</button><button className="btn sm" onClick={() => setEd({ ...p })}>Editar</button></div></td>
+            </tr>
+          ))}
+        </tbody></table>
+      ) : <Vazio titulo="Nenhum parceiro ainda">Cadastre o primeiro contador parceiro. A Lista do dia traz escritórios de contabilidade para abordar, com o modelo de e-mail "Contadores (parceria)".</Vazio>}
+      {ed && (
+        <Modal grande titulo={ed.id ? `Editar ${ed.nome}` : 'Novo parceiro'} onClose={() => setEd(null)} rodape={<><button className="btn" onClick={() => setEd(null)}>Cancelar</button><button className="btn prim" disabled={enviando} onClick={salvar}>Salvar</button></>}>
+          <div className="stack">
+            <div className="form-grid">
+              <div className="campo"><label>Nome *</label><input value={ed.nome} onChange={set('nome')} /></div>
+              <div className="campo"><label>Escritório/empresa</label><input value={ed.empresa} onChange={set('empresa')} /></div>
+              <div className="campo"><label>E-mail</label><input type="email" value={ed.email} onChange={set('email')} /></div>
+              <div className="campo"><label>WhatsApp</label><input value={ed.whatsapp} onChange={set('whatsapp')} /></div>
+              <div className="campo"><label>Tipo</label><select value={ed.tipo} onChange={set('tipo')}><option value="CONTABILIDADE">Escritório de contabilidade</option><option value="OUTRO">Outro</option></select></div>
+              <div className="campo"><label>Código do link</label><input value={ed.codigo || ''} onChange={set('codigo')} placeholder="Gerado pelo nome do escritório" /></div>
+              <div className="campo"><label>Chave Pix (para pagar a comissão)</label><input value={ed.chave_pix} onChange={set('chave_pix')} /></div>
+              <div className="campo"><label>Situação</label><select value={ed.status} onChange={set('status')}><option value="ATIVO">Ativo</option><option value="INATIVO">Inativo (o link para de valer)</option></select></div>
+            </div>
+            <div className="campo"><label>Regra de comissão combinada</label><textarea rows={2} value={ed.regra_comissao} onChange={set('regra_comissao')} placeholder="Se vazio: 10% do valor que a HS receber do cliente indicado nos primeiros 12 meses, pago até o dia 10 do mês seguinte ao recebimento." /></div>
+            <div className="campo"><label>Anotações</label><textarea rows={2} value={ed.observacoes} onChange={set('observacoes')} /></div>
+          </div>
+        </Modal>
+      )}
+      {ver && <IndicacoesParceiro p={ver} onClose={() => setVer(null)} onMudou={recarregar} />}
+    </div>
+  );
+}
+
+function IndicacoesParceiro({ p, onClose, onMudou }) {
+  const { data, recarregar } = useApi('indicacoesDoParceiro', { id: p.id });
+  const [pg, setPg] = useState({ lead_id: '', valor: '', pago_em: new Date().toISOString().slice(0, 10), descricao: '' });
+  const { executar, enviando } = useExecutar();
+  const pagar = async () => {
+    try { await executar('registrarPagamentoParceiro', { parceiro_id: p.id, ...pg, lead_id: pg.lead_id || undefined }, 'Pagamento registrado'); setPg({ ...pg, valor: '', descricao: '' }); recarregar(); onMudou(); } catch { /* aviso já mostrado */ }
+  };
+  return (
+    <Modal grande titulo={`Indicações de ${p.nome}`} onClose={onClose} rodape={<button className="btn prim" onClick={onClose}>Fechar</button>}>
+      <div className="stack">
+        <div className="aviso info small"><strong>Regra combinada:</strong> {p.regra_comissao}{p.chave_pix ? <> · <strong>Pix:</strong> {p.chave_pix}</> : ''}</div>
+        <h3 style={{ margin: 0 }}>Empresas indicadas</h3>
+        {(data?.leads || []).length ? <table className="small"><thead><tr><th>Empresa</th><th>Recebido</th><th>Situação</th></tr></thead><tbody>{data.leads.map((l) => <tr key={l.id}><td>{l.empresa}</td><td>{dataHora(l.recebido_em)}</td><td><Badge status={TOM[l.status]}>{STATUS[l.status]}</Badge></td></tr>)}</tbody></table> : <span className="small muted">Nenhuma indicação ainda.</span>}
+        <h3 style={{ margin: 0 }}>Comissões pagas</h3>
+        {(data?.pagamentos || []).length ? <table className="small"><thead><tr><th>Data</th><th>Descrição</th><th className="num">Valor</th></tr></thead><tbody>{data.pagamentos.map((x) => <tr key={x.id}><td>{(x.pago_em || '').split('-').reverse().join('/')}</td><td>{x.descricao || '—'}</td><td className="num">{brl(x.valor_centavos)}</td></tr>)}</tbody></table> : <span className="small muted">Nenhum pagamento registrado.</span>}
+        <div className="card stack" style={{ gap: 6 }}>
+          <strong>Registrar comissão paga</strong>
+          <div className="form-grid">
+            <div className="campo"><label>Cliente indicado</label><select value={pg.lead_id} onChange={(e) => setPg({ ...pg, lead_id: e.target.value })}><option value="">—</option>{(data?.leads || []).map((l) => <option key={l.id} value={l.id}>{l.empresa}</option>)}</select></div>
+            <div className="campo"><label>Valor (R$)</label><input value={pg.valor} onChange={(e) => setPg({ ...pg, valor: e.target.value })} placeholder="150,00" /></div>
+            <div className="campo"><label>Data do pagamento</label><input type="date" value={pg.pago_em} onChange={(e) => setPg({ ...pg, pago_em: e.target.value })} /></div>
+            <div className="campo"><label>Descrição</label><input value={pg.descricao} onChange={(e) => setPg({ ...pg, descricao: e.target.value })} placeholder="Ex.: comissão de novembro" /></div>
+          </div>
+          <div><button className="btn prim sm" disabled={enviando || !pg.valor} onClick={pagar}>Registrar pagamento</button></div>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -252,6 +443,7 @@ export function Leads() {
   const [aberto, setAberto] = useState(null);
   const [email, setEmail] = useState(null);
   const [aba, setAba] = useState('dia');
+  const [infoLeads, setInfoLeads] = useState(null);
   const [prospect, setProspect] = useState(null);
   return (
     <div className="stack">
@@ -259,14 +451,17 @@ export function Leads() {
         <button className="btn prim" onClick={() => setEmail({})}>Enviar e-mail marketing</button>
       </Cabecalho>
       <div className="card">
-      <Abas ativa={aba} onChange={setAba} abas={[{ id: 'dia', rotulo: 'Lista do dia' }, { id: 'leads', rotulo: 'Pedidos e contatos' }, { id: 'modelos', rotulo: 'Modelos de e-mail' }]} />
-      {aba === 'dia' ? <ListaDoDia recarregar={r} onMudou={() => setR(r + 1)} onEmail={setProspect} /> : aba === 'modelos' ? <Modelos /> : <Tabela acao="listarLeads" recarregar={r} filtros={[{ nome: 'status', rotulo: 'Situação', opcoes: Object.keys(STATUS) }]} colunas={[
+      <Abas ativa={aba} onChange={setAba} abas={[{ id: 'dia', rotulo: 'Lista do dia' }, { id: 'leads', rotulo: `Pedidos e contatos${infoLeads?.followups_hoje ? ` (${infoLeads.followups_hoje} follow-up hoje)` : ''}` }, { id: 'parceiros', rotulo: 'Parceiros (indicação)' }, { id: 'modelos', rotulo: 'Modelos de e-mail' }]} />
+      {aba === 'dia' ? <ListaDoDia recarregar={r} onMudou={() => setR(r + 1)} onEmail={setProspect} /> : aba === 'modelos' ? <Modelos /> : aba === 'parceiros' ? <Parceiros /> : <Tabela acao="listarLeads" recarregar={r} aoCarregar={setInfoLeads} filtros={[{ nome: 'status', rotulo: 'Situação', opcoes: Object.keys(STATUS) }, { nome: 'followup', rotulo: 'Follow-up', opcoes: [{ valor: 'HOJE', rotulo: 'Para hoje (e atrasados)' }, { valor: 'ATIVA', rotulo: 'Com cadência ativa' }] }]} colunas={[
         { titulo: 'Recebido', render: (l) => dataHora(l.recebido_em) },
         { titulo: 'Empresa', render: (l) => <button className="btn link" onClick={() => setAberto(l)}><strong>{l.empresa}</strong></button> },
         { titulo: 'Contato', render: (l) => <><div>{l.nome}</div><div className="small muted">{l.email}{l.whatsapp ? ` · ${mascaraFone(l.whatsapp)}` : ''}</div>{l.origem === 'PROSPECCAO' && <div className="small" style={{ color: 'var(--azul)' }}>Abordado por e-mail{l.ultimo_email_em ? ` · ${dataHora(l.ultimo_email_em)}` : ''}</div>}</> },
         { titulo: 'Segmento', render: (l) => SEGMENTOS[l.segmento] || '—' },
         { titulo: 'Carteira', num: true, render: (l) => (l.analise ? <>{brl(l.analise.vencido_centavos)}<div className="small muted">{l.analise.devedores} devedor(es)</div></> : l.valor_aberto_centavos ? <span className="muted">≈ {brl(l.valor_aberto_centavos)}</span> : '—') },
         { titulo: 'Situação', render: (l) => <Badge status={TOM[l.status]}>{STATUS[l.status]}</Badge> },
+        { titulo: 'Próximo follow-up', render: (l) => (l.proximo_followup && !['CONVERTIDO', 'PERDIDO', 'DIAGNOSTICO_ENVIADO'].includes(l.status)
+          ? <>{infoLeads?.hoje && l.proximo_followup <= infoLeads.hoje ? <Badge status="PENDENTE">{l.proximo_followup === infoLeads.hoje ? 'hoje' : 'atrasado'}</Badge> : l.proximo_followup.split('-').reverse().join('/')}<div className="small muted">{Number(l.cadencia_etapa || 0) + 1}º de 3</div></>
+          : <span className="muted">—</span>) },
         { titulo: '', render: (l) => <button className="btn sm" onClick={() => setAberto(l)}>Abrir</button> },
       ]} vazio={<Vazio titulo="Nenhum pedido ainda">Os pedidos feitos em acorly.com.br/diagnostico e os contatos abordados por e-mail aparecem aqui.</Vazio>} />}
       </div>

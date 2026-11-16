@@ -292,3 +292,14 @@ Para ligar a busca automática:
    - São até 200 contatos por envio.
    - `fonte_url` (https) é obrigatória.
    - Repetidos (mesmo e-mail, telefone ou domínio de lead ou contato já existente) são ignorados.
+
+## Rotina comercial (época, follow-up, roteiro e parceiros)
+
+- **Época do ano:** a Lista do dia mostra o tema do mês (ex.: 13º salário em novembro e dezembro) e põe primeiro os segmentos prioritários. Em novembro e dezembro, o modelo de e-mail "13º salário" é o padrão.
+- **Cadência de follow-up:** começa sozinha na primeira abordagem, com retornos nos dias 3, 7 e 14.
+  - O sistema avisa todo dia os follow-ups do dia.
+  - No contato aparecem a mensagem pronta de WhatsApp, o e-mail de retorno e os botões "Liguei" e "Encerrar".
+  - A cadência para quando o contato muda para "Diagnóstico enviado", "Virou cliente" ou "Perdido".
+- **Quem decide:** o contato guarda nome, cargo e contato direto de quem decide. O WhatsApp do follow-up vai para esse contato.
+- **Roteiro de abordagem:** cada contato tem um roteiro por segmento, com a ligação para a secretaria, a abertura, as perguntas, o fechamento e as respostas às objeções.
+- **Parceiros (indicação):** cada parceiro tem um link próprio (`acorly.com.br/diagnostico?ref=codigo`). Quem pede o diagnóstico pelo link fica vinculado ao parceiro. As comissões pagas são registradas em "Indicações". A regra padrão (10% por 12 meses) é só uma sugestão, editável por parceiro.

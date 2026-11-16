@@ -24,6 +24,9 @@ import { Usuarios, Contratos, Assinatura, Configuracoes, MinhaConta, Modelos } f
 import { TriagemWhatsApp } from './pages/hs.jsx';
 import { Empresas, EmpresasAtendidas, CarteirasRecebidas, Validacao, Distribuicao, MeusCasos, TodosCasos, Interacoes, Tarefas, Operadores, ContratosHS, Planos, Auditoria } from './pages/hs.jsx';
 
+// Link de indicação de parceiro (?ref=codigo): guarda para o pedido de diagnóstico, mesmo que a pessoa navegue antes.
+try { const r = new URLSearchParams(window.location.search).get('ref'); if (r) localStorage.setItem('acorly_ref', JSON.stringify({ r: r.slice(0, 40), t: Date.now() })); } catch { /* sem armazenamento */ }
+
 function Protegida({ p, children }) {
   const s = useSessao();
   const ok = !p || (Array.isArray(p) ? s.podeAlgum(...p) : s.pode(p));

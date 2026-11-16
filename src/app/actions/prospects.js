@@ -2,6 +2,8 @@
 // Contatos não abordados ficam na lista; ao abordar (e-mail, WhatsApp ou ligação) saem da lista e viram lead.
 import { emailValido, somenteDigitos } from '../../core/documento.js';
 import { AccessError, getById, find, criar, alterar, exigir, notificar } from '../context.js';
+import { iniciarCadencia } from './acompanhamento.js';
+import { epocaDoMes, rankSegmento, mesBrasilia } from '../comercial/epoca.js';
 
 export const SEGMENTOS_PROSPECT = ['ESCOLA_CURSO', 'SAUDE', 'ACADEMIA', 'CONDOMINIO', 'VAREJO', 'DISTRIBUIDORA', 'SERVICOS', 'IMOBILIARIA', 'CONTABILIDADE', 'OUTRO'];
 const SEGMENTO_TEXTO = { ESCOLA_CURSO: 'escolas e cursos', SAUDE: 'clínicas e consultórios', ACADEMIA: 'academias', CONDOMINIO: 'condomínios', VAREJO: 'lojas', DISTRIBUIDORA: 'distribuidoras', SERVICOS: 'empresas de serviços', IMOBILIARIA: 'imobiliárias', CONTABILIDADE: 'escritórios de contabilidade', OUTRO: 'empresas' };
@@ -16,7 +18,7 @@ function normalizar(p) {
   return {
     empresa: t(p.empresa, 160), segmento: SEGMENTOS_PROSPECT.includes(p.segmento) ? p.segmento : 'OUTRO', cidade: t(p.cidade, 80), bairro: t(p.bairro, 80),
     site: /^https:\/\//.test(site) ? site : '', email: t(p.email, 160).toLowerCase(), telefone: fone(p.telefone), whatsapp: fone(p.whatsapp),
-    fonte_url: t(p.fonte_url, 500), observacao: t(p.observacao, 500), contato_nome: t(p.contato_nome, 120),
+    fonte_url: t(p.fonte_url, 500), observacao: t(p.observacao, 500), contato_nome: t(p.contato_nome, 120), contato_cargo: t(p.contato_cargo, 80),
   };
 }
 
@@ -72,16 +74,21 @@ export async function marcarAbordado(ctx, prospect, { canal, observacao = '', le
       nome: prospect.contato_nome || prospect.empresa, empresa: prospect.empresa, email: prospect.email || '', whatsapp: prospect.whatsapp || prospect.telefone,
       cidade: [prospect.bairro, prospect.cidade].filter(Boolean).join(' · '), segmento: prospect.segmento === 'CONTABILIDADE' ? 'SERVICOS' : prospect.segmento,
       status: 'EM_CONTATO', origem: 'PROSPECCAO', recebido_em: agora, observacoes: nota, responsavel_id: ctx.user.id,
+      decisor_nome: prospect.contato_nome || '', decisor_cargo: prospect.contato_cargo || '',
     }, 'CRIAR_LEAD_PROSPECCAO');
   } else {
     await alterar(ctx, 'Lead', lead, { observacoes: `${lead.observacoes ? `${lead.observacoes}\n` : ''}${nota}`, status: lead.status === 'NOVO' ? 'EM_CONTATO' : lead.status }, 'ATUALIZAR_LEAD');
   }
+  lead = await iniciarCadencia(ctx, lead);
   await alterar(ctx, 'Prospect', prospect, { status: 'ABORDADO', abordado_em: agora, abordado_por: ctx.user.id, canal, lead_id: lead.id }, 'ABORDAR_PROSPECT');
   return lead;
 }
 
 function textoWhatsApp(ctx, p) {
-  return `Olá! Tudo bem? Sou ${ctx.user.nome || 'da equipe Acorly'}, da HS Recuperação de Crédito. Ajudamos ${SEGMENTO_TEXTO[p.segmento] || 'empresas'} a recuperar valores em atraso de forma organizada e respeitosa, com o pagamento direto na conta da empresa. Posso fazer um diagnóstico gratuito da inadimplência da ${p.empresa}? É só enviar a planilha por aqui ou em acorly.com.br/diagnostico`;
+  const ola = p.contato_nome ? `Olá, ${p.contato_nome.split(' ')[0]}!` : 'Olá!';
+  const treze = epocaDoMes(mesBrasilia(ctx)).decimo_terceiro ? ' Este é o melhor momento do ano para isso: com o 13º, muitos devedores querem quitar as contas antes do ano novo.' : '';
+  if (p.segmento === 'CONTABILIDADE') return `${ola} Tudo bem? Sou ${ctx.user.nome || 'da equipe Acorly'}, da HS Recuperação de Crédito. Gostaria de propor uma parceria com o escritório: muitos dos seus clientes têm valores em atraso, e nós recuperamos de forma organizada e respeitosa, com o pagamento direto na conta deles. O escritório recebe uma comissão por cada cliente indicado que fechar conosco. Posso te explicar em 10 minutos?`;
+  return `${ola} Tudo bem? Sou ${ctx.user.nome || 'da equipe Acorly'}, da HS Recuperação de Crédito. Ajudamos ${SEGMENTO_TEXTO[p.segmento] || 'empresas'} a recuperar valores em atraso de forma organizada e respeitosa, com o pagamento direto na conta da empresa.${treze} Posso fazer um diagnóstico gratuito da inadimplência da ${p.empresa}? É só enviar a planilha por aqui ou em acorly.com.br/diagnostico`;
 }
 
 export const actions = {
@@ -97,11 +104,14 @@ export const actions = {
         const q = n(busca);
         rows = rows.filter((p) => n(`${p.empresa} ${p.cidade} ${p.bairro} ${p.email} ${p.telefone}`).includes(q));
       }
-      rows.sort((a, b) => (a.encontrado_em < b.encontrado_em ? 1 : -1));
+      const mes = mesBrasilia(ctx);
+      rows.sort((a, b) => ((a.lote || '') !== (b.lote || '') ? ((a.lote || '') < (b.lote || '') ? 1 : -1) : rankSegmento(a.segmento, mes) - rankSegmento(b.segmento, mes) || (a.empresa > b.empresa ? 1 : -1)));
+      const epoca = epocaDoMes(mes);
+      rows = rows.map((p) => ({ ...p, prioridade: epoca.segmentos.includes(p.segmento) }));
       const hoje = ctx.now().toISOString().slice(0, 10);
       const tam = Math.min(500, Math.max(1, Number(pageSize) || 500));
       const ini = (Math.max(1, Number(page) || 1) - 1) * tam;
-      return { itens: rows.slice(ini, ini + tam), total: rows.length, novos_hoje: rows.filter((p) => p.lote === hoje).length };
+      return { itens: rows.slice(ini, ini + tam), total: rows.length, novos_hoje: rows.filter((p) => p.lote === hoje).length, epoca };
     },
   },
 

@@ -4,6 +4,7 @@ import { renderizarEmailComercial, preencher } from '../../core/emailComercial.j
 import { emailValido, somenteDigitos } from '../../core/documento.js';
 import { AccessError, ValidationError, getById, find, criar, alterar, exigir, notificar } from '../context.js';
 import { marcarAbordado } from './prospects.js';
+import { iniciarCadencia, avancarCadencia, followupVencido } from './acompanhamento.js';
 
 export const LIMITE_DIARIO_COMERCIAL = 50;
 const SEGMENTO_TEXTO = { ESCOLA_CURSO: 'escolas e cursos', SAUDE: 'clínicas e consultórios', ACADEMIA: 'academias', CONDOMINIO: 'condomínios', VAREJO: 'lojas e varejo', DISTRIBUIDORA: 'distribuidoras', SERVICOS: 'prestadores de serviço', IMOBILIARIA: 'imobiliárias', OUTRO: 'empresas' };
@@ -93,6 +94,26 @@ Podemos conversar 15 minutos esta semana?
 ${ASSINATURA}`,
   },
   {
+    nome: '13º salário (novembro e dezembro)', ordem: 2, novo: true,
+    assunto: '{{empresa}}: dezembro é o melhor mês para recuperar valores em atraso',
+    corpo: `Olá, {{nome}}, tudo bem?
+
+Sou {{remetente}}, da HS Recuperação de Crédito. Uma informação que pode valer dinheiro para a {{empresa}} agora:
+
+**dezembro é o mês em que mais se recupera dívida.** Com o 13º salário, muitos devedores querem quitar as contas para começar o ano limpo. Quem deixa para cobrar em janeiro perde essa janela, porque aí chegam IPVA, IPTU e material escolar.
+
+## Como podemos ajudar ainda este mês
+- **Diagnóstico gratuito em até 2 dias úteis:** você manda a lista de atrasados e mostramos quanto dá para recuperar.
+- **Cobrança respeitosa:** mensagens cordiais, sem constranger o seu cliente, dentro do Código de Defesa do Consumidor e da LGPD.
+- **O dinheiro cai direto na conta da {{empresa}}:** não intermediamos valores.
+- **Na cobrança gerenciada, você só paga sobre o que for recuperado.**
+
+[[botao:Quero o diagnóstico gratuito|https://acorly.com.br/diagnostico]]
+
+Se preferir, responda este e-mail com o melhor horário e eu te ligo.
+${ASSINATURA}`,
+  },
+  {
     nome: 'Retorno (3 dias depois)', ordem: 5,
     assunto: 'Re: {{empresa}} e a recuperação da inadimplência',
     corpo: `Olá, {{nome}}!
@@ -109,8 +130,10 @@ ${ASSINATURA}`,
 
 async function garantirModelos(ctx) {
   const atuais = await find(ctx, 'ModeloComercial', {});
-  if (atuais.length) return atuais;
-  for (const m of MODELOS_COMERCIAIS) await ctx.db.ModeloComercial.create({ ...m, ativo: true });
+  // modelos novos do sistema entram também para quem já tinha os anteriores (sem mexer nos editados)
+  const faltam = atuais.length ? MODELOS_COMERCIAIS.filter((m) => m.novo && !atuais.some((a) => a.nome === m.nome)) : MODELOS_COMERCIAIS;
+  if (!faltam.length) return atuais;
+  for (const { novo, ...m } of faltam) await ctx.db.ModeloComercial.create({ ...m, ativo: true }); // eslint-disable-line no-unused-vars
   return find(ctx, 'ModeloComercial', {});
 }
 
@@ -192,7 +215,10 @@ export const actions = {
       const r = await ctx.email.comercial({ para, assunto: m.assunto, html: m.html, texto: m.texto, sair });
       if (!r.ok) throw new ValidationError(`Não foi possível enviar agora${r.erro ? ` (${r.erro})` : ''}. Tente novamente.`);
       await ctx.db.EnvioComercial.create({ lead_id: lead.id, email: para, assunto: m.assunto, modelo_id: input.modelo_id || null, enviado_em: agora, enviado_por: ctx.user.id, mensagem_id: r.id || null });
-      await alterar(ctx, 'Lead', lead, { ultimo_email_em: agora, status: lead.status === 'NOVO' ? 'EM_CONTATO' : lead.status }, 'ENVIAR_EMAIL_COMERCIAL');
+      const jaTinhaEmail = !!lead.ultimo_email_em;
+      lead = await alterar(ctx, 'Lead', lead, { ultimo_email_em: agora, status: lead.status === 'NOVO' ? 'EM_CONTATO' : lead.status }, 'ENVIAR_EMAIL_COMERCIAL');
+      if (followupVencido(ctx, lead)) await avancarCadencia(ctx, lead, { canal: 'EMAIL', observacao: m.assunto });
+      else if (!jaTinhaEmail || !lead.cadencia_inicio) await iniciarCadencia(ctx, lead);
       if (input.prospect_id) {
         const pr = await getById(ctx, 'Prospect', input.prospect_id);
         if (pr?.status === 'A_ABORDAR') await marcarAbordado(ctx, pr, { canal: 'EMAIL', lead_id: lead.id });

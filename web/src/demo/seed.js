@@ -69,6 +69,10 @@ export async function semear(db, como) {
   // Pedido de diagnóstico de exemplo (leads do site)
   const { analisarPlanilha } = await import('../../../src/app/actions/leads.js');
   const csv = 'nome;cpf_cnpj;valor_original;data_vencimento\n' + [['Ana', 1800, -40], ['Bruno', 950, -75], ['Carla', 3200, -130], ['Diego', 640, -220], ['Elisa', 2100, -400], ['Fábio', 780, -20]].map(([n, v, d]) => `${n};;${v},00;${dia(d).split('-').reverse().join('/')}`).join('\n');
+  // Programa de indicação e cadência de follow-up (exemplos fictícios)
+  const parceiro = await db.Parceiro.create({ nome: 'Paula Contadora', empresa: 'Escritório Exemplo Contábil', email: 'paula@exemplo-contabil.com.br', whatsapp: '71990000010', tipo: 'CONTABILIDADE', codigo: 'exemplo-contabil', regra_comissao: '10% do valor que a HS receber do cliente indicado nos primeiros 12 meses, pago até o dia 10 do mês seguinte ao recebimento.', status: 'ATIVO', criado_em: agora.toISOString() });
+  await db.Lead.create({ nome: 'Rita Alves', empresa: 'Clínica Exemplo Sorriso', email: 'rita@exemplo-sorriso.com.br', whatsapp: '71990000011', cidade: 'Salvador/BA', segmento: 'SAUDE', status: 'NOVO', origem: 'INDICACAO:exemplo-contabil', parceiro_id: parceiro.id, recebido_em: agora.toISOString(), observacoes: '', mensagem: 'Indicação da nossa contadora.' });
+  await db.Lead.create({ nome: 'contato@exemplo-saber.com.br', empresa: 'Colégio Exemplo Saber', email: 'contato@exemplo-saber.com.br', whatsapp: '7130000020', cidade: 'Salvador/BA', segmento: 'ESCOLA_CURSO', status: 'EM_CONTATO', origem: 'PROSPECCAO', recebido_em: new Date(agora.getTime() - 3 * 864e5).toISOString(), ultimo_email_em: new Date(agora.getTime() - 3 * 864e5).toISOString(), observacoes: `${dia(-3)}: abordado por e-mail.`, decisor_nome: 'Marcos Lima', decisor_cargo: 'Mantenedor', decisor_contato: '71990000021', cadencia_inicio: dia(-3), cadencia_etapa: 0, proximo_followup: dia(0) });
   // Lista do dia (exemplos fictícios para a demonstração)
   for (const x of [
     { empresa: 'Escola Exemplo Aprender', segmento: 'ESCOLA_CURSO', bairro: 'Pituba', email: 'secretaria@exemplo-aprender.com.br', telefone: '7130000001' },

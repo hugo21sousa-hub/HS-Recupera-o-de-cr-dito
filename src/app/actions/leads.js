@@ -6,6 +6,7 @@ import { emailValido, somenteDigitos } from '../../core/documento.js';
 import { diasAtraso } from '../../core/dates.js';
 import { faixaPara, calcularComissao, TABELA_PADRAO, rotuloFaixa } from '../../core/comissao.js';
 import { ValidationError, AccessError, getById, find, criar, alterar, exigir, notificar, paginar, filtrosPermitidos } from '../context.js';
+import { parceiroPorCodigo, followupVencido, hojeBrasilia } from './acompanhamento.js';
 
 export const SEGMENTOS = ['ESCOLA_CURSO', 'SAUDE', 'ACADEMIA', 'CONDOMINIO', 'VAREJO', 'DISTRIBUIDORA', 'SERVICOS', 'IMOBILIARIA', 'OUTRO'];
 export const STATUS_LEAD = ['NOVO', 'EM_CONTATO', 'DIAGNOSTICO_ENVIADO', 'CONVERTIDO', 'PERDIDO'];
@@ -81,15 +82,17 @@ export async function registrarLead(ctx, dados, planilha = null) {
       analise = analisarPlanilha(planilha.texto, { hoje: agora.slice(0, 10), faixas: cfg?.comissao_faixas?.length ? cfg.comissao_faixas : TABELA_PADRAO });
     } catch (e) { erro_analise = e.message; }
   }
+  const parceiro = dados.ref ? await parceiroPorCodigo(ctx, dados.ref) : null;
+  if (parceiro) pedido.origem = `INDICACAO:${parceiro.codigo}`;
   const lead = await criar(ctx, 'Lead', {
-    ...pedido, status: 'NOVO', arquivo_uri: planilha?.file_uri || null, arquivo_nome: planilha?.nome || null,
+    ...pedido, parceiro_id: parceiro?.id || null, status: 'NOVO', arquivo_uri: planilha?.file_uri || null, arquivo_nome: planilha?.nome || null,
     analise: analise ? JSON.stringify(analise) : null, erro_analise, aceite_privacidade_em: agora, recebido_em: agora, ip: dados.__ip || null,
     responsavel_id: null, observacoes: '',
   }, 'RECEBER_LEAD');
   const resumo = analise
     ? `${analise.devedores} devedor(es), ${formatBRL(analise.vencido_centavos)} vencido. Comissão estimada: ${formatBRL(analise.comissao_estimada_centavos)}.`
     : pedido.valor_aberto_centavos ? `Informou cerca de ${formatBRL(pedido.valor_aberto_centavos)} em aberto.` : 'Sem planilha.';
-  await notificar(ctx, null, { perfis: ['SUPERADMIN_HS'], tipo: 'LEAD', titulo: `Novo pedido de diagnóstico: ${pedido.empresa}`, mensagem: `${pedido.nome} · ${pedido.email}${pedido.whatsapp ? ` · ${pedido.whatsapp}` : ''}\n${resumo}`, link: '/hs/leads' });
+  await notificar(ctx, null, { perfis: ['SUPERADMIN_HS'], tipo: 'LEAD', titulo: `Novo pedido de diagnóstico: ${pedido.empresa}${parceiro ? ` (indicado por ${parceiro.nome})` : ''}`, mensagem: `${pedido.nome} · ${pedido.email}${pedido.whatsapp ? ` · ${pedido.whatsapp}` : ''}\n${resumo}`, link: '/hs/leads' });
   if (ctx.aposConfirmar && ctx.email?.disponivel) {
     ctx.aposConfirmar.push(() => ctx.email.enviar({
       para: pedido.email, assunto: 'Recebemos seu pedido de diagnóstico — Acorly', titulo: 'Pedido de diagnóstico recebido',
@@ -108,24 +111,39 @@ export const actions = {
   listarLeads: {
     perm: 'lead.gerenciar',
     async run(ctx, input = {}) {
-      const rows = await find(ctx, 'Lead', filtrosPermitidos(input.filtros, ['status', 'segmento']));
+      let rows = await find(ctx, 'Lead', filtrosPermitidos(input.filtros, ['status', 'segmento', 'parceiro_id']));
+      if (input.filtros?.followup === 'HOJE') rows = rows.filter((l) => followupVencido(ctx, l));
+      if (input.filtros?.followup === 'ATIVA') rows = rows.filter((l) => l.proximo_followup && !['CONVERTIDO', 'PERDIDO', 'DIAGNOSTICO_ENVIADO'].includes(l.status));
       const pag = paginar(rows, { ...input, ordenarPor: 'recebido_em', camposBusca: ['empresa', 'nome', 'email', 'whatsapp', 'cidade'] });
       pag.itens = pag.itens.map((l) => ({ ...l, analise: l.analise ? JSON.parse(l.analise) : null, ip: undefined }));
       const todos = await find(ctx, 'Lead', {});
       pag.contagem = Object.fromEntries(STATUS_LEAD.map((s) => [s, todos.filter((l) => l.status === s).length]));
+      pag.followups_hoje = todos.filter((l) => followupVencido(ctx, l)).length;
+      pag.hoje = hojeBrasilia(ctx);
       return pag;
     },
   },
 
   atualizarLead: {
     perm: 'lead.gerenciar',
-    async run(ctx, { id, status, observacoes, responsavel_id }) {
+    async run(ctx, { id, status, observacoes, responsavel_id, decisor_nome, decisor_cargo, decisor_contato, parceiro_id }) {
       const l = await getById(ctx, 'Lead', id);
       if (!l) throw new AccessError('Pedido não encontrado', 404);
       const patch = {};
       if (status !== undefined) { exigir(STATUS_LEAD.includes(status), 'Situação inválida'); patch.status = status; }
       if (observacoes !== undefined) patch.observacoes = String(observacoes).slice(0, 4000);
       if (responsavel_id !== undefined) patch.responsavel_id = responsavel_id || null;
+      if (decisor_nome !== undefined) patch.decisor_nome = String(decisor_nome || '').trim().slice(0, 120);
+      if (decisor_cargo !== undefined) patch.decisor_cargo = String(decisor_cargo || '').trim().slice(0, 80);
+      if (decisor_contato !== undefined) patch.decisor_contato = String(decisor_contato || '').trim().slice(0, 160);
+      if (parceiro_id !== undefined) {
+        if (parceiro_id) exigir(await getById(ctx, 'Parceiro', parceiro_id), 'Parceiro não encontrado');
+        patch.parceiro_id = parceiro_id || null;
+      }
+      // respondeu, recebeu o diagnóstico, fechou ou desistiu: a cadência de follow-up para
+      if (patch.status && patch.status !== l.status && ['CONVERTIDO', 'PERDIDO', 'DIAGNOSTICO_ENVIADO'].includes(patch.status) && l.proximo_followup) {
+        patch.proximo_followup = null; patch.cadencia_fim = `Situação: ${patch.status}`;
+      }
       exigir(Object.keys(patch).length, 'Nada para atualizar');
       return alterar(ctx, 'Lead', l, patch, 'ATUALIZAR_LEAD');
     },

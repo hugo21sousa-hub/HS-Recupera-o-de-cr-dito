@@ -14,6 +14,16 @@ const paraBase64 = (arquivo) => new Promise((ok, falha) => {
   r.readAsDataURL(arquivo);
 });
 
+/** Código do parceiro que indicou (link acorly.com.br/...?ref=codigo), guardado por 90 dias neste navegador. */
+function refIndicacao() {
+  try {
+    const daUrl = new URLSearchParams(window.location.search).get('ref');
+    if (daUrl) return daUrl.slice(0, 40);
+    const salvo = JSON.parse(localStorage.getItem('acorly_ref') || 'null');
+    return salvo && Date.now() - salvo.t < 90 * 864e5 ? String(salvo.r).slice(0, 40) : undefined;
+  } catch { return undefined; }
+}
+
 export function Diagnostico() {
   const inicio = useRef(Date.now());
   const [v, setV] = useState({ nome: '', empresa: '', email: '', whatsapp: '', cidade: '', segmento: '', qtd_devedores: '', valor_aberto: '', mensagem: '', aceite_privacidade: false, site: '' });
@@ -29,7 +39,7 @@ export function Diagnostico() {
     if (arquivo && arquivo.size > 5 * 1024 * 1024) { setErro('Arquivo muito grande: envie até 5 MB.'); return; }
     setEnviando(true);
     try {
-      const payload = { ...v, tempo_ms: Date.now() - inicio.current, origem: (document.referrer || '').slice(0, 200) };
+      const payload = { ...v, tempo_ms: Date.now() - inicio.current, origem: (document.referrer || '').slice(0, 200), ref: refIndicacao() };
       if (arquivo) payload.arquivo = { nome: arquivo.name, conteudo: await paraBase64(arquivo) };
       await enviarDiagnostico(payload);
       setFeito(true);
