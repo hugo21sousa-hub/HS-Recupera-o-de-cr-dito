@@ -228,7 +228,7 @@ export const ENTITIES = {
     properties: {
       nome: s('Nome da campanha'), modelo_id: ref('ModeloComercial'), modelo_nome: s('Nome do modelo'), assunto: s('Assunto (cópia do modelo)'), corpo: s('Mensagem (cópia do modelo)'),
       remetente_nome: s('Quem assina'), criada_por: ref('Quem criou'), criada_em: ts('Criada em'), arquivo_nome: s('Planilha de origem'),
-      status: e(['ATIVA', 'PAUSADA', 'CONCLUIDA', 'CANCELADA'], 'Situação', 'ATIVA'), total: n('Destinatários na fila'), concluida_em: ts('Concluída em'),
+      status: e(['AGUARDANDO', 'ATIVA', 'PAUSADA', 'CONCLUIDA', 'CANCELADA'], 'Situação', 'ATIVA'), total: n('Destinatários na fila'), iniciada_em: ts('Começou a enviar em'), concluida_em: ts('Concluída em'),
     },
     required: ['nome', 'status'],
   },

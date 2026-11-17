@@ -322,5 +322,6 @@ O envio funciona assim:
 - Os 10 primeiros e-mails saem na hora. O restante sai de hora em hora, das 9h às 18h.
 - O limite é de 50 e-mails comerciais por dia, somando os envios avulsos.
 - Cada destinatário vira um contato com cadência de follow-up.
+- Uma campanha por vez: as outras ficam "Aguardando a vez", na ordem de criação, e a próxima começa sozinha quando a anterior termina ou é cancelada. Pausar a campanha em andamento segura a fila.
 - Uma campanha pode ser pausada, retomada ou cancelada.
 - Um envio que falha é tentado de novo até 3 vezes.

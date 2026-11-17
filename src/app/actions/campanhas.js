@@ -34,7 +34,7 @@ export async function conferirLista(ctx, contatos) {
   const leads = await find(ctx, 'Lead', {});
   const bloqueados = new Set(leads.filter((l) => l.nao_receber_comercial).map((l) => String(l.email || '').toLowerCase()));
   const recentes = new Set((await find(ctx, 'EnvioComercial', {})).filter((e) => (e.enviado_em || '') >= limite).map((e) => e.email));
-  const ativas = new Set((await find(ctx, 'CampanhaEmail', {})).filter((c) => ['ATIVA', 'PAUSADA'].includes(c.status)).map((c) => c.id));
+  const ativas = new Set((await find(ctx, 'CampanhaEmail', {})).filter((c) => EM_ABERTO.includes(c.status)).map((c) => c.id));
   const naFila = new Set((await find(ctx, 'CampanhaDestinatario', { status: 'PENDENTE' })).filter((d) => ativas.has(d.campanha_id)).map((d) => d.email));
   const vistos = new Set();
   const validos = [], invalidos = [], ignorados = [];
@@ -65,17 +65,37 @@ async function modeloEscolhido(ctx, { modelo_id, assunto, corpo }) {
   return { modelo_id: m?.id || null, modelo_nome: m?.nome || 'Texto próprio', assunto: a.slice(0, 180), corpo: b.slice(0, 8000) };
 }
 
+const EM_ABERTO = ['AGUARDANDO', 'ATIVA', 'PAUSADA'];
+const porCriacao = (a, b) => ((a.criada_em || '') > (b.criada_em || '') ? 1 : -1);
+
+/**
+ * Fila de campanhas: só uma em andamento por vez (ATIVA ou PAUSADA), na ordem em que foram criadas.
+ * As demais ficam AGUARDANDO e a próxima começa sozinha quando a atual termina ou é cancelada.
+ */
+export async function organizarFila(ctx) {
+  const abertas = (await find(ctx, 'CampanhaEmail', {})).filter((c) => EM_ABERTO.includes(c.status)).sort(porCriacao);
+  const andamento = abertas.filter((c) => c.status !== 'AGUARDANDO');
+  for (const c of andamento.slice(1)) await ctx.db.CampanhaEmail.update(c.id, { status: 'AGUARDANDO' });
+  if (andamento[0]) return andamento[0];
+  const prox = abertas.find((c) => c.status === 'AGUARDANDO');
+  if (!prox) return null;
+  const atual = await ctx.db.CampanhaEmail.update(prox.id, { status: 'ATIVA', iniciada_em: ctx.now().toISOString() });
+  const anteriores = (await find(ctx, 'CampanhaEmail', {})).filter((c) => ['CONCLUIDA', 'CANCELADA'].includes(c.status));
+  if (anteriores.length) await notificar(ctx, null, { perfis: ['SUPERADMIN_HS'], tipo: 'LEAD', titulo: `Campanha começou: ${prox.nome}`, mensagem: 'A campanha anterior terminou e esta entrou em envio.', link: '/hs/leads' });
+  return atual && atual.id ? atual : { ...prox, status: 'ATIVA' };
+}
+
 const ehLimite = (e) => /^Limite de \d+ e-mails/.test(e?.message || '');
 const enviadosHoje = async (ctx) => { const hoje = ctx.now().toISOString().slice(0, 10); return (await find(ctx, 'EnvioComercial', {})).filter((e) => (e.enviado_em || '').slice(0, 10) === hoje).length; };
 
-/** Envia o próximo lote das campanhas ativas (até `max` e-mails, respeitando o limite diário). */
-export async function processarCampanhas(ctx, { max = LOTE_POR_RODADA, campanha_id = null } = {}) {
-  if (!ctx.email?.comercial) return { enviados: 0, motivo: 'e-mail não configurado' };
+/** Envia o próximo lote da campanha em andamento (até `max` e-mails, respeitando o limite diário); ao terminar, passa para a próxima da fila. */
+export async function processarCampanhas(ctx, { max = LOTE_POR_RODADA } = {}) {
+  if (!ctx.email?.comercial) { await organizarFila(ctx); return { enviados: 0, motivo: 'e-mail não configurado' }; }
   let vagas = Math.min(max, LIMITE_DIARIO_COMERCIAL - await enviadosHoje(ctx));
   let enviados = 0, falhas = 0;
-  const campanhas = (await find(ctx, 'CampanhaEmail', { status: 'ATIVA' })).filter((c) => !campanha_id || c.id === campanha_id).sort((a, b) => (a.criada_em > b.criada_em ? 1 : -1));
-  for (const c of campanhas) {
-    if (vagas <= 0) break;
+  for (let voltas = 0; voltas < 20; voltas++) {
+    const c = await organizarFila(ctx);
+    if (!c || c.status !== 'ATIVA' || vagas <= 0) break;
     const ctxC = { ...ctx, user: { id: c.criada_por || 'sistema', nome: c.remetente_nome || 'Equipe Acorly', perfil: 'SUPERADMIN_HS', email: 'campanha@acorly' } };
     const fila = (await find(ctx, 'CampanhaDestinatario', { campanha_id: c.id, status: 'PENDENTE' })).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
     let parar = false;
@@ -94,11 +114,11 @@ export async function processarCampanhas(ctx, { max = LOTE_POR_RODADA, campanha_
       }
     }
     if (parar) break;
-    if (!(await find(ctx, 'CampanhaDestinatario', { campanha_id: c.id, status: 'PENDENTE' })).length) {
-      await ctx.db.CampanhaEmail.update(c.id, { status: 'CONCLUIDA', concluida_em: ctx.now().toISOString() });
-      const ds = await find(ctx, 'CampanhaDestinatario', { campanha_id: c.id });
-      await notificar(ctx, null, { perfis: ['SUPERADMIN_HS'], tipo: 'LEAD', titulo: `Campanha concluída: ${c.nome}`, mensagem: `${ds.filter((d) => d.status === 'ENVIADO').length} e-mail(s) enviado(s)${ds.some((d) => d.status === 'FALHA') ? `, ${ds.filter((d) => d.status === 'FALHA').length} com falha` : ''}.`, link: '/hs/leads' });
-    }
+    if ((await find(ctx, 'CampanhaDestinatario', { campanha_id: c.id, status: 'PENDENTE' })).length) break; // ainda tem fila (falhas a tentar de novo ou vagas acabaram)
+    await ctx.db.CampanhaEmail.update(c.id, { status: 'CONCLUIDA', concluida_em: ctx.now().toISOString() });
+    const ds = await find(ctx, 'CampanhaDestinatario', { campanha_id: c.id });
+    const proxima = (await find(ctx, 'CampanhaEmail', { status: 'AGUARDANDO' })).sort(porCriacao)[0];
+    await notificar(ctx, null, { perfis: ['SUPERADMIN_HS'], tipo: 'LEAD', titulo: `Campanha concluída: ${c.nome}`, mensagem: `${ds.filter((d) => d.status === 'ENVIADO').length} e-mail(s) enviado(s)${ds.some((d) => d.status === 'FALHA') ? `, ${ds.filter((d) => d.status === 'FALHA').length} com falha` : ''}.${proxima ? ` Próxima da fila: ${proxima.nome}.` : ''}`, link: '/hs/leads' });
   }
   return { enviados, falhas };
 }
@@ -109,7 +129,7 @@ async function resumo(ctx, c) {
   const leads = new Set(ds.map((d) => d.lead_id).filter(Boolean));
   const sairam = leads.size ? (await find(ctx, 'Lead', {})).filter((l) => leads.has(l.id) && l.nao_receber_comercial).length : 0;
   const pend = conta('PENDENTE');
-  return { ...c, corpo: undefined, enviados: conta('ENVIADO'), pendentes: pend, falhas: conta('FALHA'), ignorados: conta('IGNORADO'), sairam, dias_restantes: Math.ceil(pend / LIMITE_DIARIO_COMERCIAL) };
+  return { ...c, corpo: undefined, posicao_fila: null, enviados: conta('ENVIADO'), pendentes: pend, falhas: conta('FALHA'), ignorados: conta('IGNORADO'), sairam, dias_restantes: Math.ceil(pend / LIMITE_DIARIO_COMERCIAL) };
 }
 
 export const actions = {
@@ -143,23 +163,26 @@ export const actions = {
       const lista = await conferirLista(ctx, input.contatos);
       exigir(lista.validos.length, 'Nenhum contato válido para enviar');
       const m = await modeloEscolhido(ctx, input);
+      const naFrente = (await find(ctx, 'CampanhaEmail', {})).filter((x) => EM_ABERTO.includes(x.status)).length;
       const c = await criar(ctx, 'CampanhaEmail', {
         nome, ...m, remetente_nome: ctx.user.nome || 'Equipe Acorly', criada_por: ctx.user.id, criada_em: ctx.now().toISOString(),
-        arquivo_nome: String(input.arquivo_nome || '').slice(0, 160), status: 'ATIVA', total: lista.validos.length,
+        arquivo_nome: String(input.arquivo_nome || '').slice(0, 160), status: naFrente ? 'AGUARDANDO' : 'ATIVA', total: lista.validos.length, iniciada_em: naFrente ? null : ctx.now().toISOString(),
       }, 'CRIAR_CAMPANHA_EMAIL');
       let ordem = 0;
       for (const v of lista.validos) await ctx.db.CampanhaDestinatario.create({ campanha_id: c.id, ...v, ordem: ordem++, status: 'PENDENTE', tentativas: 0 });
-      const lote = await processarCampanhas(ctx, { max: LOTE_POR_RODADA, campanha_id: c.id });
-      return { id: c.id, na_fila: lista.validos.length, enviados_agora: lote.enviados, ignorados: lista.ignorados.length, invalidos: lista.invalidos.length };
+      const lote = naFrente ? { enviados: 0 } : await processarCampanhas(ctx, { max: LOTE_POR_RODADA });
+      return { id: c.id, na_fila: lista.validos.length, enviados_agora: lote.enviados, aguardando: !!naFrente, posicao: naFrente + 1, ignorados: lista.ignorados.length, invalidos: lista.invalidos.length };
     },
   },
 
   listarCampanhas: {
     perm: 'lead.gerenciar',
     async run(ctx) {
+      await organizarFila(ctx);
       const cs = (await find(ctx, 'CampanhaEmail', {})).sort((a, b) => (a.criada_em < b.criada_em ? 1 : -1));
+      const fila = cs.filter((c) => EM_ABERTO.includes(c.status)).sort(porCriacao).map((c) => c.id);
       const out = [];
-      for (const c of cs.slice(0, 100)) out.push(await resumo(ctx, c));
+      for (const c of cs.slice(0, 100)) out.push({ ...(await resumo(ctx, c)), posicao_fila: fila.includes(c.id) ? fila.indexOf(c.id) + 1 : null });
       return { itens: out, total: cs.length, enviados_hoje: await enviadosHoje(ctx), limite_diario: LIMITE_DIARIO_COMERCIAL };
     },
   },
@@ -182,9 +205,11 @@ export const actions = {
       if (!c) throw new AccessError('Campanha não encontrada', 404);
       const novo = { pausar: 'PAUSADA', retomar: 'ATIVA', cancelar: 'CANCELADA' }[acao];
       exigir(novo, 'Ação inválida');
-      exigir(acao === 'pausar' ? c.status === 'ATIVA' : acao === 'retomar' ? c.status === 'PAUSADA' : ['ATIVA', 'PAUSADA'].includes(c.status), 'Não é possível nesta situação');
+      exigir(acao === 'pausar' ? c.status === 'ATIVA' : acao === 'retomar' ? c.status === 'PAUSADA' : EM_ABERTO.includes(c.status), 'Não é possível nesta situação');
       if (acao === 'cancelar') for (const d of await find(ctx, 'CampanhaDestinatario', { campanha_id: id, status: 'PENDENTE' })) await ctx.db.CampanhaDestinatario.update(d.id, { status: 'IGNORADO', motivo: 'Campanha cancelada' });
-      return alterar(ctx, 'CampanhaEmail', c, { status: novo, ...(acao === 'cancelar' ? { concluida_em: ctx.now().toISOString() } : {}) }, `CAMPANHA_${acao.toUpperCase()}`);
+      const r = await alterar(ctx, 'CampanhaEmail', c, { status: novo, ...(acao === 'cancelar' ? { concluida_em: ctx.now().toISOString() } : {}) }, `CAMPANHA_${acao.toUpperCase()}`);
+      if (acao === 'cancelar') await organizarFila(ctx); // a próxima da fila começa
+      return r;
     },
   },
 
@@ -196,7 +221,7 @@ export const actions = {
       if (!c) throw new AccessError('Campanha não encontrada', 404);
       exigir(c.status === 'ATIVA', 'A campanha não está ativa');
       exigir(await enviadosHoje(ctx) < LIMITE_DIARIO_COMERCIAL, `O limite de ${LIMITE_DIARIO_COMERCIAL} e-mails de hoje já foi usado. O envio continua amanhã, sozinho.`);
-      return processarCampanhas(ctx, { max: LOTE_POR_RODADA, campanha_id: id });
+      return processarCampanhas(ctx, { max: LOTE_POR_RODADA });
     },
   },
 };

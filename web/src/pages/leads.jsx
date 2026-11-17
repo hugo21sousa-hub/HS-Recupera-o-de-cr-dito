@@ -439,7 +439,7 @@ function IndicacoesParceiro({ p, onClose, onMudou }) {
   );
 }
 
-const STATUS_CAMPANHA = { ATIVA: ['Enviando', 'info'], PAUSADA: ['Pausada', 'PENDENTE'], CONCLUIDA: ['Concluída', 'ATIVA'], CANCELADA: ['Cancelada', 'CANCELADA'] };
+const STATUS_CAMPANHA = { AGUARDANDO: ['Aguardando a vez', 'PENDENTE'], ATIVA: ['Enviando', 'info'], PAUSADA: ['Pausada', 'PENDENTE'], CONCLUIDA: ['Concluída', 'ATIVA'], CANCELADA: ['Cancelada', 'CANCELADA'] };
 const STATUS_DEST = { PENDENTE: ['Na fila', 'PENDENTE'], ENVIADO: ['Enviado', 'ATIVA'], FALHA: ['Falhou', 'CANCELADA'], IGNORADO: ['Não enviado', 'CANCELADA'] };
 
 /** Disparo de e-mail marketing a partir de planilha (fila diária, até 50 por dia). */
@@ -454,7 +454,7 @@ function Campanhas({ onMudou }) {
     <div className="stack">
       <div className="row between">
         <p className="small muted" style={{ margin: 0, maxWidth: '78ch' }}>
-          Envie uma planilha com e-mails de empresas e escolha o modelo. O sistema confere a lista e envia aos poucos: até {data?.limite_diario || 50} e-mails por dia, em lotes de hora em hora no horário comercial, para proteger o domínio. Cada destinatário vira um contato com follow-up.
+          Envie uma planilha com e-mails de empresas e escolha o modelo. O sistema confere a lista e envia aos poucos: até {data?.limite_diario || 50} e-mails por dia, em lotes de hora em hora no horário comercial, para proteger o domínio. Uma campanha por vez: a próxima começa sozinha quando a anterior termina. Cada destinatário vira um contato com follow-up.
           {data && <> <strong>Hoje: {data.enviados_hoje} de {data.limite_diario} e-mails usados.</strong></>}
         </p>
         <button className="btn prim" onClick={() => setNova(true)}>Nova campanha</button>
@@ -471,15 +471,15 @@ function Campanhas({ onMudou }) {
                   <div style={{ background: 'var(--borda)', borderRadius: 99, height: 8, overflow: 'hidden' }}><div style={{ width: `${Math.round((feito / tot) * 100)}%`, background: 'var(--azul)', height: 8 }} /></div>
                   <div className="small muted">{c.enviados} enviado(s){c.falhas ? ` · ${c.falhas} falha(s)` : ''}{c.ignorados ? ` · ${c.ignorados} não enviado(s)` : ''}</div>
                 </td>
-                <td className="num">{c.pendentes}{c.pendentes && c.status === 'ATIVA' ? <div className="small muted">≈ {c.dias_restantes} dia(s)</div> : null}</td>
+                <td className="num">{c.pendentes}{c.pendentes && ['ATIVA', 'AGUARDANDO'].includes(c.status) ? <div className="small muted">≈ {c.dias_restantes} dia(s){c.status === 'AGUARDANDO' ? ' depois de começar' : ''}</div> : null}</td>
                 <td className="num">{c.sairam}</td>
-                <td><Badge status={STATUS_CAMPANHA[c.status][1]}>{STATUS_CAMPANHA[c.status][0]}</Badge></td>
+                <td><Badge status={STATUS_CAMPANHA[c.status][1]}>{STATUS_CAMPANHA[c.status][0]}</Badge>{c.posicao_fila ? <div className="small muted">{c.posicao_fila === 1 ? 'em andamento' : `${c.posicao_fila}º na fila`}</div> : null}</td>
                 <td><div className="row" style={{ gap: 4 }}>
                   <button className="btn sm" onClick={() => setVer(c)}>Destinatários</button>
                   {c.status === 'ATIVA' && c.pendentes > 0 && <button className="btn sm" disabled={enviando} onClick={() => acao('enviarLoteCampanha', { id: c.id }, 'Lote enviado')}>Enviar próximo lote</button>}
                   {c.status === 'ATIVA' && <button className="btn sm" disabled={enviando} onClick={() => acao('alterarCampanha', { id: c.id, acao: 'pausar' }, 'Campanha pausada')}>Pausar</button>}
                   {c.status === 'PAUSADA' && <button className="btn sm" disabled={enviando} onClick={() => acao('alterarCampanha', { id: c.id, acao: 'retomar' }, 'Campanha retomada')}>Retomar</button>}
-                  {['ATIVA', 'PAUSADA'].includes(c.status) && <button className="btn sm" disabled={enviando} onClick={() => { if (window.confirm(`Cancelar a campanha "${c.nome}"? Os ${c.pendentes} e-mail(s) que ainda estão na fila não serão enviados.`)) acao('alterarCampanha', { id: c.id, acao: 'cancelar' }, 'Campanha cancelada'); }}>Cancelar</button>}
+                  {['ATIVA', 'PAUSADA', 'AGUARDANDO'].includes(c.status) && <button className="btn sm" disabled={enviando} onClick={() => { if (window.confirm(`Cancelar a campanha "${c.nome}"? Os ${c.pendentes} e-mail(s) que ainda estão na fila não serão enviados.`)) acao('alterarCampanha', { id: c.id, acao: 'cancelar' }, 'Campanha cancelada'); }}>Cancelar</button>}
                 </div></td>
               </tr>
             );
@@ -528,7 +528,7 @@ function NovaCampanha({ onClose, onCriada }) {
   const criar = async () => {
     try {
       const r = await executar('criarCampanha', { nome, modelo_id: modeloId, contatos: lidos.contatos, arquivo_nome: arquivo?.name }, null);
-      toast.ok(`Campanha criada: ${r.enviados_agora} e-mail(s) enviado(s) agora, ${r.na_fila - r.enviados_agora} na fila.`);
+      toast.ok(r.aguardando ? `Campanha criada: ${r.posicao}ª da fila. Ela começa quando as anteriores terminarem.` : `Campanha criada: ${r.enviados_agora} e-mail(s) enviado(s) agora, ${r.na_fila - r.enviados_agora} na fila.`);
       onCriada();
     } catch { /* aviso já mostrado */ }
   };
@@ -556,7 +556,7 @@ function NovaCampanha({ onClose, onCriada }) {
               <div className="card stat"><span className="rot">Com erro</span><span className="val" style={{ color: previa.total_invalidos ? 'var(--critico)' : undefined }}>{previa.total_invalidos}</span></div>
               <div className="card stat"><span className="rot">Tempo de envio</span><span className="val">{previa.validos ? `${previa.dias_estimados} dia(s)` : '—'}</span></div>
             </div>
-            <span className="small muted">Até {previa.limite_diario} por dia{previa.livres_hoje < previa.limite_diario ? ` (hoje ainda cabem ${previa.livres_hoje})` : ''}. Os 10 primeiros saem assim que você iniciar; o restante segue de hora em hora, das 9h às 18h.</span>
+            <span className="small muted">Até {previa.limite_diario} por dia{previa.livres_hoje < previa.limite_diario ? ` (hoje ainda cabem ${previa.livres_hoje})` : ''}. Se não houver outra campanha em andamento, os 10 primeiros saem assim que você iniciar; senão, ela entra na fila e começa quando as anteriores terminarem. O envio segue de hora em hora, das 9h às 18h.</span>
             {previa.total_ignorados > 0 && <details className="small"><summary>Ver os {previa.total_ignorados} retirados (repetidos, pediram para sair, receberam há menos de 30 dias)</summary><ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>{previa.ignorados.map((x) => <li key={`${x.linha}${x.email}`}>Linha {x.linha}: {x.email} — {x.motivo}</li>)}</ul></details>}
             {previa.total_invalidos > 0 && <details className="small" open={previa.total_invalidos <= 5}><summary>Ver as {previa.total_invalidos} linhas com erro</summary><ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>{previa.invalidos.map((x) => <li key={`${x.linha}${x.email}`}>Linha {x.linha}: {x.email} — {x.motivo}</li>)}</ul></details>}
             {a && (

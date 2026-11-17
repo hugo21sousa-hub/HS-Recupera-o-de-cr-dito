@@ -103,3 +103,40 @@ test('só o superadmin cria campanhas', async () => {
   await t.falha('gestor@hs.com', 'criarCampanha', { nome: 'x', contatos: lista(1) }, 403);
   await t.falha('gestor@hs.com', 'listarCampanhas', {}, 403);
 });
+
+test('fila: só uma campanha por vez; a próxima começa quando a anterior termina (ou é cancelada)', async () => {
+  const t = await base();
+  const [modelo] = await t.ok(S, 'listarModelosComerciais');
+  const a = await t.ok(S, 'criarCampanha', { nome: 'Camp A', modelo_id: modelo.id, contatos: lista(25, 'a') });
+  t.estado.agora = new Date(t.estado.agora.getTime() + 60e3);
+  const b = await t.ok(S, 'criarCampanha', { nome: 'Camp B', modelo_id: modelo.id, contatos: lista(5, 'b') });
+  t.estado.agora = new Date(t.estado.agora.getTime() + 60e3);
+  const c = await t.ok(S, 'criarCampanha', { nome: 'Camp C', modelo_id: modelo.id, contatos: lista(30, 'c') });
+  assert.deepEqual([a.enviados_agora, b.enviados_agora, b.aguardando, b.posicao, c.posicao], [10, 0, true, 2, 3]);
+  await t.falha(S, 'enviarLoteCampanha', { id: b.id }, 422);
+  const st = async () => Object.fromEntries((await t.ok(S, 'listarCampanhas')).itens.map((x) => [x.nome, [x.status, x.enviados]]));
+  assert.deepEqual(await st(), { 'Camp A': ['ATIVA', 10], 'Camp B': ['AGUARDANDO', 0], 'Camp C': ['AGUARDANDO', 0] });
+  await processarCampanhas(sys(t)); // A: +10 (20)
+  assert.deepEqual(await st(), { 'Camp A': ['ATIVA', 20], 'Camp B': ['AGUARDANDO', 0], 'Camp C': ['AGUARDANDO', 0] });
+  await processarCampanhas(sys(t)); // A termina (+5) e B começa na mesma rodada (+5, termina); C começa
+  assert.deepEqual(await st(), { 'Camp A': ['CONCLUIDA', 25], 'Camp B': ['CONCLUIDA', 5], 'Camp C': ['ATIVA', 0] });
+  assert.ok((await t.db.Notificacao.filter({})).some((n) => /Campanha começou: Camp C/.test(n.titulo)));
+  // pausar a atual segura a fila; cancelar libera a próxima
+  const d = await t.ok(S, 'criarCampanha', { nome: 'Camp D', modelo_id: modelo.id, contatos: lista(3, 'd') });
+  await t.ok(S, 'alterarCampanha', { id: c.id, acao: 'pausar' });
+  await processarCampanhas(sys(t));
+  assert.deepEqual(await st(), { 'Camp A': ['CONCLUIDA', 25], 'Camp B': ['CONCLUIDA', 5], 'Camp C': ['PAUSADA', 0], 'Camp D': ['AGUARDANDO', 0] });
+  await t.ok(S, 'alterarCampanha', { id: c.id, acao: 'cancelar' });
+  assert.equal((await st())['Camp D'][0], 'ATIVA');
+  assert.ok(d.id);
+});
+
+test('campanhas antigas abertas ao mesmo tempo entram em fila pela ordem de criação', async () => {
+  const t = await base();
+  for (const [nome, h] of [['Primeira', 10], ['Segunda', 11], ['Terceira', 12]]) {
+    const c = await t.db.CampanhaEmail.create({ nome, status: 'ATIVA', assunto: 'x', corpo: 'y', criada_em: `2026-11-11T${h}:00:00Z`, total: 1 });
+    await t.db.CampanhaDestinatario.create({ campanha_id: c.id, email: `x@${nome.toLowerCase()}.com.br`, empresa: nome, status: 'PENDENTE', ordem: 0 });
+  }
+  const l = await t.ok(S, 'listarCampanhas');
+  assert.deepEqual(l.itens.map((x) => [x.nome, x.status, x.posicao_fila]), [['Terceira', 'AGUARDANDO', 3], ['Segunda', 'AGUARDANDO', 2], ['Primeira', 'ATIVA', 1]]);
+});
