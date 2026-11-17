@@ -1,10 +1,11 @@
 // Pedidos de diagnóstico gratuito (leads do site): acompanhamento comercial da equipe.
 import { useEffect, useState } from 'react';
-import { hs, abrirLink } from '../api.js';
+import { hs, abrirLink, baixarArquivo } from '../api.js';
 import { Tabela, Badge, Cabecalho, Modal, Vazio, Abas, Carregando, useApi, useExecutar, useToast } from '../ui.jsx';
 import { brl, dataHora, mascaraFone, mascaraDoc, pct } from '../format.js';
 import { useSessao } from '../sessao.jsx';
 import { roteiro } from '../roteiros.js';
+import { lerPlanilha, contatosDaPlanilha, MODELO_PLANILHA_CAMPANHA } from '../planilha.js';
 
 const SEGMENTOS = { ESCOLA_CURSO: 'Escola ou curso', SAUDE: 'Saúde', ACADEMIA: 'Academia', CONDOMINIO: 'Condomínio', VAREJO: 'Varejo', DISTRIBUIDORA: 'Distribuidora', SERVICOS: 'Serviços', IMOBILIARIA: 'Imobiliária', OUTRO: 'Outro' };
 const SEGMENTOS_PROSPECT = { ...SEGMENTOS, CONTABILIDADE: 'Contabilidade' };
@@ -438,6 +439,158 @@ function IndicacoesParceiro({ p, onClose, onMudou }) {
   );
 }
 
+const STATUS_CAMPANHA = { ATIVA: ['Enviando', 'info'], PAUSADA: ['Pausada', 'PENDENTE'], CONCLUIDA: ['Concluída', 'ATIVA'], CANCELADA: ['Cancelada', 'CANCELADA'] };
+const STATUS_DEST = { PENDENTE: ['Na fila', 'PENDENTE'], ENVIADO: ['Enviado', 'ATIVA'], FALHA: ['Falhou', 'CANCELADA'], IGNORADO: ['Não enviado', 'CANCELADA'] };
+
+/** Disparo de e-mail marketing a partir de planilha (fila diária, até 50 por dia). */
+function Campanhas({ onMudou }) {
+  const { data, carregando, recarregar } = useApi('listarCampanhas', {});
+  const [nova, setNova] = useState(false);
+  const [ver, setVer] = useState(null);
+  const { executar, enviando } = useExecutar();
+  const acao = (nome, dados, msg) => executar(nome, dados, msg).then(() => { recarregar(); onMudou(); }).catch(() => {});
+  if (carregando && !data) return <Carregando />;
+  return (
+    <div className="stack">
+      <div className="row between">
+        <p className="small muted" style={{ margin: 0, maxWidth: '78ch' }}>
+          Envie uma planilha com e-mails de empresas e escolha o modelo. O sistema confere a lista e envia aos poucos: até {data?.limite_diario || 50} e-mails por dia, em lotes de hora em hora no horário comercial, para proteger o domínio. Cada destinatário vira um contato com follow-up.
+          {data && <> <strong>Hoje: {data.enviados_hoje} de {data.limite_diario} e-mails usados.</strong></>}
+        </p>
+        <button className="btn prim" onClick={() => setNova(true)}>Nova campanha</button>
+      </div>
+      {(data?.itens || []).length ? (
+        <table><thead><tr><th>Campanha</th><th>Progresso</th><th className="num">Na fila</th><th className="num">Pediram para sair</th><th>Situação</th><th /></tr></thead><tbody>
+          {data.itens.map((c) => {
+            const feito = c.enviados + c.falhas + c.ignorados;
+            const tot = Math.max(1, feito + c.pendentes);
+            return (
+              <tr key={c.id}>
+                <td><strong>{c.nome}</strong><div className="small muted">{c.modelo_nome} · {dataHora(c.criada_em)}{c.arquivo_nome ? ` · ${c.arquivo_nome}` : ''}</div></td>
+                <td style={{ minWidth: 180 }}>
+                  <div style={{ background: 'var(--borda)', borderRadius: 99, height: 8, overflow: 'hidden' }}><div style={{ width: `${Math.round((feito / tot) * 100)}%`, background: 'var(--azul)', height: 8 }} /></div>
+                  <div className="small muted">{c.enviados} enviado(s){c.falhas ? ` · ${c.falhas} falha(s)` : ''}{c.ignorados ? ` · ${c.ignorados} não enviado(s)` : ''}</div>
+                </td>
+                <td className="num">{c.pendentes}{c.pendentes && c.status === 'ATIVA' ? <div className="small muted">≈ {c.dias_restantes} dia(s)</div> : null}</td>
+                <td className="num">{c.sairam}</td>
+                <td><Badge status={STATUS_CAMPANHA[c.status][1]}>{STATUS_CAMPANHA[c.status][0]}</Badge></td>
+                <td><div className="row" style={{ gap: 4 }}>
+                  <button className="btn sm" onClick={() => setVer(c)}>Destinatários</button>
+                  {c.status === 'ATIVA' && c.pendentes > 0 && <button className="btn sm" disabled={enviando} onClick={() => acao('enviarLoteCampanha', { id: c.id }, 'Lote enviado')}>Enviar próximo lote</button>}
+                  {c.status === 'ATIVA' && <button className="btn sm" disabled={enviando} onClick={() => acao('alterarCampanha', { id: c.id, acao: 'pausar' }, 'Campanha pausada')}>Pausar</button>}
+                  {c.status === 'PAUSADA' && <button className="btn sm" disabled={enviando} onClick={() => acao('alterarCampanha', { id: c.id, acao: 'retomar' }, 'Campanha retomada')}>Retomar</button>}
+                  {['ATIVA', 'PAUSADA'].includes(c.status) && <button className="btn sm" disabled={enviando} onClick={() => { if (window.confirm(`Cancelar a campanha "${c.nome}"? Os ${c.pendentes} e-mail(s) que ainda estão na fila não serão enviados.`)) acao('alterarCampanha', { id: c.id, acao: 'cancelar' }, 'Campanha cancelada'); }}>Cancelar</button>}
+                </div></td>
+              </tr>
+            );
+          })}
+        </tbody></table>
+      ) : <Vazio titulo="Nenhuma campanha ainda">Clique em "Nova campanha" e envie uma planilha (CSV ou Excel) com os e-mails das empresas.</Vazio>}
+      {nova && <NovaCampanha onClose={() => setNova(false)} onCriada={() => { setNova(false); recarregar(); onMudou(); }} />}
+      {ver && <DestinatariosCampanha c={ver} onClose={() => setVer(null)} />}
+    </div>
+  );
+}
+
+function NovaCampanha({ onClose, onCriada }) {
+  const modelos = useApi('listarModelosComerciais', {});
+  const epoca = useApi('epocaComercial', {});
+  const [nome, setNome] = useState('');
+  const [modeloId, setModeloId] = useState('');
+  const [arquivo, setArquivo] = useState(null);
+  const [lidos, setLidos] = useState(null);
+  const [previa, setPrevia] = useState(null);
+  const [amostra, setAmostra] = useState(0);
+  const [lendo, setLendo] = useState(false);
+  const { executar, enviando } = useExecutar();
+  const toast = useToast();
+  const ativos = (modelos.data || []).filter((m) => m.ativo !== false);
+  useEffect(() => {
+    if (!modeloId && ativos.length && (epoca.data || epoca.erro)) setModeloId((epoca.data?.decimo_terceiro && ativos.find((m) => m.nome.startsWith('13º'))) ? ativos.find((m) => m.nome.startsWith('13º')).id : ativos[0].id);
+  }, [ativos.length, epoca.data]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!lidos?.contatos.length || !modeloId) return;
+    setPrevia(null);
+    hs('previaCampanha', { contatos: lidos.contatos, modelo_id: modeloId }).then((p) => { setPrevia(p); setAmostra(0); }).catch((e) => toast.erro(e));
+  }, [lidos, modeloId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const escolher = async (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setArquivo(f); setLidos(null); setPrevia(null); setLendo(true);
+    try {
+      const r = contatosDaPlanilha(await lerPlanilha(f));
+      if (!r.colunas.email) throw new Error('Não encontrei a coluna de e-mail. Use um cabeçalho "email" (veja o modelo de planilha).');
+      if (!r.contatos.length) throw new Error('A planilha não tem contatos.');
+      setLidos(r);
+      if (!nome) setNome(f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').slice(0, 80));
+    } catch (err) { toast.erro(err); setArquivo(null); } finally { setLendo(false); e.target.value = ''; }
+  };
+  const criar = async () => {
+    try {
+      const r = await executar('criarCampanha', { nome, modelo_id: modeloId, contatos: lidos.contatos, arquivo_nome: arquivo?.name }, null);
+      toast.ok(`Campanha criada: ${r.enviados_agora} e-mail(s) enviado(s) agora, ${r.na_fila - r.enviados_agora} na fila.`);
+      onCriada();
+    } catch { /* aviso já mostrado */ }
+  };
+  const a = previa?.amostra?.[amostra];
+  return (
+    <Modal grande titulo="Nova campanha por planilha" onClose={onClose} rodape={<><button className="btn" onClick={onClose}>Cancelar</button><button className="btn prim" disabled={enviando || !previa?.validos || nome.trim().length < 3} onClick={criar}>{previa?.validos ? `Iniciar campanha (${previa.validos} e-mail${previa.validos > 1 ? 's' : ''})` : 'Iniciar campanha'}</button></>}>
+      <div className="stack">
+        <div className="form-grid">
+          <div className="campo"><label>Planilha (CSV ou Excel .xlsx)</label><input type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={escolher} /><span className="small muted">Colunas: <strong>email</strong> (obrigatória), empresa, nome, segmento, whatsapp. <button type="button" className="btn link small" onClick={() => { try { baixarArquivo('modelo-campanha-acorly.csv', '\uFEFF' + MODELO_PLANILHA_CAMPANHA, 'text/csv;charset=utf-8'); } catch (err) { toast.erro(err); } }}>Baixar modelo de planilha</button></span></div>
+          <div className="campo"><label>Modelo de e-mail</label><select value={modeloId} onChange={(e) => setModeloId(e.target.value)}>{ativos.map((m) => <option key={m.id} value={m.id}>{m.nome}</option>)}</select><span className="small muted">Para ajustar o texto, edite o modelo na aba "Modelos de e-mail".</span></div>
+          <div className="campo"><label>Nome da campanha</label><input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Escolas de Salvador, novembro" /></div>
+        </div>
+        {lendo && <Carregando />}
+        {lidos && (
+          <div className="small muted">
+            {lidos.contatos.length} linha(s) lida(s) de {arquivo?.name}. Colunas usadas: e-mail = "{lidos.colunas.email}"{lidos.colunas.empresa ? `, empresa = "${lidos.colunas.empresa}"` : ', empresa pelo domínio do e-mail'}{lidos.colunas.nome ? `, nome = "${lidos.colunas.nome}"` : ''}{lidos.colunas.segmento ? `, segmento = "${lidos.colunas.segmento}"` : ''}.
+          </div>
+        )}
+        {lidos && !previa && <Carregando />}
+        {previa && (
+          <>
+            <div className="grid g4">
+              <div className="card stat"><span className="rot">Serão enviados</span><span className="val" style={{ color: 'var(--ok)' }}>{previa.validos}</span></div>
+              <div className="card stat"><span className="rot">Retirados da lista</span><span className="val">{previa.total_ignorados}</span></div>
+              <div className="card stat"><span className="rot">Com erro</span><span className="val" style={{ color: previa.total_invalidos ? 'var(--critico)' : undefined }}>{previa.total_invalidos}</span></div>
+              <div className="card stat"><span className="rot">Tempo de envio</span><span className="val">{previa.validos ? `${previa.dias_estimados} dia(s)` : '—'}</span></div>
+            </div>
+            <span className="small muted">Até {previa.limite_diario} por dia{previa.livres_hoje < previa.limite_diario ? ` (hoje ainda cabem ${previa.livres_hoje})` : ''}. Os 10 primeiros saem assim que você iniciar; o restante segue de hora em hora, das 9h às 18h.</span>
+            {previa.total_ignorados > 0 && <details className="small"><summary>Ver os {previa.total_ignorados} retirados (repetidos, pediram para sair, receberam há menos de 30 dias)</summary><ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>{previa.ignorados.map((x) => <li key={`${x.linha}${x.email}`}>Linha {x.linha}: {x.email} — {x.motivo}</li>)}</ul></details>}
+            {previa.total_invalidos > 0 && <details className="small" open={previa.total_invalidos <= 5}><summary>Ver as {previa.total_invalidos} linhas com erro</summary><ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>{previa.invalidos.map((x) => <li key={`${x.linha}${x.email}`}>Linha {x.linha}: {x.email} — {x.motivo}</li>)}</ul></details>}
+            {a && (
+              <div className="stack" style={{ gap: 6 }}>
+                <div className="row between"><strong className="small">Prévia: como {a.empresa} vai receber</strong><div className="row" style={{ gap: 4 }}>{previa.amostra.map((x, i) => <button key={x.email} className={`btn sm${i === amostra ? ' prim' : ''}`} onClick={() => setAmostra(i)}>{i + 1}</button>)}</div></div>
+                <div className="small"><strong>Para:</strong> {a.email} · <strong>Assunto:</strong> {a.assunto}</div>
+                <div className="previa-email" dangerouslySetInnerHTML={{ __html: a.html }} />
+              </div>
+            )}
+          </>
+        )}
+        <span className="small muted">Use listas próprias (contatos públicos de empresas, Lista do dia, parceiros). Listas compradas trazem e-mails pessoais e armadilhas de spam e podem bloquear o domínio. Todo e-mail sai com a identificação da HS e o link "não quero mais receber".</span>
+      </div>
+    </Modal>
+  );
+}
+
+function DestinatariosCampanha({ c, onClose }) {
+  const [status, setStatus] = useState('');
+  const { data, carregando } = useApi('destinatariosCampanha', { id: c.id, status: status || undefined }, [status]);
+  return (
+    <Modal grande titulo={`Destinatários: ${c.nome}`} onClose={onClose} rodape={<button className="btn prim" onClick={onClose}>Fechar</button>}>
+      <div className="stack">
+        <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ maxWidth: 260 }}><option value="">Todos</option>{Object.entries(STATUS_DEST).map(([k, [t]]) => <option key={k} value={k}>{t}</option>)}</select>
+        {carregando && !data ? <Carregando /> : (
+          <table className="small"><thead><tr><th>E-mail</th><th>Empresa</th><th>Situação</th><th>Quando / motivo</th></tr></thead><tbody>
+            {(data || []).map((d) => <tr key={d.id}><td>{d.email}</td><td>{d.empresa}{d.nome ? <div className="muted">{d.nome}</div> : null}</td><td><Badge status={STATUS_DEST[d.status][1]}>{STATUS_DEST[d.status][0]}</Badge></td><td>{d.enviado_em ? dataHora(d.enviado_em) : d.motivo || '—'}</td></tr>)}
+          </tbody></table>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
 export function Leads() {
   const [r, setR] = useState(0);
   const [aberto, setAberto] = useState(null);
@@ -451,8 +604,8 @@ export function Leads() {
         <button className="btn prim" onClick={() => setEmail({})}>Enviar e-mail marketing</button>
       </Cabecalho>
       <div className="card">
-      <Abas ativa={aba} onChange={setAba} abas={[{ id: 'dia', rotulo: 'Lista do dia' }, { id: 'leads', rotulo: `Pedidos e contatos${infoLeads?.followups_hoje ? ` (${infoLeads.followups_hoje} follow-up hoje)` : ''}` }, { id: 'parceiros', rotulo: 'Parceiros (indicação)' }, { id: 'modelos', rotulo: 'Modelos de e-mail' }]} />
-      {aba === 'dia' ? <ListaDoDia recarregar={r} onMudou={() => setR(r + 1)} onEmail={setProspect} /> : aba === 'modelos' ? <Modelos /> : aba === 'parceiros' ? <Parceiros /> : <Tabela acao="listarLeads" recarregar={r} aoCarregar={setInfoLeads} filtros={[{ nome: 'status', rotulo: 'Situação', opcoes: Object.keys(STATUS) }, { nome: 'followup', rotulo: 'Follow-up', opcoes: [{ valor: 'HOJE', rotulo: 'Para hoje (e atrasados)' }, { valor: 'ATIVA', rotulo: 'Com cadência ativa' }] }]} colunas={[
+      <Abas ativa={aba} onChange={setAba} abas={[{ id: 'dia', rotulo: 'Lista do dia' }, { id: 'leads', rotulo: `Pedidos e contatos${infoLeads?.followups_hoje ? ` (${infoLeads.followups_hoje} follow-up hoje)` : ''}` }, { id: 'campanhas', rotulo: 'Campanhas por planilha' }, { id: 'parceiros', rotulo: 'Parceiros (indicação)' }, { id: 'modelos', rotulo: 'Modelos de e-mail' }]} />
+      {aba === 'dia' ? <ListaDoDia recarregar={r} onMudou={() => setR(r + 1)} onEmail={setProspect} /> : aba === 'modelos' ? <Modelos /> : aba === 'parceiros' ? <Parceiros /> : aba === 'campanhas' ? <Campanhas onMudou={() => setR(r + 1)} /> : <Tabela acao="listarLeads" recarregar={r} aoCarregar={setInfoLeads} filtros={[{ nome: 'status', rotulo: 'Situação', opcoes: Object.keys(STATUS) }, { nome: 'followup', rotulo: 'Follow-up', opcoes: [{ valor: 'HOJE', rotulo: 'Para hoje (e atrasados)' }, { valor: 'ATIVA', rotulo: 'Com cadência ativa' }] }]} colunas={[
         { titulo: 'Recebido', render: (l) => dataHora(l.recebido_em) },
         { titulo: 'Empresa', render: (l) => <button className="btn link" onClick={() => setAberto(l)}><strong>{l.empresa}</strong></button> },
         { titulo: 'Contato', render: (l) => <><div>{l.nome}</div><div className="small muted">{l.email}{l.whatsapp ? ` · ${mascaraFone(l.whatsapp)}` : ''}</div>{l.origem === 'PROSPECCAO' && <div className="small" style={{ color: 'var(--azul)' }}>Abordado por e-mail{l.ultimo_email_em ? ` · ${dataHora(l.ultimo_email_em)}` : ''}</div>}</> },

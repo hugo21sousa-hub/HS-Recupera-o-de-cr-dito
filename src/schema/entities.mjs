@@ -220,8 +220,25 @@ export const ENTITIES = {
   },
   EnvioComercial: {
     description: 'Registro de cada e-mail comercial enviado',
-    properties: { lead_id: ref('Lead'), email: s('Destino'), assunto: s('Assunto'), modelo_id: ref('ModeloComercial'), enviado_em: ts('Enviado em'), enviado_por: ref('Quem enviou'), mensagem_id: s('ID no provedor') },
+    properties: { lead_id: ref('Lead'), campanha_id: ref('CampanhaEmail'), email: s('Destino'), assunto: s('Assunto'), modelo_id: ref('ModeloComercial'), enviado_em: ts('Enviado em'), enviado_por: ref('Quem enviou'), mensagem_id: s('ID no provedor') },
     required: ['email', 'enviado_em'],
+  },
+  CampanhaEmail: {
+    description: 'Disparo de e-mail comercial a partir de uma planilha, enviado aos poucos (fila diária)',
+    properties: {
+      nome: s('Nome da campanha'), modelo_id: ref('ModeloComercial'), modelo_nome: s('Nome do modelo'), assunto: s('Assunto (cópia do modelo)'), corpo: s('Mensagem (cópia do modelo)'),
+      remetente_nome: s('Quem assina'), criada_por: ref('Quem criou'), criada_em: ts('Criada em'), arquivo_nome: s('Planilha de origem'),
+      status: e(['ATIVA', 'PAUSADA', 'CONCLUIDA', 'CANCELADA'], 'Situação', 'ATIVA'), total: n('Destinatários na fila'), concluida_em: ts('Concluída em'),
+    },
+    required: ['nome', 'status'],
+  },
+  CampanhaDestinatario: {
+    description: 'Destinatário de uma campanha de e-mail',
+    properties: {
+      campanha_id: ref('CampanhaEmail'), email: s('E-mail'), nome: s('Nome do contato'), empresa: s('Empresa'), segmento: s('Segmento'), whatsapp: s('WhatsApp'), ordem: n('Ordem na fila'),
+      status: e(['PENDENTE', 'ENVIADO', 'FALHA', 'IGNORADO'], 'Situação', 'PENDENTE'), motivo: s('Motivo (falha/ignorado)'), tentativas: n('Tentativas'), enviado_em: ts('Enviado em'), lead_id: ref('Lead'),
+    },
+    required: ['campanha_id', 'email', 'status'],
   },
   PostSocial: {
     description: 'Post sugerido para as redes sociais (nunca publicado automaticamente)',

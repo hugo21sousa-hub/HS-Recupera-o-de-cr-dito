@@ -128,7 +128,7 @@ ${ASSINATURA}`,
   },
 ];
 
-async function garantirModelos(ctx) {
+export async function garantirModelos(ctx) {
   const atuais = await find(ctx, 'ModeloComercial', {});
   // modelos novos do sistema entram também para quem já tinha os anteriores (sem mexer nos editados)
   const faltam = atuais.length ? MODELOS_COMERCIAIS.filter((m) => m.novo && !atuais.some((a) => a.nome === m.nome)) : MODELOS_COMERCIAIS;
@@ -146,7 +146,7 @@ function variaveis(ctx, d) {
   };
 }
 
-async function montar(ctx, input, sair = null) {
+export async function montar(ctx, input, sair = null) {
   let assunto = input.assunto, corpo = input.corpo;
   if (input.modelo_id) {
     const m = await getById(ctx, 'ModeloComercial', input.modelo_id);
@@ -158,6 +158,42 @@ async function montar(ctx, input, sair = null) {
   const assuntoFinal = preencher(assunto, vars).slice(0, 180);
   const r = renderizarEmailComercial({ corpo: preencher(corpo, vars), urlBase: ctx.urlBase || '', rodape: 'HS Recuperação de Crédito · CNPJ 37.573.934/0001-22 · Salvador/BA · acorly.com.br', sair });
   return { assunto: assuntoFinal, ...r };
+}
+
+/** Envia a apresentação para um contato (cria ou atualiza o lead e registra o envio). */
+export async function enviarComercial(ctx, input) {
+  if (!ctx.email?.comercial) throw new ValidationError('O envio de e-mails não está configurado.');
+  const para = String(input.para || '').trim().toLowerCase();
+  exigir(emailValido(para), 'Informe um e-mail válido');
+  const hoje = ctx.now().toISOString().slice(0, 10);
+  const envios = await find(ctx, 'EnvioComercial', {});
+  exigir(envios.filter((e) => (e.enviado_em || '').slice(0, 10) === hoje).length < LIMITE_DIARIO_COMERCIAL, `Limite de ${LIMITE_DIARIO_COMERCIAL} e-mails comerciais por dia atingido (protege a reputação do domínio). Continue amanhã.`);
+  let lead = input.lead_id ? await getById(ctx, 'Lead', input.lead_id) : (await find(ctx, 'Lead', { email: para }))[0];
+  if ((await find(ctx, 'Lead', { email: para })).some((l) => l.nao_receber_comercial)) throw new ValidationError('Este contato pediu para não receber e-mails comerciais.');
+  const agora = ctx.now().toISOString();
+  if (!lead) {
+    exigir(String(input.empresa || '').trim(), 'Informe a empresa do contato');
+    lead = await criar(ctx, 'Lead', {
+      nome: String(input.nome || '').slice(0, 120) || para, empresa: String(input.empresa).slice(0, 160), email: para, whatsapp: somenteDigitos(input.whatsapp).slice(0, 13),
+      segmento: SEGMENTO_TEXTO[input.segmento] ? input.segmento : 'OUTRO', cidade: String(input.cidade || '').slice(0, 80), status: 'EM_CONTATO', origem: 'PROSPECCAO',
+      recebido_em: agora, observacoes: '', responsavel_id: ctx.user.id,
+    }, 'CRIAR_LEAD_PROSPECCAO');
+  }
+  const dados = { nome: input.nome || lead.nome, empresa: input.empresa || lead.empresa, segmento: input.segmento || lead.segmento, modelo_id: input.modelo_id, assunto: input.assunto, corpo: input.corpo };
+  const sair = ctx.descadastro?.linkComercial ? ctx.descadastro.linkComercial(lead.id) : null;
+  const m = await montar(ctx, dados, sair);
+  const r = await ctx.email.comercial({ para, assunto: m.assunto, html: m.html, texto: m.texto, sair });
+  if (!r.ok) throw new ValidationError(`Não foi possível enviar agora${r.erro ? ` (${r.erro})` : ''}. Tente novamente.`);
+  await ctx.db.EnvioComercial.create({ lead_id: lead.id, campanha_id: input.campanha_id || null, email: para, assunto: m.assunto, modelo_id: input.modelo_id || null, enviado_em: agora, enviado_por: ctx.user.id, mensagem_id: r.id || null });
+  const jaTinhaEmail = !!lead.ultimo_email_em;
+  lead = await alterar(ctx, 'Lead', lead, { ultimo_email_em: agora, status: lead.status === 'NOVO' ? 'EM_CONTATO' : lead.status }, 'ENVIAR_EMAIL_COMERCIAL');
+  if (followupVencido(ctx, lead)) await avancarCadencia(ctx, lead, { canal: 'EMAIL', observacao: m.assunto });
+  else if (!jaTinhaEmail || !lead.cadencia_inicio) await iniciarCadencia(ctx, lead);
+  if (input.prospect_id) {
+    const pr = await getById(ctx, 'Prospect', input.prospect_id);
+    if (pr?.status === 'A_ABORDAR') await marcarAbordado(ctx, pr, { canal: 'EMAIL', lead_id: lead.id });
+  }
+  return { lead_id: lead.id, assunto: m.assunto, enviados_hoje: envios.filter((e) => (e.enviado_em || '').slice(0, 10) === hoje).length + 1 };
 }
 
 export const actions = {
@@ -191,40 +227,7 @@ export const actions = {
   /** Envia a apresentação para um contato (cria ou atualiza o lead e registra o envio). */
   enviarEmailComercial: {
     perm: 'lead.gerenciar',
-    async run(ctx, input) {
-      if (!ctx.email?.comercial) throw new ValidationError('O envio de e-mails não está configurado.');
-      const para = String(input.para || '').trim().toLowerCase();
-      exigir(emailValido(para), 'Informe um e-mail válido');
-      const hoje = ctx.now().toISOString().slice(0, 10);
-      const envios = await find(ctx, 'EnvioComercial', {});
-      exigir(envios.filter((e) => (e.enviado_em || '').slice(0, 10) === hoje).length < LIMITE_DIARIO_COMERCIAL, `Limite de ${LIMITE_DIARIO_COMERCIAL} e-mails comerciais por dia atingido (protege a reputação do domínio). Continue amanhã.`);
-      let lead = input.lead_id ? await getById(ctx, 'Lead', input.lead_id) : (await find(ctx, 'Lead', { email: para }))[0];
-      if ((await find(ctx, 'Lead', { email: para })).some((l) => l.nao_receber_comercial)) throw new ValidationError('Este contato pediu para não receber e-mails comerciais.');
-      const agora = ctx.now().toISOString();
-      if (!lead) {
-        exigir(String(input.empresa || '').trim(), 'Informe a empresa do contato');
-        lead = await criar(ctx, 'Lead', {
-          nome: String(input.nome || '').slice(0, 120) || para, empresa: String(input.empresa).slice(0, 160), email: para, whatsapp: somenteDigitos(input.whatsapp).slice(0, 13),
-          segmento: SEGMENTO_TEXTO[input.segmento] ? input.segmento : 'OUTRO', cidade: String(input.cidade || '').slice(0, 80), status: 'EM_CONTATO', origem: 'PROSPECCAO',
-          recebido_em: agora, observacoes: '', responsavel_id: ctx.user.id,
-        }, 'CRIAR_LEAD_PROSPECCAO');
-      }
-      const dados = { nome: input.nome || lead.nome, empresa: input.empresa || lead.empresa, segmento: input.segmento || lead.segmento, modelo_id: input.modelo_id, assunto: input.assunto, corpo: input.corpo };
-      const sair = ctx.descadastro?.linkComercial ? ctx.descadastro.linkComercial(lead.id) : null;
-      const m = await montar(ctx, dados, sair);
-      const r = await ctx.email.comercial({ para, assunto: m.assunto, html: m.html, texto: m.texto, sair });
-      if (!r.ok) throw new ValidationError(`Não foi possível enviar agora${r.erro ? ` (${r.erro})` : ''}. Tente novamente.`);
-      await ctx.db.EnvioComercial.create({ lead_id: lead.id, email: para, assunto: m.assunto, modelo_id: input.modelo_id || null, enviado_em: agora, enviado_por: ctx.user.id, mensagem_id: r.id || null });
-      const jaTinhaEmail = !!lead.ultimo_email_em;
-      lead = await alterar(ctx, 'Lead', lead, { ultimo_email_em: agora, status: lead.status === 'NOVO' ? 'EM_CONTATO' : lead.status }, 'ENVIAR_EMAIL_COMERCIAL');
-      if (followupVencido(ctx, lead)) await avancarCadencia(ctx, lead, { canal: 'EMAIL', observacao: m.assunto });
-      else if (!jaTinhaEmail || !lead.cadencia_inicio) await iniciarCadencia(ctx, lead);
-      if (input.prospect_id) {
-        const pr = await getById(ctx, 'Prospect', input.prospect_id);
-        if (pr?.status === 'A_ABORDAR') await marcarAbordado(ctx, pr, { canal: 'EMAIL', lead_id: lead.id });
-      }
-      return { lead_id: lead.id, assunto: m.assunto, enviados_hoje: envios.filter((e) => (e.enviado_em || '').slice(0, 10) === hoje).length + 1 };
-    },
+    async run(ctx, input) { return enviarComercial(ctx, input); },
   },
 
   enviosDoLead: {

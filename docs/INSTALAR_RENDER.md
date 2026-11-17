@@ -303,3 +303,24 @@ Para ligar a busca automática:
 - **Quem decide:** o contato guarda nome, cargo e contato direto de quem decide. O WhatsApp do follow-up vai para esse contato.
 - **Roteiro de abordagem:** cada contato tem um roteiro por segmento, com a ligação para a secretaria, a abertura, as perguntas, o fechamento e as respostas às objeções.
 - **Parceiros (indicação):** cada parceiro tem um link próprio (`acorly.com.br/diagnostico?ref=codigo`). Quem pede o diagnóstico pelo link fica vinculado ao parceiro. As comissões pagas são registradas em "Indicações". A regra padrão (10% por 12 meses) é só uma sugestão, editável por parceiro.
+
+## Campanhas de e-mail por planilha
+
+Em **Diagnósticos e prospecção → Campanhas por planilha**:
+
+1. Envie uma planilha CSV ou Excel (.xlsx). A coluna `email` é obrigatória; as colunas empresa, nome, segmento e whatsapp são opcionais.
+2. Escolha o modelo de e-mail.
+3. Confira a prévia. Antes de enviar, o sistema tira da lista:
+   - e-mails inválidos;
+   - repetidos;
+   - quem pediu para não receber;
+   - quem recebeu e-mail nos últimos 30 dias;
+   - quem já está na fila de outra campanha.
+
+O envio funciona assim:
+
+- Os 10 primeiros e-mails saem na hora. O restante sai de hora em hora, das 9h às 18h.
+- O limite é de 50 e-mails comerciais por dia, somando os envios avulsos.
+- Cada destinatário vira um contato com cadência de follow-up.
+- Uma campanha pode ser pausada, retomada ou cancelada.
+- Um envio que falha é tentado de novo até 3 vezes.

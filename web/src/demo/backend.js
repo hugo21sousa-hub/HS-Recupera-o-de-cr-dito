@@ -17,6 +17,8 @@ function ctxPara(email, nome) {
     db, user: null, authEmail: email, authName: nome || email, now: () => new Date(),
     files: { signedUrl: async (uri) => `demo:${uri}`, reivindicar: async () => true },
     invite: async (para) => ({ link: `(demonstração) o convite para ${para} seria enviado por e-mail ou link`, expira_em: new Date(Date.now() + 7 * 864e5).toISOString(), enviado_por_email: false }),
+    // e-mails comerciais simulados: na demonstração nada sai de verdade
+    email: { comercial: async () => ({ ok: true, id: 'demonstracao' }) },
   };
 }
 
