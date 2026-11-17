@@ -81,7 +81,7 @@ async function lerXlsx(buf) {
 async function lerCsv(file) {
   const buf = await file.arrayBuffer();
   let texto = new TextDecoder('utf-8').decode(buf);
-  if (texto.includes('�')) texto = new TextDecoder('windows-1252').decode(buf); // Excel brasileiro salva CSV em ANSI
+  if (/\uFFFD/.test(texto)) texto = new TextDecoder('windows-1252').decode(buf); // Excel brasileiro salva CSV em ANSI
   return parseCSV(texto).map((l) => Object.fromEntries(Object.entries(l).map(([k, v]) => [chave(k), v])));
 }
 
