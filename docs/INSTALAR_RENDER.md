@@ -74,6 +74,8 @@ Depois que você criar a senha, o código deixa de funcionar e pode ser apagado 
 
 ## 4. Manter o sistema "acordado" (recomendado)
 
+**A Acorly usa o plano Starter do Render (desde novembro de 2026): o sistema fica sempre ligado, e as rotinas de hora em hora mantêm o Supabase ativo. Este passo só é necessário no plano grátis.**
+
 No plano grátis, o Render desliga o sistema após 15 minutos sem acesso, e o próximo acesso demora cerca de 1 minuto. Já o Supabase pausa projetos parados por 7 dias. Para evitar as duas coisas, de graça:
 
 1. Acesse **cron-job.org** e crie uma conta.
@@ -269,7 +271,7 @@ A partir daí, quem abrir `www.acorly.com.br` ou `hs-recuperacao.onrender.com` �
 | Serviço | Limite | Para 10 clientes |
 |---|---|---|
 | Supabase | 500 MB de banco e 1 GB de arquivos | Sobra por bastante tempo |
-| Render | 512 MB de memória e horas mensais limitadas | Suficiente com um único serviço |
+| Render | 512 MB de memória e horas mensais limitadas (a Acorly já usa o Starter, sempre ligado) | Suficiente com um único serviço |
 
 Quando o negócio crescer, basta trocar para um plano pago do Render ou do Supabase. Não precisa mudar nada no sistema.
 
