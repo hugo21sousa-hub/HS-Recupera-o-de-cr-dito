@@ -30,6 +30,9 @@ import { executarRetencao } from '../app/retencao.js';
 import { PERFIS_HS } from '../core/permissions.js';
 import { TABELA_PADRAO, rotuloFaixa } from '../core/comissao.js';
 
+// WhatsApp oficial da Acorly (botão flutuante do site e assinatura dos e-mails); CONTATO_WHATSAPP no Render substitui.
+const WHATSAPP_ACORLY = '71920054062';
+
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8', '.xml': 'application/xml; charset=utf-8', '.webp': 'image/webp', '.mp4': 'video/mp4', '.webm': 'video/webm', '.jpg': 'image/jpeg' };
 const COOKIE = 'hs_sessao';
 
@@ -60,7 +63,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
   const asaas = criarAsaas({ config: configAsaas(env), fetchImpl: fetchImpl || fetch });
   const descadastro = criarDescadastro({ segredo, urlBase });
   const enviosDiagnostico = new Map();
-  const integracoes = { email, descadastro, urlBase, contato: { email: env.CONTATO_EMAIL || 'contato@acorly.com.br', whatsapp: env.CONTATO_WHATSAPP || null }, whatsapp: whatsapp.disponivel ? whatsapp : null, asaas: asaas.disponivel ? asaas : null };
+  const integracoes = { email, descadastro, urlBase, contato: { email: env.CONTATO_EMAIL || 'contato@acorly.com.br', whatsapp: env.CONTATO_WHATSAPP || WHATSAPP_ACORLY }, whatsapp: whatsapp.disponivel ? whatsapp : null, asaas: asaas.disponivel ? asaas : null };
 
   /** Executa em transação; efeitos externos (e-mails) só depois do COMMIT. */
   async function transacao(fn) {
@@ -285,7 +288,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
       const planos = await exclusivo(() => db.Plano.filter({ status: 'ATIVO' }));
       return json(res, 200, { ok: true, data: {
         planos: planos.sort((a, b) => (a.ordem || 0) - (b.ordem || 0)).map((p) => ({ nome: p.nome, preco_mensal_centavos: p.preco_mensal_centavos, limite_devedores: p.limite_devedores, limite_usuarios: p.limite_usuarios, funcionalidades: p.funcionalidades || [] })),
-        contato: { email: env.CONTATO_EMAIL || 'contato@acorly.com.br', whatsapp: env.CONTATO_WHATSAPP || null },
+        contato: { email: env.CONTATO_EMAIL || 'contato@acorly.com.br', whatsapp: env.CONTATO_WHATSAPP || WHATSAPP_ACORLY },
         dpo: env.DPO_NOME || null,
         redes: await exclusivo(() => redesSociaisPublicas({ db })),
         dias_teste: DIAS_TESTE,

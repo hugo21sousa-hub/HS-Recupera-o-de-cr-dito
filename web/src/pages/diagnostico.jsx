@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { enviarDiagnostico, baixarArquivo } from '../api.js';
 import { Marca } from '../layout.jsx';
+import { WhatsAppFlutuante } from '../whatsapp.jsx';
 
 const SEGMENTOS = [['ESCOLA_CURSO', 'Escola ou curso'], ['SAUDE', 'Clínica, consultório ou laboratório'], ['ACADEMIA', 'Academia'], ['CONDOMINIO', 'Condomínio ou administradora'], ['VAREJO', 'Loja / varejo com crediário'], ['DISTRIBUIDORA', 'Distribuidora / atacado'], ['SERVICOS', 'Prestação de serviços'], ['IMOBILIARIA', 'Imobiliária'], ['OUTRO', 'Outro']];
 const MODELO = 'nome;cpf_cnpj;telefone;email;valor_original;data_vencimento\nMaria da Silva;52998224725;71999990000;maria@email.com;1.250,00;10/08/2026\n';
@@ -89,6 +90,7 @@ export function Diagnostico() {
           </div>
         </form>
       )}
+      <WhatsAppFlutuante texto="Olá! Estou na página do diagnóstico gratuito da Acorly e tenho uma dúvida." />
     </div>
   );
 }

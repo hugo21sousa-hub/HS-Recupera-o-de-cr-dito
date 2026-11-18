@@ -55,7 +55,7 @@ export async function publico() {
   const planos = (await db.Plano.filter({ status: 'ATIVO' })).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
   const cfg = (await db.ConfiguracaoHS.filter({}))[0];
   const f = cfg?.comissao_faixas?.length ? cfg.comissao_faixas : TABELA_PADRAO;
-  return { planos, contato: { email: 'contato@acorly.com.br', whatsapp: null }, dpo: null, redes: REDES_PADRAO, comissao: f.map((x, i) => ({ ...x, faixa: rotuloFaixa(f, i) })) };
+  return { planos, contato: { email: 'contato@acorly.com.br', whatsapp: '71920054062' }, dpo: null, redes: REDES_PADRAO, comissao: f.map((x, i) => ({ ...x, faixa: rotuloFaixa(f, i) })) };
 }
 
 const indisponivel = () => { throw new Erro('Indisponível na demonstração.', 422); };
