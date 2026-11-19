@@ -21,6 +21,7 @@ import { Diagnostico } from './pages/diagnostico.jsx';
 import { Leads } from './pages/leads.jsx';
 import { Conteudo } from './pages/conteudo.jsx';
 import { IndicadoresNegocio } from './pages/negocio.jsx';
+import { FinanceiroHS } from './pages/financeiroHS.jsx';
 import { Usuarios, Contratos, Assinatura, Configuracoes, MinhaConta, Modelos } from './pages/gestao.jsx';
 import { TriagemWhatsApp } from './pages/hs.jsx';
 import { Empresas, EmpresasAtendidas, CarteirasRecebidas, Validacao, Distribuicao, MeusCasos, TodosCasos, Interacoes, Tarefas, Operadores, ContratosHS, Planos, Auditoria } from './pages/hs.jsx';
@@ -116,6 +117,7 @@ function Raiz() {
           <Route path="/hs/conteudo" element={P('conteudo.ler', <Conteudo />)} />
           <Route path="/hs/leads" element={P('lead.gerenciar', <Leads />)} />
           <Route path="/hs/negocio" element={P('plano.gerenciar', <IndicadoresNegocio />)} />
+          <Route path="/hs/financeiro" element={P('financeiro.hs', <FinanceiroHS />)} />
           <Route path="/hs/mensagens" element={P('interacao.registrar', <CentralMensagens />)} />
           <Route path="/hs/interacoes" element={<Navigate to="/hs/mensagens" replace />} />
           <Route path="/hs/negociacoes" element={P('negociacao.propor', <Negociacoes />)} />

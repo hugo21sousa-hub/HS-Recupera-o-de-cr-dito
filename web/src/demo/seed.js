@@ -69,6 +69,28 @@ export async function semear(db, como) {
   // Pedido de diagnóstico de exemplo (leads do site)
   const { analisarPlanilha } = await import('../../../src/app/actions/leads.js');
   const csv = 'nome;cpf_cnpj;valor_original;data_vencimento\n' + [['Ana', 1800, -40], ['Bruno', 950, -75], ['Carla', 3200, -130], ['Diego', 640, -220], ['Elisa', 2100, -400], ['Fábio', 780, -20]].map(([n, v, d]) => `${n};;${v},00;${dia(d).split('-').reverse().join('/')}`).join('\n');
+  // Financeiro da empresa (exemplo fictício)
+  {
+    const mesAtual = dia(0).slice(0, 7);
+    const mesAnt = new Date(Date.UTC(Number(mesAtual.slice(0, 4)), Number(mesAtual.slice(5, 7)) - 2, 1)).toISOString().slice(0, 7);
+    await db.ConfiguracaoHS.filter({}).then(async (c) => (c[0] ? db.ConfiguracaoHS.update(c[0].id, { financeiro_aliquota_bps: 600 }) : db.ConfiguracaoHS.create({ financeiro_aliquota_bps: 600 })));
+    const fixas = [['EQUIPE', 'Pró-labore', 'Sócio', 300000, 5], ['EQUIPE', 'Salário operadora', 'Olívia Operadora', 220000, 5], ['INFRAESTRUTURA', 'Render (servidor)', 'Render', 4000, 12], ['INFRAESTRUTURA', 'E-mail e domínio', 'Hostinger', 3500, 15], ['ADMINISTRATIVO', 'Contador', 'Escritório Exemplo', 45000, 10]];
+    for (const [categoria, descricao, fornecedor, valor, d] of fixas) {
+      const r = await db.RecorrenciaHS.create({ tipo: 'DESPESA', categoria, descricao, fornecedor, valor_centavos: valor, dia_vencimento: d, inicio: mesAnt, fim: null, forma_pagamento: 'PIX', ativa: true, criado_em: agora.toISOString() });
+      const venc = `${mesAnt}-${String(d).padStart(2, '0')}`;
+      await db.LancamentoHS.create({ tipo: 'DESPESA', categoria, descricao, fornecedor, valor_centavos: valor, competencia: mesAnt, vencimento: venc, status: 'PAGO', pago_em: venc, forma_pagamento: 'PIX', recorrencia_id: r.id, criado_em: agora.toISOString(), observacao: '' });
+    }
+    // mensalidades recebidas pelo Asaas (exemplo)
+    let n = 0;
+    for (const [m, qtd] of [[mesAnt, 38], [mesAtual, 41]]) {
+      for (let i = 0; i < qtd; i++) {
+        const valor = [49.9, 89.9, 159.9][i % 3];
+        await db.EventoAssinatura.create({ empresa_id: 'demo', tipo: 'PAYMENT_RECEIVED', origem: 'GATEWAY', data_hora: `${m}-${String(1 + (i % 9)).padStart(2, '0')}T13:00:00Z`, payload: JSON.stringify({ pagamento: `demo${n++}`, valor, liquido: +(valor - 1.99).toFixed(2) }) });
+      }
+    }
+    await db.LancamentoHS.create({ tipo: 'DESPESA', categoria: 'MARKETING', descricao: 'Impulsionamento Instagram', fornecedor: 'Meta', valor_centavos: 25000, competencia: mesAtual, vencimento: dia(-2), status: 'PAGO', pago_em: dia(-2), forma_pagamento: 'CARTAO', criado_em: agora.toISOString(), observacao: '' });
+    await db.LancamentoHS.create({ tipo: 'RECEITA', categoria: 'OUTRAS_RECEITAS', descricao: 'Consultoria de cobrança (avulsa)', fornecedor: 'Cliente Exemplo', valor_centavos: 120000, competencia: mesAnt, vencimento: `${mesAnt}-20`, status: 'PAGO', pago_em: `${mesAnt}-20`, forma_pagamento: 'PIX', criado_em: agora.toISOString(), observacao: '' });
+  }
   // Visitas do site (exemplo fictício: últimos 30 dias)
   for (let k = 1; k <= 30; k++) {
     const ig = 4 + ((k * 7) % 9), dir = 2 + ((k * 3) % 5), go = (k * 5) % 4, li = k % 3 === 0 ? 2 : 0;

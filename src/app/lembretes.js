@@ -4,6 +4,7 @@
 // - parcelas de acordos perto do vencimento (devedor, por e-mail, quando o envio de cobrança está ligado).
 import { avisoFollowups } from './actions/acompanhamento.js';
 import { processarCampanhas } from './actions/campanhas.js';
+import { avisoContasPagar } from './actions/financeiroHS.js';
 import { find, getById, notificar } from './context.js';
 import { situacaoAcesso } from './acesso.js';
 import { casoAtivo } from '../core/caseStatus.js';
@@ -123,5 +124,5 @@ export async function prestacoesAutomaticas(ctx) {
 export async function rodarLembretes(ctx, { ignorarHorario = false } = {}) {
   const horaBrasilia = (ctx.now().getUTCHours() + 21) % 24;
   if (!ignorarHorario && (horaBrasilia < 9 || horaBrasilia >= 18)) return null;
-  return { mensalidade: await lembretesMensalidade(ctx), teste: await lembretesTeste(ctx), parcelas: await lembretesParcelas(ctx), prestacoes: await prestacoesAutomaticas(ctx), followups: await avisoFollowups(ctx), campanhas: await processarCampanhas(ctx) };
+  return { mensalidade: await lembretesMensalidade(ctx), teste: await lembretesTeste(ctx), parcelas: await lembretesParcelas(ctx), prestacoes: await prestacoesAutomaticas(ctx), followups: await avisoFollowups(ctx), campanhas: await processarCampanhas(ctx), contas: await avisoContasPagar(ctx) };
 }

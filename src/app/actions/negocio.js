@@ -6,6 +6,32 @@ import { situacaoAcesso } from '../acesso.js';
 const mesDe = (iso) => String(iso || '').slice(0, 7);
 const PAGO = new Set(['PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED']);
 
+/**
+ * Receitas automáticas por mês (AAAA-MM): mensalidades recebidas pelo Asaas (bruto e taxa, quando o Asaas informa o líquido)
+ * e comissão da cobrança gerenciada sobre pagamentos confirmados.
+ */
+export async function receitasPorMes(ctx) {
+  const assinaturas = new Map(), taxas = new Map(), comissao = new Map();
+  const vistos = new Set();
+  for (const ev of (await find(ctx, 'EventoAssinatura', { origem: 'GATEWAY' })).filter((x) => PAGO.has(x.tipo))) {
+    let p = {};
+    try { p = JSON.parse(ev.payload || '{}'); } catch { /* ignora */ }
+    const chave = p.pagamento || ev.id;
+    if (vistos.has(chave)) continue;
+    vistos.add(chave);
+    const m = mesDe(ev.data_hora);
+    const bruto = Math.round(Number(p.valor || 0) * 100);
+    assinaturas.set(m, (assinaturas.get(m) || 0) + bruto);
+    if (p.liquido != null && Number(p.liquido) > 0) taxas.set(m, (taxas.get(m) || 0) + Math.max(0, bruto - Math.round(Number(p.liquido) * 100)));
+  }
+  for (const pg of await find(ctx, 'Pagamento', { status_confirmacao: 'CONFIRMADO' })) {
+    if (!pg.comissao_hs_centavos) continue;
+    const m = mesDe(pg.data_confirmacao);
+    comissao.set(m, (comissao.get(m) || 0) + pg.comissao_hs_centavos);
+  }
+  return { assinaturas, taxas, comissao };
+}
+
 function ultimosMeses(hojeISO, n) {
   const [a, m] = hojeISO.slice(0, 7).split('-').map(Number);
   const out = [];
@@ -55,26 +81,8 @@ export const actions = {
         if (s.modo === 'SOMENTE_LEITURA' && s.motivo === 'TESTE_ENCERRADO') semPlano.push({ empresa_id: e.id, empresa: nomeEmpresa(e), email: e.email, teste_ate: s.teste_ate, com_contrato: s.com_contrato });
       }
 
-      // Receita recebida (assinaturas pagas pelo Asaas), sem contar o mesmo pagamento duas vezes
-      const eventos = (await find(ctx, 'EventoAssinatura', { origem: 'GATEWAY' })).filter((x) => PAGO.has(x.tipo));
-      const vistos = new Set();
-      const recebidoPorMes = new Map();
-      for (const ev of eventos) {
-        let p = {};
-        try { p = JSON.parse(ev.payload || '{}'); } catch { /* ignora */ }
-        const chave = p.pagamento || ev.id;
-        if (vistos.has(chave)) continue;
-        vistos.add(chave);
-        const m = mesDe(ev.data_hora);
-        recebidoPorMes.set(m, (recebidoPorMes.get(m) || 0) + Math.round(Number(p.valor || 0) * 100));
-      }
-      // Comissão da cobrança gerenciada (pagamentos confirmados)
-      const comissaoPorMes = new Map();
-      for (const pg of await find(ctx, 'Pagamento', { status_confirmacao: 'CONFIRMADO' })) {
-        if (!pg.comissao_hs_centavos) continue;
-        const m = mesDe(pg.data_confirmacao);
-        comissaoPorMes.set(m, (comissaoPorMes.get(m) || 0) + pg.comissao_hs_centavos);
-      }
+      // Receita recebida (assinaturas pagas pelo Asaas, sem repetir pagamento) e comissão da cobrança gerenciada
+      const { assinaturas: recebidoPorMes, comissao: comissaoPorMes } = await receitasPorMes(ctx);
 
       // Cancelamentos: assinaturas pagas que foram canceladas (por mês)
       const cancelamentos = assinaturas.filter((a) => a.status === 'CANCELADA' && (a.ultimo_pagamento_em || a.gateway !== 'ASAAS'));

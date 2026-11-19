@@ -33,7 +33,7 @@ export const MENU_EMPRESA = [
 ];
 
 export const MENU_HS = [
-  { secao: 'Negócio', itens: [{ to: '/hs/negocio', r: 'Indicadores do negócio', p: 'plano.gerenciar' }, { to: '/hs/leads', r: 'Diagnósticos e prospecção', p: 'lead.gerenciar', contador: 'leads' }, { to: '/hs/conteudo', r: 'Conteúdo e redes sociais', p: 'conteudo.ler' }, { to: 'https://mail.hostinger.com/', externo: true, r: 'E-mail (webmail) ↗', p: 'config.sistema' }] },
+  { secao: 'Negócio', itens: [{ to: '/hs/negocio', r: 'Indicadores do negócio', p: 'plano.gerenciar' }, { to: '/hs/financeiro', r: 'Financeiro da empresa', p: 'financeiro.hs' }, { to: '/hs/leads', r: 'Diagnósticos e prospecção', p: 'lead.gerenciar', contador: 'leads' }, { to: '/hs/conteudo', r: 'Conteúdo e redes sociais', p: 'conteudo.ler' }, { to: 'https://mail.hostinger.com/', externo: true, r: 'E-mail (webmail) ↗', p: 'config.sistema' }] },
   { secao: 'Central de operações', itens: [
     { to: '/hs', r: 'Visão geral', p: 'relatorio.hs', fim: true },
     { to: '/hs/empresas', r: 'Empresas', p: 'empresa.gerenciar_todas' },

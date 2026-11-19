@@ -341,3 +341,42 @@ Como a contagem funciona:
 - É anônima e sem cookies. Cada visitante recebe um código que muda todo dia; o IP não é guardado e robôs são ignorados.
 - Os eventos do dia viram um resumo diário na rotina noturna, e os resumos são mantidos por 13 meses.
 - Para saber qual post ou campanha trouxe a pessoa, use links com etiqueta, por exemplo: `acorly.com.br/?utm_source=instagram&utm_campaign=bio`.
+
+## Financeiro da empresa e DRE
+
+Em **Negócio → Financeiro da empresa**, só para o superadmin.
+
+**Lançamentos**
+- Despesas e receitas da HS, com categoria, fornecedor ou colaborador, valor, vencimento, mês de competência, forma de pagamento e comprovante.
+- Categorias de despesa:
+  - equipe (salários, pró-labore, comissões de operadores);
+  - sistemas;
+  - marketing;
+  - administrativo;
+  - serviços de terceiros;
+  - comissões de parceiros;
+  - taxas;
+  - impostos;
+  - despesas financeiras;
+  - outras.
+
+**Despesas fixas**
+- Ao criar o lançamento, marque "Repete todo mês" (salários, servidor, contador).
+- O sistema lança cada mês sozinho.
+- Reajustes valem para os meses em aberto.
+
+**Contas a pagar**
+- A visão geral mostra as contas vencidas, as de hoje e as dos próximos 7 dias.
+- Todo dia sai um aviso no sino das contas vencidas ou que vencem no dia.
+
+**DRE mensal**
+- É gerencial e calculado por competência.
+- Entram sozinhos:
+  - mensalidades do Asaas, já com as taxas do Asaas;
+  - comissões da cobrança gerenciada;
+  - comissões pagas a parceiros.
+- O resto vem dos lançamentos.
+- Os impostos são estimados pela alíquota da aba Configurações até o DAS do mês ser lançado.
+- Exporta PDF e CSV.
+- O botão "Fechar mês" guarda o DRE e trava os lançamentos do mês.
+- "Reabrir" exige um motivo, que fica registrado na auditoria.

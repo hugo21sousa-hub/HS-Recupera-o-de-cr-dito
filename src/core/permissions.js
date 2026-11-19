@@ -17,7 +17,7 @@ const LEITURA_EMPRESA = ['empresa.ler', 'devedor.ler', 'divida.ler', 'carteira.l
 
 export const MATRIZ = {
   SUPERADMIN_HS: [
-    'global', 'empresa.gerenciar_todas', 'usuario.gerenciar_interno', 'usuario.gerenciar_empresa', 'plano.gerenciar',
+    'global', 'empresa.gerenciar_todas', 'usuario.gerenciar_interno', 'usuario.gerenciar_empresa', 'plano.gerenciar', 'financeiro.hs',
     'assinatura.gerenciar', 'contrato.gerenciar', 'auditoria.ler', 'config.sistema', 'relatorio.hs',
     'carteira.validar', 'caso.distribuir', 'caso.ler_todos_hs', 'caso.suspender', 'operador.gerenciar',
     'interacao.registrar', 'tarefa.gerenciar', 'negociacao.propor', 'negociacao.revisar', 'pagamento.informar',

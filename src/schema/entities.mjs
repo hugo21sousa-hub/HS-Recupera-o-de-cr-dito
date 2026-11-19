@@ -256,6 +256,30 @@ export const ENTITIES = {
     },
     required: ['dia'],
   },
+  LancamentoHS: {
+    description: 'Lançamento financeiro da própria HS (despesa ou receita), por competência, com vencimento e pagamento',
+    properties: {
+      tipo: e(['DESPESA', 'RECEITA'], 'Tipo'), categoria: s('Categoria'), descricao: s('Descrição'), fornecedor: s('Fornecedor, colaborador ou cliente'), valor_centavos: c('Valor'),
+      competencia: s('Mês de competência (AAAA-MM)'), vencimento: dt('Vencimento'), status: e(['PENDENTE', 'PAGO', 'CANCELADO'], 'Situação', 'PENDENTE'), pago_em: dt('Pago/recebido em'),
+      forma_pagamento: s('Forma de pagamento'), recorrencia_id: ref('RecorrenciaHS'), comprovante_uri: s('Comprovante (privado)'), comprovante_nome: s('Nome do comprovante'),
+      observacao: s('Observação'), criado_por: ref('Quem lançou'), criado_em: ts('Lançado em'),
+    },
+    required: ['tipo', 'categoria', 'descricao', 'valor_centavos', 'competencia', 'status'],
+  },
+  RecorrenciaHS: {
+    description: 'Despesa ou receita que se repete todo mês (salário, sistema, contador…): gera os lançamentos sozinha',
+    properties: {
+      tipo: e(['DESPESA', 'RECEITA'], 'Tipo'), categoria: s('Categoria'), descricao: s('Descrição'), fornecedor: s('Fornecedor/colaborador'), valor_centavos: c('Valor mensal'),
+      dia_vencimento: n('Dia do vencimento'), inicio: s('Primeiro mês (AAAA-MM)'), fim: s('Último mês (AAAA-MM), vazio = sem fim'), forma_pagamento: s('Forma de pagamento'),
+      ativa: b('Ativa', true), criado_por: ref('Quem criou'), criado_em: ts('Criada em'),
+    },
+    required: ['tipo', 'categoria', 'descricao', 'valor_centavos', 'inicio'],
+  },
+  FechamentoMes: {
+    description: 'Mês fechado no financeiro da HS: guarda o DRE do mês e trava os lançamentos dele',
+    properties: { mes: s('Mês (AAAA-MM)'), snapshot: { type: 'object', description: 'DRE no fechamento' }, fechado_em: ts('Fechado em'), fechado_por: ref('Quem fechou'), observacao: s('Observação') },
+    required: ['mes'],
+  },
   PostSocial: {
     description: 'Post sugerido para as redes sociais (nunca publicado automaticamente)',
     properties: {
@@ -344,7 +368,7 @@ export const ENTITIES = {
   },
   ConfiguracaoHS: {
     description: 'Configurações gerais do Acorly (registro único), como a tabela padrão de comissão',
-    properties: { comissao_faixas: arr('Faixas de comissão [{ate_dias, bps}]', { type: 'object' }), atualizado_por: s('Usuário'), atualizado_em: ts('Atualização'), redes_sociais: { type: 'object', description: 'Links das redes sociais (instagram, linkedin, facebook, youtube, tiktok)' }, conteudo_inicio: dt('Início da agenda de posts'), conteudo_proximo: n('Próximo tema do banco de posts'), conteudo_aviso_fim: b('Aviso de fim do banco enviado'), aviso_followup_em: dt('Último aviso diário de follow-ups'), },
+    properties: { comissao_faixas: arr('Faixas de comissão [{ate_dias, bps}]', { type: 'object' }), atualizado_por: s('Usuário'), atualizado_em: ts('Atualização'), redes_sociais: { type: 'object', description: 'Links das redes sociais (instagram, linkedin, facebook, youtube, tiktok)' }, conteudo_inicio: dt('Início da agenda de posts'), conteudo_proximo: n('Próximo tema do banco de posts'), conteudo_aviso_fim: b('Aviso de fim do banco enviado'), aviso_followup_em: dt('Último aviso diário de follow-ups'), financeiro_aliquota_bps: n('Alíquota efetiva de impostos sobre o faturamento (bps), para estimar o DRE'), aviso_contas_em: dt('Último aviso diário de contas a pagar'), },
     required: [],
   },
   EventoWebhook: {
