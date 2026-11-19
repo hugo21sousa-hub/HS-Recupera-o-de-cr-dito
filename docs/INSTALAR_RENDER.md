@@ -327,3 +327,17 @@ O envio funciona assim:
 - Uma campanha por vez: as outras ficam "Aguardando a vez", na ordem de criação, e a próxima começa sozinha quando a anterior termina ou é cancelada. Pausar a campanha em andamento segura a fila.
 - Uma campanha pode ser pausada, retomada ou cancelada.
 - Um envio que falha é tentado de novo até 3 vezes.
+
+## Visitas do site
+
+Em **Negócio → Indicadores do negócio → Visitas do site** aparecem:
+
+- pessoas por dia e páginas vistas;
+- a origem de cada visita: Instagram, Google, LinkedIn, direto, ou campanhas marcadas com `utm_source` e `utm_campaign`;
+- as conversões: pedido de diagnóstico, conta criada, clique no WhatsApp e demonstração aberta.
+
+Como a contagem funciona:
+
+- É anônima e sem cookies. Cada visitante recebe um código que muda todo dia; o IP não é guardado e robôs são ignorados.
+- Os eventos do dia viram um resumo diário na rotina noturna, e os resumos são mantidos por 13 meses.
+- Para saber qual post ou campanha trouxe a pessoa, use links com etiqueta, por exemplo: `acorly.com.br/?utm_source=instagram&utm_campaign=bio`.

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { publico } from '../api.js';
 import { Marca } from '../layout.jsx';
 import { WhatsAppFlutuante, linkWhatsApp } from '../whatsapp.jsx';
+import { registrarVisita } from '../visitas.js';
 import { brl, rotulo, mascaraFone, pct } from '../format.js';
 
 const SERVICOS = [
@@ -238,7 +239,7 @@ export function Site() {
             <div className="stack small" style={{ gap: 6 }}>
               <strong>Fale conosco</strong>
               {contato.email && <span style={{ userSelect: 'all' }}>{contato.email}</span>}
-              {contato.whatsapp && <a href={linkWhatsApp(contato.whatsapp, 'Olá! Vim pelo site da Acorly e gostaria de saber mais.')} target="_blank" rel="noreferrer">WhatsApp {mascaraFone(contato.whatsapp)}</a>}
+              {contato.whatsapp && <a onClick={() => registrarVisita('WHATSAPP')} href={linkWhatsApp(contato.whatsapp, 'Olá! Vim pelo site da Acorly e gostaria de saber mais.')} target="_blank" rel="noreferrer">WhatsApp {mascaraFone(contato.whatsapp)}</a>}
             </div>
           )}
         </div>

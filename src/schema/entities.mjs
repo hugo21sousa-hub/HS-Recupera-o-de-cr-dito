@@ -240,6 +240,22 @@ export const ENTITIES = {
     },
     required: ['campanha_id', 'email', 'status'],
   },
+  VisitaSite: {
+    description: 'Evento anônimo de visita/conversão no site (do dia atual; dias anteriores viram VisitaDia). Sem cookies e sem IP.',
+    properties: {
+      dia: dt('Dia (Brasília)'), em: ts('Quando'), visitante: s('Código anônimo do visitante, muda todo dia'), evento: e(['VISITA', 'DIAGNOSTICO', 'CADASTRO', 'WHATSAPP', 'DEMONSTRACAO'], 'Evento'),
+      pagina: s('Página'), origem: s('Origem (instagram, google, direto…)'), utm_source: s('utm_source'), utm_medium: s('utm_medium'), utm_campaign: s('utm_campaign'), dispositivo: e(['CELULAR', 'COMPUTADOR'], 'Dispositivo'),
+    },
+    required: ['dia', 'evento'],
+  },
+  VisitaDia: {
+    description: 'Resumo diário das visitas do site',
+    properties: {
+      dia: dt('Dia'), visitantes: n('Pessoas no dia'), visualizacoes: n('Páginas vistas'), conversoes: { type: 'object', description: 'Conversões por tipo' },
+      por_origem: { type: 'object', description: 'Por origem' }, por_pagina: { type: 'object', description: 'Por página' }, por_campanha: { type: 'object', description: 'Por campanha (utm_campaign)' }, por_dispositivo: { type: 'object', description: 'Celular x computador' },
+    },
+    required: ['dia'],
+  },
   PostSocial: {
     description: 'Post sugerido para as redes sociais (nunca publicado automaticamente)',
     properties: {

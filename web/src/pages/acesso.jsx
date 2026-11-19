@@ -8,6 +8,7 @@ export { Documento } from './legal.jsx';
 import { DEMO } from '../api.js';
 import { USUARIOS_DEMO, SENHA_DEMO } from '../demo/seed.js';
 import { Campos, useFormulario, useToast, Spinner, Carregando, Badge } from '../ui.jsx';
+import { registrarVisita } from '../visitas.js';
 import { rotulo } from '../format.js';
 
 function TelaAcesso({ children }) {
@@ -163,7 +164,7 @@ export function Cadastro() {
             { nome: 'email', rotulo: 'E-mail', tipo: 'email', obrigatorio: true, autoComplete: 'username' },
             { nome: 'senha', rotulo: 'Senha', tipo: 'senha', obrigatorio: true, autoComplete: 'new-password', ajuda: 'Mínimo de 8 caracteres, com letras e números.' },
           ]}
-          onSubmit={async (d) => { await auth.cadastro(d); await s.recarregar(); nav('/onboarding'); }}
+          onSubmit={async (d) => { await auth.cadastro(d); registrarVisita('CADASTRO', '/cadastro'); await s.recarregar(); nav('/onboarding'); }}
           rodape={<p className="small muted">Já tem conta? <Link to="/entrar">Entrar</Link></p>} />
       </div>
     </TelaAcesso>

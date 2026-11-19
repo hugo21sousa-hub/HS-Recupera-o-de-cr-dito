@@ -1,7 +1,8 @@
-import { StrictMode } from 'react';
+import { StrictMode, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, MemoryRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { DEMO } from './api.js';
+import { registrarVisita } from './visitas.js';
 import './styles.css';
 import { SessaoProvider, useSessao } from './sessao.jsx';
 import { ToastProvider, ConfirmProvider, Carregando, Vazio } from './ui.jsx';
@@ -33,6 +34,13 @@ function Protegida({ p, children }) {
   return ok ? children : <Vazio titulo="Acesso não permitido">Seu perfil não tem permissão para esta área.</Vazio>;
 }
 
+/** Conta a página vista (só no site público, para quem não está logado). */
+function ContadorVisitas() {
+  const { pathname } = useLocation();
+  useEffect(() => { if (!pathname.startsWith('/convite/')) registrarVisita('VISITA', pathname); }, [pathname]);
+  return null;
+}
+
 function Raiz() {
   const s = useSessao();
   const loc = useLocation();
@@ -41,6 +49,8 @@ function Raiz() {
   const ehConvite = loc.pathname.startsWith('/convite/');
   if (!s.logado) {
     return (
+      <>
+      <ContadorVisitas />
       <Routes>
         <Route path="/" element={<Site />} />
         <Route path="/entrar" element={<Entrar />} />
@@ -52,6 +62,7 @@ function Raiz() {
         <Route path="/diagnostico" element={<Diagnostico />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </>
     );
   }
   if (ehConvite) return <Routes><Route path="/convite/:token" element={<Convite />} /></Routes>;

@@ -8,7 +8,8 @@ import { registrarLead } from '../app/actions/leads.js';
 import { garantirAgenda, redesSociaisPublicas } from '../app/actions/conteudo.js';
 import { sairDaListaComercial } from '../app/actions/prospeccao.js';
 import { importarProspects } from '../app/actions/prospects.js';
-import { timingSafeEqual } from 'node:crypto';
+import { timingSafeEqual, createHash } from 'node:crypto';
+import { registrarEvento, classificarOrigem, ehRobo, dispositivo, compactarVisitas } from '../app/visitas.js';
 import { readFileSync, existsSync, statSync, writeFileSync, mkdirSync, createReadStream } from 'node:fs';
 import { join, extname, resolve, sep } from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -63,6 +64,18 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
   const asaas = criarAsaas({ config: configAsaas(env), fetchImpl: fetchImpl || fetch });
   const descadastro = criarDescadastro({ segredo, urlBase });
   const enviosDiagnostico = new Map();
+  const eventosVisita = new Map();
+  // Visitante anônimo: muda todo dia; não guarda IP nem usa cookie.
+  const visitanteAnonimo = (ip, ua) => createHash('sha256').update(`${segredo}|${new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10)}|${ip}|${ua}`).digest('hex').slice(0, 20);
+  const contarVisita = async (ip, ua, dados) => {
+    if (ehRobo(ua)) return;
+    const agoraMs = Date.now();
+    const lista = (eventosVisita.get(ip) || []).filter((t) => agoraMs - t < 3600e3);
+    if (lista.length >= 120) return;
+    eventosVisita.set(ip, [...lista, agoraMs]);
+    if (eventosVisita.size > 5000) eventosVisita.clear();
+    await transacao((pos) => registrarEvento(ctxSistema(pos), { visitante: visitanteAnonimo(ip, ua), dispositivo: dispositivo(ua), ...dados }));
+  };
   const integracoes = { email, descadastro, urlBase, contato: { email: env.CONTATO_EMAIL || 'contato@acorly.com.br', whatsapp: env.CONTATO_WHATSAPP || WHATSAPP_ACORLY }, whatsapp: whatsapp.disponivel ? whatsapp : null, asaas: asaas.disponivel ? asaas : null };
 
   /** Executa em transação; efeitos externos (e-mails) só depois do COMMIT. */
@@ -105,6 +118,8 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
         if (p.status === 'A_ABORDAR') continue;
         if ((p.abordado_em || p.descartado_em || p.encontrado_em || '') < limiteLeads) await db.Prospect.delete(p.id);
       }
+      // Visitas do site: dias anteriores viram resumo diário (eventos anônimos apagados); resumos com mais de 13 meses saem
+      r.visitas = await compactarVisitas({ db, now: () => new Date(), user: SISTEMA });
       const agoraISO = new Date().toISOString();
       for (const ent of ['Sessao', 'Convite', 'Desafio2FA']) for (const x of await db[ent].filter({})) if (x.expira_em < agoraISO) await db[ent].delete(x.id);
       return r;
@@ -248,6 +263,17 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
       });
       return json(res, r.status, r.body);
     }
+    if (rota === 'POST /api/publico/visita') {
+      // Estatística anônima de visitas (sem cookies): página vista ou conversão (clique no WhatsApp, conta criada)
+      const corpo = await lerCorpo(req, 4096).catch(() => null);
+      let d = {};
+      try { d = JSON.parse(corpo?.toString('utf8') || '{}'); } catch { d = {}; }
+      const ua = String(req.headers['user-agent'] || '');
+      const evento = ['VISITA', 'WHATSAPP', 'CADASTRO', 'DEMONSTRACAO'].includes(d.evento) ? d.evento : 'VISITA';
+      const origem = classificarOrigem({ utm_source: d.utm_source, referrer: d.referrer, ua, hostProprio: req.headers.host || '' });
+      await contarVisita(ip, ua, { evento, pagina: String(d.pagina || '/').split('?')[0], origem, utm_source: d.utm_source, utm_medium: d.utm_medium, utm_campaign: d.utm_campaign }).catch((e) => console.error('[visitas]', e.message));
+      res.writeHead(204, { 'Cache-Control': 'no-store' }); return res.end();
+    }
     if (rota === 'POST /api/publico/diagnostico') {
       // Pedido de diagnóstico gratuito (formulário público do site), com planilha opcional em base64
       const agoraMs = Date.now();
@@ -275,6 +301,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
         }
         try {
           const out = await registrarLead({ ...ctxSistema(pos), urlBase }, { ...d, __ip: ip }, planilha);
+          pos.push(() => contarVisita(ip, String(req.headers['user-agent'] || ''), { evento: 'DIAGNOSTICO', pagina: '/diagnostico', origem: 'interno' }).catch(() => {}));
           return { status: 200, body: { ok: true, data: { recebido: true, id: out.id } } };
         } catch (e) {
           if (e.status && e.status < 500) return { status: e.status, body: { ok: false, error: e.message }, __rollback: true };
@@ -433,6 +460,10 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
     }
     // Demonstração pública (página única com dados fictícios e regras rodando no navegador)
     if ((req.method === 'GET' || req.method === 'HEAD') && /^\/demonstracao\/?$/.test(url.pathname)) {
+      if (req.method === 'GET') {
+        const ua = String(req.headers['user-agent'] || '');
+        contarVisita(ip, ua, { evento: 'DEMONSTRACAO', pagina: '/demonstracao', origem: classificarOrigem({ utm_source: url.searchParams.get('utm_source'), referrer: req.headers.referer, ua, hostProprio: req.headers.host || '' }), utm_source: url.searchParams.get('utm_source'), utm_campaign: url.searchParams.get('utm_campaign') }).catch(() => {});
+      }
       const arq = join(resolve(webDir), 'demonstracao.html');
       if (!existsSync(arq)) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('Demonstração indisponível'); }
       res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");

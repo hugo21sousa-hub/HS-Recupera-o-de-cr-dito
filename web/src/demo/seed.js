@@ -69,6 +69,15 @@ export async function semear(db, como) {
   // Pedido de diagnóstico de exemplo (leads do site)
   const { analisarPlanilha } = await import('../../../src/app/actions/leads.js');
   const csv = 'nome;cpf_cnpj;valor_original;data_vencimento\n' + [['Ana', 1800, -40], ['Bruno', 950, -75], ['Carla', 3200, -130], ['Diego', 640, -220], ['Elisa', 2100, -400], ['Fábio', 780, -20]].map(([n, v, d]) => `${n};;${v},00;${dia(d).split('-').reverse().join('/')}`).join('\n');
+  // Visitas do site (exemplo fictício: últimos 30 dias)
+  for (let k = 1; k <= 30; k++) {
+    const ig = 4 + ((k * 7) % 9), dir = 2 + ((k * 3) % 5), go = (k * 5) % 4, li = k % 3 === 0 ? 2 : 0;
+    const vis = ig + dir + go + li, diag = k % 4 === 0 ? 1 : 0, wa = k % 3 === 0 ? 1 : 0;
+    const o = (n, d = 0, w = 0) => ({ visitantes: n, visualizacoes: n * 2, DIAGNOSTICO: d, CADASTRO: 0, WHATSAPP: w, DEMONSTRACAO: 0 });
+    await db.VisitaDia.create({ dia: dia(-k), visitantes: vis, visualizacoes: vis * 2, conversoes: { DIAGNOSTICO: diag, CADASTRO: 0, WHATSAPP: wa, DEMONSTRACAO: k % 5 === 0 ? 1 : 0 },
+      por_origem: { instagram: o(ig, diag, wa), direto: o(dir), ...(go ? { google: o(go) } : {}), ...(li ? { linkedin: o(li) } : {}) },
+      por_pagina: { '/': vis, '/diagnostico': Math.ceil(vis / 2), '/cadastro': Math.floor(vis / 4) }, por_campanha: { bio: { visitantes: Math.ceil(ig / 2), conversoes: diag } }, por_dispositivo: { CELULAR: ig + dir, COMPUTADOR: go + li } });
+  }
   // Programa de indicação e cadência de follow-up (exemplos fictícios)
   const parceiro = await db.Parceiro.create({ nome: 'Paula Contadora', empresa: 'Escritório Exemplo Contábil', email: 'paula@exemplo-contabil.com.br', whatsapp: '71990000010', tipo: 'CONTABILIDADE', codigo: 'exemplo-contabil', regra_comissao: '10% do valor que a HS receber do cliente indicado nos primeiros 12 meses, pago até o dia 10 do mês seguinte ao recebimento.', status: 'ATIVO', criado_em: agora.toISOString() });
   await db.Lead.create({ nome: 'Rita Alves', empresa: 'Clínica Exemplo Sorriso', email: 'rita@exemplo-sorriso.com.br', whatsapp: '71990000011', cidade: 'Salvador/BA', segmento: 'SAUDE', status: 'NOVO', origem: 'INDICACAO:exemplo-contabil', parceiro_id: parceiro.id, recebido_em: agora.toISOString(), observacoes: '', mensagem: 'Indicação da nossa contadora.' });
