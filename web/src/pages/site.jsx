@@ -33,6 +33,12 @@ const SERVICOS = [
   },
 ];
 
+const DESTAQUES = [
+  { titulo: '30 dias sem risco', texto: 'Teste com até 20 devedores. Você só paga se o dinheiro entrar na sua conta.', botao: 'Começar pelo diagnóstico grátis', para: '/diagnostico', tom: 'a' },
+  { titulo: 'Seu dinheiro parado de volta ao caixa', texto: 'Diagnóstico grátis em até 2 dias úteis: descubra quanto da sua inadimplência dá para recuperar.', botao: 'Quero o meu diagnóstico', para: '/diagnostico', tom: 'b' },
+  { titulo: 'Cobre com inteligência e cordialidade', texto: 'Mensagens com o nome da sua empresa, sem ameaças e sem expor seu cliente. Você vê tudo antes.', botao: 'Veja as mensagens', para: '/mensagens', tom: 'c' },
+];
+
 const PILOTO = [
   ['1. Diagnóstico grátis e anônimo', 'Você envia só o valor e a data de vencimento de cada atraso, sem nome, CPF ou telefone. Em até 2 dias úteis, recebe quanto dá para recuperar.'],
   ['2. Piloto de 30 dias', 'Até 20 devedores escolhidos por você (comece pelos que já saíram ou que você deu como perdidos). Você vê e aprova as mensagens e define os limites de desconto e parcelamento uma única vez.'],
@@ -125,6 +131,18 @@ export function Site() {
               </ul>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="site-destaques" aria-label="Destaques">
+        <div className="site-largura site-destaques-in">
+          {DESTAQUES.map((d) => (
+            <article key={d.titulo} className={`site-destaque site-destaque-${d.tom}`}>
+              <h2>{d.titulo}</h2>
+              <p>{d.texto}</p>
+              <Link className="site-destaque-btn" to={d.para}>{d.botao} →</Link>
+            </article>
+          ))}
         </div>
       </section>
 

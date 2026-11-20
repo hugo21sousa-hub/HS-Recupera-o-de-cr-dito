@@ -311,3 +311,18 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 @media (max-width: 760px) { .site-piloto-garantias { grid-template-columns: 1fr; } }
 .site-piloto-garantias li { padding-left: 24px; position: relative; line-height: 1.5; }
 .site-piloto-garantias li::before { content: '✓'; position: absolute; left: 0; color: var(--ok); font-weight: 800; }
+
+/* Faixa de 3 destaques (banners) logo abaixo do topo */
+.site-destaques { background: var(--bg); padding-block: 28px 8px; }
+.site-destaques-in { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 900px) { .site-destaques-in { grid-template-columns: 1fr; } }
+.site-destaque { position: relative; overflow: hidden; border-radius: 16px; padding: 24px 24px 22px; color: #fff; display: flex; flex-direction: column; gap: 10px; min-height: 200px; box-shadow: 0 10px 24px rgba(0, 20, 82, .18); }
+.site-destaque::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: var(--faixa-marca); }
+.site-destaque h2 { margin: 0; font-size: 22px; line-height: 1.2; letter-spacing: -.01em; color: #fff; text-wrap: balance; }
+.site-destaque p { margin: 0; font-size: 15px; line-height: 1.5; color: #e6edff; flex: 1; }
+.site-destaque-a { background: radial-gradient(circle at 90% 10%, rgba(49, 214, 255, .35), transparent 50%), linear-gradient(150deg, var(--navy), #0043ff); }
+.site-destaque-b { background: radial-gradient(circle at 90% 10%, rgba(49, 255, 94, .28), transparent 50%), linear-gradient(150deg, #00227f, #0036cc); }
+.site-destaque-c { background: radial-gradient(circle at 90% 10%, rgba(255, 49, 255, .3), transparent 50%), linear-gradient(150deg, var(--navy), #0030b8); }
+.site-destaque-btn { align-self: flex-start; background: #fff; color: var(--azul); font-weight: 700; font-size: 14px; padding: 10px 16px; border-radius: 10px; text-decoration: none; }
+.site-destaque-btn:hover { text-decoration: none; background: #e6edff; }
+.site-destaque-btn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
