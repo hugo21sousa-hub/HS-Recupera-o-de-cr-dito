@@ -46,7 +46,7 @@ async function efetivarConfirmacao(ctx, pag, input = {}) {
   }
   // Comissão do Acorly: só em casos de cobrança gerenciada e só sobre o valor confirmado
   const casoPag = pag.caso_id ? await getById(ctx, 'CasoCobranca', pag.caso_id) : await casoDaDivida(ctx, divida.id);
-  const cm = await comissaoDoCaso(ctx, casoPag, divida);
+  const cm = await comissaoDoCaso(ctx, casoPag, divida, pag.data_informada);
   const comissao = cm ? { comissao_bps: cm.bps, comissao_hs_centavos: calcularComissao(efeitos.pagamento.valor_confirmado_centavos, cm.bps) } : { comissao_bps: 0, comissao_hs_centavos: 0 };
   await alterar(ctx, 'Pagamento', pag, { ...efeitos.pagamento, ...comissao, data_confirmacao: agora, confirmado_por: ctx.user.id }, 'CONFIRMAR_PAGAMENTO');
   await ctx.db.LancamentoFinanceiro.create({ empresa_id: pag.empresa_id, divida_id: divida.id, tipo: 'PAGAMENTO_CONFIRMADO', valor_centavos: -efeitos.pagamento.valor_confirmado_centavos, saldo_anterior_centavos: divida.saldo_atual_centavos, saldo_posterior_centavos: efeitos.divida.saldo_atual_centavos, referencia_id: pag.id, usuario_id: ctx.user.id, data_hora: agora });

@@ -29,7 +29,7 @@ import { processarWebhookWhatsApp } from '../app/actions/whatsapp.js';
 import { processarWebhookAsaas } from '../app/actions/comercial.js';
 import { executarRetencao } from '../app/retencao.js';
 import { PERFIS_HS } from '../core/permissions.js';
-import { TABELA_PADRAO, TABELA_ANTERIOR, rotuloFaixa } from '../core/comissao.js';
+import { TABELA_PADRAO, TABELA_DUAS_FAIXAS, rotuloFaixa } from '../core/comissao.js';
 import { exemplosPublicos, MODELOS_PADRAO } from '../app/actions/mensagens.js';
 
 // WhatsApp oficial da Acorly (botão flutuante do site e assinatura dos e-mails); CONTATO_WHATSAPP no Render substitui.
@@ -553,9 +553,9 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
       if (u && u.perfil !== 'SUPERADMIN_HS') return null;
       if (!u) u = await db.UsuarioPlataforma.create({ nome: env.SUPERADMIN_NOME || 'Administrador Acorly', email: emailAdm, perfil: 'SUPERADMIN_HS', empresa_id: null, status: 'ATIVO', data_criacao: new Date().toISOString() });
       await garantirModelosPadrao(db);
-      // Tabela de comissão: quem ainda usa a tabela antiga (10/15/20/25%) passa para a do Piloto Sem Risco (10% até 180 dias, 15% acima)
+      // Tabela de comissão: quem ficou com a tabela de 2 faixas (10%/15%) volta para a padrão (10/15/20/25% por atraso)
       for (const cfg of await db.ConfiguracaoHS.filter({})) {
-        if (JSON.stringify(cfg.comissao_faixas || null) === JSON.stringify(TABELA_ANTERIOR)) await db.ConfiguracaoHS.update(cfg.id, { comissao_faixas: TABELA_PADRAO });
+        if (JSON.stringify(cfg.comissao_faixas || null) === JSON.stringify(TABELA_DUAS_FAIXAS)) await db.ConfiguracaoHS.update(cfg.id, { comissao_faixas: TABELA_PADRAO });
       }
       const planos = await db.Plano.filter({});
       for (const pl of planos) {

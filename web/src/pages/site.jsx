@@ -22,7 +22,7 @@ const SERVICOS = [
   {
     nome: 'Acorly Cobrança Gerenciada',
     resumo: 'A equipe Acorly cobra por você.',
-    preco: 'Comissão só sobre o que entrar na sua conta: 10% para dívidas de até 180 dias de atraso e 15% acima disso. Comece pelo Piloto Sem Risco.',
+    preco: 'Comissão só sobre o que entrar na sua conta, conforme o tempo de atraso (veja a tabela em Planos). Comece pelo Piloto Sem Risco: 10% nos primeiros 30 dias.',
     itens: [
       'Você escolhe quais dívidas encaminhar e autoriza os limites',
       'O Acorly valida a carteira e distribui entre os operadores',
@@ -36,7 +36,7 @@ const SERVICOS = [
 const PILOTO = [
   ['1. Diagnóstico grátis e anônimo', 'Você envia só o valor e a data de vencimento de cada atraso, sem nome, CPF ou telefone. Em até 2 dias úteis, recebe quanto dá para recuperar.'],
   ['2. Piloto de 30 dias', 'Até 20 devedores escolhidos por você (comece pelos que já saíram ou que você deu como perdidos). Você vê e aprova as mensagens e define os limites de desconto e parcelamento uma única vez.'],
-  ['3. Você só paga se entrar', 'O devedor paga direto na conta da sua empresa. A comissão é de 10% sobre o que entrar no piloto. Se nada entrar, você não paga nada.'],
+  ['3. Você só paga se entrar', 'O devedor paga direto na conta da sua empresa. A comissão é de 10% sobre o que entrar durante os 30 dias do piloto. Se nada entrar, você não paga nada.'],
 ];
 
 const GARANTIAS_PILOTO = [
@@ -45,7 +45,7 @@ const GARANTIAS_PILOTO = [
   'Mensagens com o nome da sua empresa, em tom cordial e sem ameaças',
   'Se um cliente seu reclamar, paramos o contato com ele na hora',
   'Sem mensalidade no piloto e sem fidelidade',
-  'Depois do piloto, 10% fixos para dívidas de até 180 dias, por escrito',
+  'Depois dos 30 dias, vale a tabela normal por tempo de atraso (veja em Planos)',
 ];
 
 const PASSOS = [
@@ -67,9 +67,9 @@ const GARANTIAS = [
 const DUVIDAS = [
   ['O Acorly recebe o dinheiro das dívidas?', 'Não. O devedor paga diretamente para a sua empresa, pelos meios que você já usa (Pix, boleto, transferência). Você confirma o recebimento no sistema.'],
   ['Preciso contratar a cobrança gerenciada para usar o Acorly?', 'Não. Você pode usar só a plataforma e cobrar com a sua equipe, contratar a cobrança gerenciada ou usar as duas formas ao mesmo tempo.'],
-  ['O que é o Piloto Sem Risco?', 'Um teste de 30 dias da cobrança gerenciada com até 20 devedores escolhidos por você. Você vê e aprova as mensagens, define os limites de desconto e parcelamento, o devedor paga direto na sua conta e você paga 10% só do que entrar. Se nada entrar, não paga nada.'],
+  ['O que é o Piloto Sem Risco?', 'Um teste de 30 dias da cobrança gerenciada com até 20 devedores escolhidos por você. Você vê e aprova as mensagens, define os limites de desconto e parcelamento, o devedor paga direto na sua conta e você paga 10% só do que entrar nesses 30 dias. Se nada entrar, não paga nada. Depois do piloto, se você continuar, vale a tabela normal de comissão por tempo de atraso.'],
   ['Preciso mandar dados dos meus clientes para o diagnóstico?', 'Não. O diagnóstico usa só o valor e a data de vencimento de cada atraso. Se você enviar uma planilha com nomes, CPF ou telefones, essas colunas são removidas no seu próprio computador antes do envio. Dados pessoais só são compartilhados se você decidir começar o piloto, depois de assinar o contrato com as cláusulas de proteção de dados.'],
-  ['Quanto custa a cobrança gerenciada?', 'Você paga uma comissão apenas sobre o que for efetivamente recebido: 10% para dívidas de até 180 dias de atraso e 15% acima disso (veja a tabela em Planos). Se nada for recebido, não há comissão. Os percentuais ficam no contrato.'],
+  ['Quanto custa a cobrança gerenciada?', 'Você paga uma comissão apenas sobre o que for efetivamente recebido, com percentual conforme o tempo de atraso da dívida (veja a tabela em Planos). Se nada for recebido, não há comissão. No Piloto Sem Risco, a comissão é de 10% sobre o que entrar nos 30 dias do piloto. Os percentuais ficam no contrato.'],
   ['Outras empresas podem ver os meus dados?', 'Não. Cada empresa tem um ambiente isolado. A equipe Acorly só acessa os casos que você encaminhar e autorizar.'],
   ['Como a equipe Acorly negocia em meu nome?', 'Dentro dos limites que você define: desconto máximo, número de parcelas, entrada mínima, canais e horários de contato. Fora disso, a proposta vai para a sua aprovação.'],
   ['Posso importar a minha lista de devedores?', 'Sim. Basta uma planilha CSV (o Excel salva nesse formato). O sistema mostra uma prévia com os erros antes de importar.'],
@@ -105,7 +105,7 @@ export function Site() {
           <div className="site-hero-texto">
             <span className="site-selo">Piloto Sem Risco · Salvador</span>
             <h1>Recupere o que é seu sem perder o cliente.</h1>
-            <p>Teste por 30 dias com até 20 devedores escolhidos por você. Você vê as mensagens antes, o devedor paga direto na conta da sua empresa e você <strong style={{ color: '#fff' }}>só paga 10% do que entrar</strong>. Se nada entrar, não paga nada.</p>
+            <p>Teste por 30 dias com até 20 devedores escolhidos por você. Você vê as mensagens antes, o devedor paga direto na conta da sua empresa e você <strong style={{ color: '#fff' }}>só paga 10% do que entrar nos 30 dias</strong>. Se nada entrar, não paga nada.</p>
             <div className="row">
               <Link className="btn prim site-btn-grande" to="/diagnostico">Começar pelo diagnóstico grátis</Link>
               <Link className="btn site-btn-grande site-btn-claro" to="/mensagens">Veja as mensagens</Link>

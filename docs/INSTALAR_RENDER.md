@@ -386,7 +386,7 @@ Em **Negócio → Financeiro da empresa**, só para o superadmin.
 - **Página inicial:** o destaque agora é o Piloto Sem Risco: 30 dias, até 20 devedores escolhidos pelo cliente, 10% só do que entrar.
 - **Nova página pública `/mensagens`:** mostra as mensagens que o devedor recebe, com dados de exemplo. Elas vêm dos modelos globais de mensagem; ao editar os modelos no sistema, a página muda junto.
 - **Diagnóstico anônimo:** a planilha (Excel ou CSV) é lida no navegador, e só as colunas de valor e vencimento são enviadas. Nome, CPF e telefone não saem do computador do cliente.
-- **Comissão padrão: 10% para dívidas de até 180 dias e 15% acima disso.** Quem tinha a tabela antiga sem mudanças (10/15/20/25%) passa para a nova automaticamente na inicialização. Uma tabela personalizada não é alterada.
+- **Comissão:** a tabela padrão continua por tempo de atraso: 10% até 90 dias, 15% de 91 a 180 dias, 20% de 181 a 365 dias e 25% acima. O Piloto Sem Risco cobra 10% só sobre o que for pago durante os 30 dias do piloto. Depois, os pagamentos dos mesmos casos seguem a tabela padrão. Se a tabela de 2 faixas (10%/15%) ficou salva no sistema, ela volta sozinha para a padrão na inicialização.
 - **Novo modelo de e-mail comercial "Piloto Sem Risco":** passa a ser o padrão no primeiro contato.
 
 ## Diagnóstico, piloto e resultados
@@ -402,7 +402,7 @@ Em **Negócio → Financeiro da empresa**, só para o superadmin.
 
 **Contrato "Piloto Sem Risco"**
 - Onde: em Contratos de cobrança → Nova proposta.
-- O que é preenchido sozinho: até 20 devedores, 30 dias de vigência, comissão de 10% fixos e sem mensalidade.
+- O que é preenchido sozinho: até 20 devedores, 30 dias de vigência, comissão de 10% sobre o que for pago dentro dos 30 dias (depois, tabela padrão) e sem mensalidade.
 - Avisos: a empresa e o superadmin recebem um aviso 5 dias antes do fim e outro no encerramento, com o resultado do piloto.
 - Depois do fim, o piloto não aceita devedores novos. Os acordos em andamento continuam sendo acompanhados.
 

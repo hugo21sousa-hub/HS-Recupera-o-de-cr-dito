@@ -103,7 +103,7 @@ Sou {{remetente}}, da HS Recuperação de Crédito, de Salvador. Ajudamos {{segm
 Para você conhecer sem risco, temos o **Piloto Sem Risco**:
 - **Diagnóstico grátis e anônimo:** você envia só o valor e o vencimento de cada atraso, sem nome nem CPF, e em até 2 dias úteis mostramos quanto dá para recuperar.
 - **30 dias com até 20 devedores escolhidos por você:** você vê e aprova as mensagens antes, e elas saem com o nome da {{empresa}}.
-- **O devedor paga direto na conta da sua empresa** e você paga **10% só do que entrar**. Se nada entrar, não paga nada.
+- **O devedor paga direto na conta da sua empresa** e você paga **10% só do que entrar nos 30 dias**. Se nada entrar, não paga nada.
 - Se algum cliente seu reclamar, paramos o contato com ele na hora.
 
 [[botao:Quero o diagnóstico gratuito|https://acorly.com.br/diagnostico]]

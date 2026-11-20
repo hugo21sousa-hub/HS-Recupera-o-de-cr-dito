@@ -204,7 +204,7 @@ function ComissaoContrato({ inicial, padrao, onChange }) {
     <div className="stack">
       <h3 style={{ margin: 0 }}>Comissão do Acorly sobre valores recebidos</h3>
       <label className="check"><input type="checkbox" checked={propria} onChange={(e) => setPropria(e.target.checked)} />Usar tabela própria neste contrato</label>
-      {propria ? <EditorFaixas faixas={faixas} onChange={setFaixas} /> : <><p className="small muted" style={{ margin: 0 }}>Sem tabela própria, o contrato usa a tabela padrão vigente (abaixo). No Piloto Sem Risco, a comissão é de 10% fixos para qualquer atraso.</p><TabelaComissao faixas={padrao} /></>}
+      {propria ? <EditorFaixas faixas={faixas} onChange={setFaixas} /> : <><p className="small muted" style={{ margin: 0 }}>Sem tabela própria, o contrato usa a tabela padrão vigente (abaixo). No Piloto Sem Risco, a comissão é de 10% sobre o que for pago durante os 30 dias; pagamentos depois do fim do piloto seguem a tabela padrão.</p><TabelaComissao faixas={padrao} /></>}
     </div>
   );
 }

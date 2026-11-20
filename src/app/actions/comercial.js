@@ -42,8 +42,18 @@ export const comRotulos = (faixas) => faixas.map((f, i) => ({ ...f, faixa: rotul
  * Comissão de um caso Acorly. Casos antigos (encaminhados antes da tabela existir) recebem a faixa
  * correspondente ao atraso na data do encaminhamento, e o valor fica gravado no caso.
  */
-export async function comissaoDoCaso(ctx, caso, divida) {
+export async function comissaoDoCaso(ctx, caso, divida, dataPagamento = null) {
   if (!caso || caso.modalidade_cobranca !== 'HS_GERENCIADA') return null;
+  // Piloto Sem Risco: os 10% valem só para o que for pago dentro dos 30 dias do piloto; depois, vale a tabela padrão
+  if (dataPagamento && caso.contrato_servico_id) {
+    const ct = await getById(ctx, 'ContratoServico', caso.contrato_servico_id);
+    if (ct?.modalidade === 'PILOTO' && ct.data_fim && String(dataPagamento).slice(0, 10) > ct.data_fim) {
+      const div = divida || await getById(ctx, 'Divida', caso.divida_id);
+      const dias = Number.isSafeInteger(caso.dias_atraso_no_envio) ? caso.dias_atraso_no_envio : diasAtraso(div.data_vencimento, (caso.data_recebimento || ctx.now().toISOString()).slice(0, 10));
+      const f = faixaPara(dias, await tabelaComissao(ctx));
+      return { bps: f.bps, faixa: `${f.faixa} (tabela padrão, após o piloto)`, dias };
+    }
+  }
   if (Number.isSafeInteger(caso.comissao_bps)) return { bps: caso.comissao_bps, faixa: caso.comissao_faixa, dias: caso.dias_atraso_no_envio };
   const contrato = caso.contrato_servico_id ? await getById(ctx, 'ContratoServico', caso.contrato_servico_id) : null;
   const div = divida || await getById(ctx, 'Divida', caso.divida_id);

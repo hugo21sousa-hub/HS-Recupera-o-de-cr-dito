@@ -3,17 +3,18 @@
 import { ValidationError, aplicarPercentual } from './money.js';
 
 /** Faixas: [{ ate_dias: número | null (sem limite), bps }], em ordem crescente. 1% = 100 bps. */
-// Tabela da oferta "Piloto Sem Risco": 10% fixos para dívidas de até 180 dias de atraso e 15% acima disso.
+// Tabela padrão (por tempo de atraso no encaminhamento). O Piloto Sem Risco cobra 10% só durante os 30 dias do piloto.
 export const TABELA_PADRAO = [
-  { ate_dias: 180, bps: 1000 },
-  { ate_dias: null, bps: 1500 },
-];
-// Tabela anterior (4 faixas, até 25%), mantida para referência e testes.
-export const TABELA_ANTERIOR = [
   { ate_dias: 90, bps: 1000 },
   { ate_dias: 180, bps: 1500 },
   { ate_dias: 365, bps: 2000 },
   { ate_dias: null, bps: 2500 },
+];
+export const TABELA_ANTERIOR = TABELA_PADRAO;
+// Tabela de 2 faixas usada por pouco tempo (nov/2026); quem ficou com ela volta para a padrão na inicialização.
+export const TABELA_DUAS_FAIXAS = [
+  { ate_dias: 180, bps: 1000 },
+  { ate_dias: null, bps: 1500 },
 ];
 
 export function validarFaixas(faixas) {

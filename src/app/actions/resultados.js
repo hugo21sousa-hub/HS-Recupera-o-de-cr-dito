@@ -46,7 +46,7 @@ function corpoDiagnostico(lead, n, { taxa_bps, prazo_dias, mensagem, whatsapp })
     '## Próximo passo: Piloto Sem Risco',
     '- **30 dias com até 20 devedores escolhidos por você** (sugerimos começar pelos que já saíram ou que você deu como perdidos).',
     '- Você vê as mensagens antes e define uma única vez os limites de desconto e parcelamento.',
-    '- O devedor paga **direto na conta da sua empresa**, e você paga **10% só do que entrar**. Se nada entrar, não paga nada.',
+    '- O devedor paga **direto na conta da sua empresa**, e você paga **10% só do que entrar nos 30 dias**. Se nada entrar, não paga nada. Depois do piloto, se você continuar, vale a tabela normal por tempo de atraso.',
     '- Se algum cliente seu reclamar, paramos o contato com ele na hora.',
     '',
     ...(String(mensagem || '').trim() ? [String(mensagem).trim(), ''] : []),
@@ -85,7 +85,7 @@ export function padraoPiloto(input) {
     valor_contratado_centavos: 0,
     forma_cobranca_servico: 'Sem mensalidade: comissão só sobre o que for recuperado',
     comissao_faixas: input.comissao_faixas?.length ? input.comissao_faixas : PILOTO.faixas,
-    escopo: input.escopo || `Piloto Sem Risco: cobrança gerenciada de até ${PILOTO.casos} devedores escolhidos pela CONTRATANTE, por ${PILOTO.dias} dias. Comissão de 10% somente sobre os valores efetivamente recebidos e confirmados; sem recebimento, nada é devido.`,
+    escopo: input.escopo || `Piloto Sem Risco: cobrança gerenciada de até ${PILOTO.casos} devedores escolhidos pela CONTRATANTE, por ${PILOTO.dias} dias. Comissão de 10% somente sobre os valores pagos dentro do período do piloto e confirmados; sem recebimento, nada é devido. Pagamentos feitos depois do fim do piloto seguem a tabela padrão de comissão por tempo de atraso.`,
   };
 }
 
@@ -112,7 +112,7 @@ export async function avisosPilotos(ctx) {
     if (!c.piloto_aviso_5d_em && hoje >= somaDias(c.data_fim, -5) && hoje <= c.data_fim) {
       const r = await resultadoContrato(ctx, c);
       const msg = `${r.casos} devedor(es) no piloto, ${r.acordos} com acordo, ${formatBRL(r.recuperado_centavos)} já recuperado e confirmado.`;
-      await notificar(ctx, c.empresa_id, { perfis: ['ADMIN_EMPRESA'], tipo: 'PILOTO', titulo: `Seu Piloto Sem Risco termina em ${data(c.data_fim)}`, mensagem: `${msg} Para continuar depois do piloto, fale com a equipe Acorly.`, link: '/contratos' });
+      await notificar(ctx, c.empresa_id, { perfis: ['ADMIN_EMPRESA'], tipo: 'PILOTO', titulo: `Seu Piloto Sem Risco termina em ${data(c.data_fim)}`, mensagem: `${msg} Os 10% valem para o que for pago até o fim do piloto; depois, vale a tabela padrão. Para continuar, fale com a equipe Acorly.`, link: '/contratos' });
       await notificar(ctx, null, { perfis: ['SUPERADMIN_HS'], tipo: 'PILOTO', titulo: `Piloto de ${nome} termina em ${data(c.data_fim)}`, mensagem: `${msg} Hora de propor a continuidade (gerenciada ou plataforma).`, link: '/hs/contratos' });
       await ctx.db.ContratoServico.update(c.id, { piloto_aviso_5d_em: hoje });
       enviados++;
@@ -120,7 +120,7 @@ export async function avisosPilotos(ctx) {
     if (!c.piloto_aviso_fim_em && hoje > c.data_fim) {
       const r = await resultadoContrato(ctx, c);
       const msg = `Resultado: ${r.casos} devedor(es), ${r.acordos} com acordo, ${formatBRL(r.recuperado_centavos)} recuperado e confirmado (comissão ${formatBRL(r.comissao_centavos)}). Os acordos em andamento continuam sendo acompanhados.`;
-      await notificar(ctx, c.empresa_id, { perfis: ['ADMIN_EMPRESA'], tipo: 'PILOTO', titulo: 'Seu Piloto Sem Risco terminou', mensagem: `${msg} Você pode continuar com a cobrança gerenciada (10% até 180 dias, 15% acima) ou cobrar com a sua equipe na plataforma.`, link: '/contratos' });
+      await notificar(ctx, c.empresa_id, { perfis: ['ADMIN_EMPRESA'], tipo: 'PILOTO', titulo: 'Seu Piloto Sem Risco terminou', mensagem: `${msg} Pagamentos feitos a partir de agora seguem a tabela padrão de comissão. Você pode continuar com a cobrança gerenciada ou cobrar com a sua equipe na plataforma.`, link: '/contratos' });
       await notificar(ctx, null, { perfis: ['SUPERADMIN_HS'], tipo: 'PILOTO', titulo: `Piloto de ${nome} terminou`, mensagem: `${msg} Proponha o contrato de continuidade em Contratos de cobrança.`, link: '/hs/contratos' });
       await ctx.db.ContratoServico.update(c.id, { piloto_aviso_fim_em: hoje });
       enviados++;

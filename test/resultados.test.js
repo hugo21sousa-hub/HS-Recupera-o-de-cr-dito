@@ -68,15 +68,23 @@ test('piloto: contrato com 20 casos, 30 dias e 10%; limite de casos; avisos de f
   assert.ok(ns.some((n) => /Piloto de Loja A terminou/.test(n.titulo) && /R\$ 400,00 recuperado/.test(n.mensagem)));
   // depois da vigência não entra caso novo no piloto
   await t.falha(A.adm, 'encaminharParaHS', { tipo_selecao: 'DIVIDAS', divida_ids: [A.dividas[2].id], contrato_servico_id: piloto.id, autorizacao: AUTORIZACAO, confirmacao: true });
+  // pagamento feito DEPOIS do fim do piloto: volta a tabela padrão (93 dias de atraso → 15%)
+  await t.db.ContratoServico.update(piloto.id, { data_fim: '2026-11-14' });
+  t.estado.agora = new Date('2026-11-16T14:00:00Z');
+  await t.ok('op1@hs.com', 'registrarInteracao', { caso_id: casos[1].id, canal: 'WHATSAPP', tipo_interacao: 'MENSAGEM_ENVIADA', mensagem: 'Olá' });
+  const pag2 = await t.ok('op1@hs.com', 'informarPagamento', { caso_id: casos[1].id, valor_centavos: 20000, data_informada: '2026-11-15' });
+  const r2 = await t.ok(A.fin, 'confirmarPagamento', { pagamento_id: pag2.id, valor_confirmado_centavos: 20000 });
+  assert.equal(r2.comissao_bps, 1500, 'fora dos 30 dias do piloto vale a tabela padrão');
+  assert.equal(r2.comissao_hs_centavos, 3000);
   // resultados
   const r = await t.ok('super@hs.com', 'resultadosCobranca', {});
   const f = r.por_faixa.find((x) => x.faixa === '91 a 180 dias');
-  assert.deepEqual([f.casos, f.recuperado_centavos, f.com_pagamento], [2, 40000, 1]);
+  assert.deepEqual([f.casos, f.recuperado_centavos, f.com_pagamento], [2, 60000, 2]);
   assert.equal(f.encaminhado_centavos, 200000);
-  assert.equal(f.taxa_bps, 2000);
-  assert.equal(r.tempo_primeiro_pagamento.casos, 1);
+  assert.equal(f.taxa_bps, 3000);
+  assert.equal(r.tempo_primeiro_pagamento.casos, 2);
   assert.equal(r.funil.pilotos_iniciados, 1);
   const p = r.pilotos.find((x) => x.id === piloto.id);
-  assert.deepEqual([p.casos, p.recuperado_centavos, p.comissao_centavos, p.limite], [2, 40000, 4000, 20]);
+  assert.deepEqual([p.casos, p.recuperado_centavos, p.comissao_centavos, p.limite], [2, 60000, 7000, 20]);
   await t.falha('gestor@hs.com', 'resultadosCobranca', {}, 403);
 });
