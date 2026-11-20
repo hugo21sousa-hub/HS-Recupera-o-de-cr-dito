@@ -1,4 +1,5 @@
 import { test } from 'node:test';
+import { TABELA_ANTERIOR } from '../src/core/comissao.js';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -10,7 +11,7 @@ import { app, envBanco } from './helpers.js';
 const CSV = 'nome;cpf_cnpj;valor_original;data_vencimento\nAna;52998224725;1.000,00;01/10/2026\nBeto;11144477735;2.000,00;01/03/2026\nCaio;39053344705;500,00;01/12/2026\nSem valor;12345678909;;01/01/2026\n';
 
 test('análise da planilha: total, vencido, a vencer, faixas de atraso e comissão estimada', () => {
-  const a = analisarPlanilha(CSV, { hoje: '2026-11-14' });
+  const a = analisarPlanilha(CSV, { hoje: '2026-11-14', faixas: TABELA_ANTERIOR });
   assert.equal(a.validas, 3);
   assert.equal(a.ignoradas, 1);
   assert.equal(a.devedores, 3);
@@ -70,4 +71,13 @@ test('equipe acompanha os pedidos: lista com contagem por situação e atualiza�
   assert.equal((await t.db.Lead.filter({ id: l.id }))[0].status, 'EM_CONTATO');
   await t.falha('super@hs.com', 'atualizarLead', { id: l.id, status: 'XYZ' }, 422);
   await t.falha('op@hs.com', 'listarLeads', {}, 403);
+});
+
+test('diagnóstico anônimo: planilha só com valor e vencimento é analisada com a tabela do Piloto', async () => {
+  const { analisarPlanilha } = await import('../src/app/actions/leads.js');
+  const a = analisarPlanilha('valor;vencimento\n1250,50;10/08/2026\n480,00;05/09/2026\n', { hoje: '2026-11-20' });
+  assert.equal(a.validas, 2);
+  assert.equal(a.vencido_centavos, 173050);
+  assert.equal(a.por_faixa.length, 2);
+  assert.equal(a.comissao_estimada_centavos, Math.round(173050 * 0.10));
 });

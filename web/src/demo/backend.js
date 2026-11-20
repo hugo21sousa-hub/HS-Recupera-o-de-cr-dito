@@ -4,6 +4,7 @@ import { memDB } from './memdb.js';
 import { semear, SENHA_DEMO } from './seed.js';
 import { TABELA_PADRAO, rotuloFaixa } from '../../../src/core/comissao.js';
 import { REDES_PADRAO } from '../../../src/app/actions/conteudo.js';
+import { exemplosPublicos, MODELOS_PADRAO } from '../../../src/app/actions/mensagens.js';
 
 const banco = memDB();
 const db = banco.db;
@@ -55,7 +56,7 @@ export async function publico() {
   const planos = (await db.Plano.filter({ status: 'ATIVO' })).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
   const cfg = (await db.ConfiguracaoHS.filter({}))[0];
   const f = cfg?.comissao_faixas?.length ? cfg.comissao_faixas : TABELA_PADRAO;
-  return { planos, contato: { email: 'contato@acorly.com.br', whatsapp: '71920054062' }, dpo: null, redes: REDES_PADRAO, comissao: f.map((x, i) => ({ ...x, faixa: rotuloFaixa(f, i) })) };
+  return { planos, contato: { email: 'contato@acorly.com.br', whatsapp: '71920054062' }, dpo: null, redes: REDES_PADRAO, mensagens_exemplo: exemplosPublicos(MODELOS_PADRAO), comissao: f.map((x, i) => ({ ...x, faixa: rotuloFaixa(f, i) })) };
 }
 
 const indisponivel = () => { throw new Erro('Indisponível na demonstração.', 422); };

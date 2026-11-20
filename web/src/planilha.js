@@ -115,3 +115,49 @@ export function contatosDaPlanilha(linhas) {
 }
 
 export const MODELO_PLANILHA_CAMPANHA = 'email;empresa;nome;segmento;whatsapp\ncontato@colegioexemplo.com.br;Colégio Exemplo;Maria Souza;Escola;71999990000\nfinanceiro@clinicaexemplo.com.br;Clínica Exemplo;;Saúde;\n';
+
+// ---------- Diagnóstico anônimo ----------
+const COL_VALOR = ['valor', 'valor_original', 'valor_em_aberto', 'valor_aberto', 'valor_devido', 'saldo', 'saldo_devedor', 'debito', 'valor_da_parcela', 'valor_parcela', 'mensalidade', 'total'];
+const COL_VENC = ['vencimento', 'data_vencimento', 'data_de_vencimento', 'vence_em', 'venc', 'data'];
+
+/** Número vindo do Excel ("1250.5") ou do texto brasileiro ("1.250,50") → "1250,50". */
+function valorBR(v) {
+  const t = String(v ?? '').trim().replace(/^R\$\s*/i, '');
+  if (!t) return '';
+  if (/^-?\d+(\.\d+)?$/.test(t)) return Number(t).toFixed(2).replace('.', ',');
+  return t;
+}
+/** Data do Excel (número de série) ou texto → "dd/mm/aaaa" (ou o texto original). */
+function dataBR(v) {
+  const t = String(v ?? '').trim();
+  if (/^\d{5}(\.\d+)?$/.test(t)) {
+    const n = Math.floor(Number(t));
+    if (n > 20000 && n < 80000) {
+      const d = new Date(Date.UTC(1899, 11, 30) + n * 864e5);
+      return `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${d.getUTCFullYear()}`;
+    }
+  }
+  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(t);
+  return iso ? `${iso[3]}/${iso[2]}/${iso[1]}` : t;
+}
+
+/**
+ * Lê a planilha no navegador e monta uma versão ANÔNIMA só com valor e vencimento.
+ * Nome, CPF, telefone, e-mail e qualquer outra coluna ficam no computador da pessoa.
+ */
+export async function anonimizarPlanilha(file) {
+  const linhas = await lerPlanilha(file);
+  if (!linhas.length) throw new Error('A planilha está vazia.');
+  const cab = Object.keys(linhas[0]);
+  const achar = (nomes) => nomes.find((n) => cab.includes(n)) || cab.find((h) => nomes.some((n) => h.startsWith(n)));
+  const colValor = achar(COL_VALOR), colVenc = achar(COL_VENC);
+  if (!colValor || !colVenc) throw new Error('Não encontrei as colunas de valor e de vencimento. Use os títulos "valor" e "vencimento" na primeira linha (veja o modelo).');
+  const saida = ['valor;vencimento'];
+  for (const l of linhas.slice(0, 20000)) {
+    const val = valorBR(l[colValor]), venc = dataBR(l[colVenc]);
+    if (!val && !venc) continue;
+    saida.push(`${val.replace(/;/g, '')};${venc.replace(/;/g, '')}`);
+  }
+  if (saida.length < 2) throw new Error('Não encontrei nenhuma linha com valor e vencimento.');
+  return { csv: `${saida.join('\n')}\n`, dividas: saida.length - 1, removidas: cab.filter((c) => c !== colValor && c !== colVenc), colValor, colVenc };
+}

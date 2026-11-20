@@ -70,7 +70,7 @@ function Abordar({ lead, prospect, onClose, onFeito }) {
   };
   useEffect(() => {
     if (!v.modelo_id && ativos.length && (epoca.data || epoca.erro)) {
-      const m = ativos.find((x) => (lead?.status === 'EM_CONTATO' && lead?.ultimo_email_em ? x.nome.startsWith('Retorno') : false)) || (prospect?.segmento === 'CONTABILIDADE' ? ativos.find((x) => /parceria|contab/i.test(x.nome)) : null) || (epoca.data?.decimo_terceiro && prospect?.segmento !== 'CONTABILIDADE' ? ativos.find((x) => x.nome.startsWith('13º')) : null) || ativos.find((x) => x.nome === (v.segmento === 'ESCOLA_CURSO' ? 'Escolas e cursos' : v.segmento === 'SAUDE' ? 'Clínicas e consultórios' : 'Apresentação dos serviços')) || ativos[0];
+      const m = ativos.find((x) => (lead?.status === 'EM_CONTATO' && lead?.ultimo_email_em ? x.nome.startsWith('Retorno') : false)) || (prospect?.segmento === 'CONTABILIDADE' ? ativos.find((x) => /parceria|contab/i.test(x.nome)) : null) || ativos.find((x) => x.nome === 'Piloto Sem Risco') || (epoca.data?.decimo_terceiro && prospect?.segmento !== 'CONTABILIDADE' ? ativos.find((x) => x.nome.startsWith('13º')) : null) || ativos.find((x) => x.nome === (v.segmento === 'ESCOLA_CURSO' ? 'Escolas e cursos' : v.segmento === 'SAUDE' ? 'Clínicas e consultórios' : 'Apresentação dos serviços')) || ativos[0];
       setV((x) => ({ ...x, modelo_id: m.id, assunto: m.assunto, corpo: m.corpo }));
     }
   }, [ativos.length, epoca.data]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -506,7 +506,7 @@ function NovaCampanha({ onClose, onCriada }) {
   const toast = useToast();
   const ativos = (modelos.data || []).filter((m) => m.ativo !== false);
   useEffect(() => {
-    if (!modeloId && ativos.length && (epoca.data || epoca.erro)) setModeloId((epoca.data?.decimo_terceiro && ativos.find((m) => m.nome.startsWith('13º'))) ? ativos.find((m) => m.nome.startsWith('13º')).id : ativos[0].id);
+    if (!modeloId && ativos.length && (epoca.data || epoca.erro)) setModeloId((ativos.find((m) => m.nome === 'Piloto Sem Risco') || (epoca.data?.decimo_terceiro && ativos.find((m) => m.nome.startsWith('13º'))) || ativos[0]).id);
   }, [ativos.length, epoca.data]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!lidos?.contatos.length || !modeloId) return;

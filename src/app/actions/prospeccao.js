@@ -94,6 +94,25 @@ Podemos conversar 15 minutos esta semana?
 ${ASSINATURA}`,
   },
   {
+    nome: 'Piloto Sem Risco', ordem: 1, novo: true,
+    assunto: '{{empresa}}: teste a recuperação de atrasados por 30 dias, pagando só se entrar',
+    corpo: `Olá, {{nome}}, tudo bem?
+
+Sou {{remetente}}, da HS Recuperação de Crédito, de Salvador. Ajudamos {{segmento}} como a {{empresa}} a recuperar valores em atraso **sem perder o cliente**.
+
+Para você conhecer sem risco, temos o **Piloto Sem Risco**:
+- **Diagnóstico grátis e anônimo:** você envia só o valor e o vencimento de cada atraso, sem nome nem CPF, e em até 2 dias úteis mostramos quanto dá para recuperar.
+- **30 dias com até 20 devedores escolhidos por você:** você vê e aprova as mensagens antes, e elas saem com o nome da {{empresa}}.
+- **O devedor paga direto na conta da sua empresa** e você paga **10% só do que entrar**. Se nada entrar, não paga nada.
+- Se algum cliente seu reclamar, paramos o contato com ele na hora.
+
+[[botao:Quero o diagnóstico gratuito|https://acorly.com.br/diagnostico]]
+[[link:Ver as mensagens que o devedor recebe|https://acorly.com.br/mensagens]]
+
+Abrimos poucas vagas de piloto por mês para atender cada empresa com cuidado.
+${ASSINATURA}`,
+  },
+  {
     nome: '13º salário (novembro e dezembro)', ordem: 2, novo: true,
     assunto: '{{empresa}}: dezembro é o melhor mês para recuperar valores em atraso',
     corpo: `Olá, {{nome}}, tudo bem?

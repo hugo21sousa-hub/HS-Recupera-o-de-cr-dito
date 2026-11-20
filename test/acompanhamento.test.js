@@ -47,7 +47,8 @@ test('modelo do 13º entra para quem já tinha os modelos antigos', async () => 
   const m = await t.ok(S, 'listarModelosComerciais');
   const treze = m.find((x) => /13º/.test(x.nome));
   assert.ok(treze);
-  assert.equal(m.length, 2, 'não recria os outros modelos padrão');
+  assert.equal(m.length, 3, 'só entram os modelos novos (13º e Piloto Sem Risco); não recria os outros');
+  assert.ok(m.some((x) => x.nome === 'Piloto Sem Risco'));
   const p = await t.ok(S, 'previaEmailComercial', { modelo_id: treze.id, empresa: 'Escola A' });
   assert.match(p.html, /dezembro é o mês em que mais se recupera/);
   assert.equal((p.html.match(/contato@acorly\.com\.br/g) || []).length, 1);

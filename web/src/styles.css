@@ -302,3 +302,12 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 .whats-flutuante span { padding-right: 6px; }
 @media (max-width: 640px) { .whats-flutuante span { display: none; } .whats-flutuante { padding: 0; justify-content: center; } }
 @media (prefers-reduced-motion: reduce) { .whats-flutuante { transition: none; } }
+
+/* Exemplo de mensagem de WhatsApp (página pública "Veja as mensagens") */
+.msg-exemplo-whats { align-self: flex-start; max-width: 560px; background: #dcf8c6; color: #111b21; padding: 10px 12px; border-radius: 10px 10px 10px 2px; font-size: 14px; line-height: 1.5; box-shadow: 0 1px 1px rgba(0, 0, 0, .08); white-space: pre-wrap; }
+.site-piloto-passos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 8px 0 20px; }
+@media (max-width: 860px) { .site-piloto-passos { grid-template-columns: 1fr; } }
+.site-piloto-garantias { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; list-style: none; padding: 0; margin: 0; }
+@media (max-width: 760px) { .site-piloto-garantias { grid-template-columns: 1fr; } }
+.site-piloto-garantias li { padding-left: 24px; position: relative; line-height: 1.5; }
+.site-piloto-garantias li::before { content: '✓'; position: absolute; left: 0; color: var(--ok); font-weight: 800; }

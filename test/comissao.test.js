@@ -1,16 +1,20 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TABELA_PADRAO, faixaPara, validarFaixas, rotuloFaixa, calcularComissao } from '../src/core/comissao.js';
+import { TABELA_PADRAO, TABELA_ANTERIOR, faixaPara, validarFaixas, rotuloFaixa, calcularComissao } from '../src/core/comissao.js';
 import { cenario, casosHS, AUTORIZACAO } from './helpers.js';
 
 test('faixas de comissão: seleção, rótulos e validação', () => {
-  assert.deepEqual(faixaPara(0), { bps: 1000, faixa: 'até 90 dias', indice: 0 });
-  assert.equal(faixaPara(90).bps, 1000);
-  assert.equal(faixaPara(91).bps, 1500);
-  assert.equal(faixaPara(180).faixa, '91 a 180 dias');
-  assert.equal(faixaPara(365).bps, 2000);
-  assert.deepEqual(faixaPara(366), { bps: 2500, faixa: 'acima de 365 dias', indice: 3 });
-  assert.equal(rotuloFaixa(TABELA_PADRAO, 2), '181 a 365 dias');
+  // tabela atual (Piloto Sem Risco): 10% até 180 dias, 15% acima
+  assert.equal(TABELA_PADRAO.length, 2);
+  assert.deepEqual(faixaPara(0), { bps: 1000, faixa: 'até 180 dias', indice: 0 });
+  assert.equal(faixaPara(180).bps, 1000);
+  assert.deepEqual(faixaPara(181), { bps: 1500, faixa: 'acima de 180 dias', indice: 1 });
+  assert.equal(faixaPara(900).bps, 1500);
+  // tabelas personalizadas com mais faixas continuam funcionando
+  assert.equal(faixaPara(91, TABELA_ANTERIOR).bps, 1500);
+  assert.equal(faixaPara(180, TABELA_ANTERIOR).faixa, '91 a 180 dias');
+  assert.deepEqual(faixaPara(366, TABELA_ANTERIOR), { bps: 2500, faixa: 'acima de 365 dias', indice: 3 });
+  assert.equal(rotuloFaixa(TABELA_ANTERIOR, 2), '181 a 365 dias');
   assert.equal(calcularComissao(30000, 1500), 4500);
   assert.equal(calcularComissao(33333, 1500), 5000); // arredondamento ao centavo
   assert.throws(() => validarFaixas([{ ate_dias: 90, bps: 1000 }, { ate_dias: 60, bps: 1500 }, { ate_dias: null, bps: 2000 }]), /crescentes/);
@@ -22,32 +26,32 @@ test('faixas de comissão: seleção, rótulos e validação', () => {
 test('cliente vê a comissão antes de encaminhar; ela fica fixada no caso e é calculada só sobre o que foi recebido', async () => {
   const t = await cenario();
   const { A } = t.empresas;
-  // dívidas do cenário vencem em 10/08/2026; hoje (cenário) = 11/11/2026 → 93 dias → faixa 91 a 180 dias = 15%
+  // dívidas do cenário vencem em 10/08/2026; hoje (cenário) = 11/11/2026 → 93 dias → faixa até 180 dias = 10%
   const previa = await t.ok(A.adm, 'comissaoDivida', { divida_id: A.dividas[0].id });
   assert.equal(previa.dias_atraso, 93);
-  assert.equal(previa.comissao_bps, 1500);
-  assert.equal(previa.comissao_faixa, '91 a 180 dias');
-  assert.equal(previa.estimativa_centavos, 15000);
-  assert.equal(previa.tabela.length, 4);
+  assert.equal(previa.comissao_bps, 1000);
+  assert.equal(previa.comissao_faixa, 'até 180 dias');
+  assert.equal(previa.estimativa_centavos, 10000);
+  assert.equal(previa.tabela.length, 2);
   const conf = await t.ok(A.adm, 'previewEncaminhamento', { tipo_selecao: 'DIVIDAS', divida_ids: [A.dividas[0].id], contrato_servico_id: A.contrato.id });
-  assert.equal(conf.itens[0].comissao_bps, 1500);
-  assert.equal(conf.resumo.comissao_estimada_elegiveis_centavos, 15000);
+  assert.equal(conf.itens[0].comissao_bps, 1000);
+  assert.equal(conf.resumo.comissao_estimada_elegiveis_centavos, 10000);
   const [caso] = await casosHS(t, 'A', [0]);
-  assert.equal(caso.comissao_bps, 1500);
+  assert.equal(caso.comissao_bps, 1000);
   assert.equal(caso.dias_atraso_no_envio, 93);
   // depois de encaminhada, a tela da dívida mostra a comissão fixada
   assert.equal((await t.ok(A.adm, 'comissaoDivida', { divida_id: A.dividas[0].id })).ja_encaminhada, true);
-  // pagamento parcial de R$ 300,00 → comissão de R$ 45,00
+  // pagamento parcial de R$ 300,00 → comissão de R$ 30,00
   await t.ok('op1@hs.com', 'registrarInteracao', { caso_id: caso.id, canal: 'WHATSAPP', tipo_interacao: 'MENSAGEM_ENVIADA', mensagem: 'Olá' });
   const pag = await t.ok('op1@hs.com', 'informarPagamento', { caso_id: caso.id, valor_centavos: 30000, data_informada: '2026-11-10' });
   const r = await t.ok(A.fin, 'confirmarPagamento', { pagamento_id: pag.id, valor_confirmado_centavos: 30000 });
-  assert.equal(r.comissao_hs_centavos, 4500);
+  assert.equal(r.comissao_hs_centavos, 3000);
   const dash = (await t.ok(A.adm, 'dashboardEmpresa', {})).financeiro;
-  assert.equal(dash.comissao_hs_centavos, 4500);
+  assert.equal(dash.comissao_hs_centavos, 3000);
   const pc = await t.ok('gestor@hs.com', 'gerarPrestacaoContas', { contrato_servico_id: A.contrato.id, periodo_inicio: '2026-11-01', periodo_fim: '2026-11-30' });
   const rel = JSON.parse(pc.relatorio);
-  assert.equal(rel.comissao_hs_centavos, 4500);
-  assert.equal(rel.comissoes[0].comissao_centavos, 4500);
+  assert.equal(rel.comissao_hs_centavos, 3000);
+  assert.equal(rel.comissoes[0].comissao_centavos, 3000);
   // cobrança própria (sem HS): sem comissão
   const proprio = await t.ok(A.adm, 'abrirCobrancaPropria', { divida_id: A.dividas[2].id });
   const r2 = await t.ok(A.adm, 'informarPagamento', { divida_id: A.dividas[2].id, valor_centavos: 10000, data_informada: '2026-11-10', confirmar_agora: true });

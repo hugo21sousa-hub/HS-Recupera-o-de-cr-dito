@@ -380,3 +380,11 @@ Em **Negócio → Financeiro da empresa**, só para o superadmin.
 - Exporta PDF e CSV.
 - O botão "Fechar mês" guarda o DRE e trava os lançamentos do mês.
 - "Reabrir" exige um motivo, que fica registrado na auditoria.
+
+## Piloto Sem Risco (oferta principal do site)
+
+- **Página inicial:** o destaque agora é o Piloto Sem Risco: 30 dias, até 20 devedores escolhidos pelo cliente, 10% só do que entrar.
+- **Nova página pública `/mensagens`:** mostra as mensagens que o devedor recebe, com dados de exemplo. Elas vêm dos modelos globais de mensagem; ao editar os modelos no sistema, a página muda junto.
+- **Diagnóstico anônimo:** a planilha (Excel ou CSV) é lida no navegador, e só as colunas de valor e vencimento são enviadas. Nome, CPF e telefone não saem do computador do cliente.
+- **Comissão padrão: 10% para dívidas de até 180 dias e 15% acima disso.** Quem tinha a tabela antiga sem mudanças (10/15/20/25%) passa para a nova automaticamente na inicialização. Uma tabela personalizada não é alterada.
+- **Novo modelo de e-mail comercial "Piloto Sem Risco":** passa a ser o padrão no primeiro contato.

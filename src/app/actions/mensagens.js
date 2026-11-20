@@ -15,6 +15,14 @@ const DIAS_SEM_CONTATO = 3;
 export const ASSUNTO_PADRAO = 'Pendência financeira com {{credor}}';
 
 /** Modelos criados automaticamente (globais) quando ainda não existe nenhum modelo global. */
+/** Exemplos públicos (site): modelos preenchidos com dados fictícios, para o credor ver o que o devedor recebe. */
+export const EXEMPLO_VARS = { nome: 'Maria', credor: 'Escola Exemplo', valor: 'R$ 480,00', vencimento: '10/10/2026' };
+export function exemplosPublicos(modelos) {
+  const preencher = (t) => String(t || '').replace(/\{\{\s*(\w+)\s*\}\}/g, (_, k) => EXEMPLO_VARS[k] ?? '');
+  return modelos.filter((m) => !m.empresa_id && (m.status || 'ATIVO') === 'ATIVO' && ['WHATSAPP', 'EMAIL'].includes(m.canal))
+    .map((m) => ({ nome: m.nome, canal: m.canal, assunto: m.assunto ? preencher(m.assunto) : '', texto: preencher(m.conteudo) }));
+}
+
 export const MODELOS_PADRAO = [
   { nome: 'Primeiro contato', canal: 'WHATSAPP', conteudo: 'Olá, {{nome}}, tudo bem? Estamos entrando em contato a respeito de uma pendência com a {{credor}}, no valor de {{valor}}, com vencimento em {{vencimento}}. Podemos conversar para encontrar a melhor forma de regularizar? Se você já pagou, por favor desconsidere esta mensagem e, se puder, nos envie o comprovante.' },
   { nome: 'Lembrete', canal: 'WHATSAPP', conteudo: 'Olá, {{nome}}! Passando para lembrar da pendência com a {{credor}}, no valor de {{valor}}. Temos condições para facilitar o pagamento. Quer que eu envie uma proposta?' },

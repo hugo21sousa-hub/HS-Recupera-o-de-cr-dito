@@ -18,6 +18,7 @@ import { CasoDetalhe } from './pages/caso.jsx';
 import { Negociacoes, Acordos, Pagamentos, Relatorios } from './pages/financeiro.jsx';
 import { CentralMensagens } from './pages/central.jsx';
 import { Diagnostico } from './pages/diagnostico.jsx';
+import { MensagensPublicas } from './pages/mensagensPublicas.jsx';
 import { Leads } from './pages/leads.jsx';
 import { Conteudo } from './pages/conteudo.jsx';
 import { IndicadoresNegocio } from './pages/negocio.jsx';
@@ -61,6 +62,7 @@ function Raiz() {
         <Route path="/termos" element={<Documento tipo="termos" />} />
         <Route path="/privacidade" element={<Documento tipo="privacidade" />} />
         <Route path="/diagnostico" element={<Diagnostico />} />
+        <Route path="/mensagens" element={<MensagensPublicas />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       </>
@@ -69,6 +71,7 @@ function Raiz() {
   if (ehConvite) return <Routes><Route path="/convite/:token" element={<Convite />} /></Routes>;
   if (loc.pathname === '/termos' || loc.pathname === '/privacidade') return <Documento tipo={loc.pathname.slice(1)} />;
   if (loc.pathname === '/diagnostico') return <Diagnostico />;
+  if (loc.pathname === '/mensagens') return <MensagensPublicas />;
   if (s.perfil?.seguranca?.exige_2fa && !s.perfil?.seguranca?.dois_fatores_ativo) return <Exigir2FA />;
   if (s.perfil?.precisa_onboarding && !s.ehHS) return <Routes><Route path="*" element={<Onboarding />} /></Routes>;
   if (s.usuario?.status && s.usuario.status !== 'ATIVO') return <Vazio titulo="Acesso bloqueado">Fale com o administrador da sua empresa.</Vazio>;

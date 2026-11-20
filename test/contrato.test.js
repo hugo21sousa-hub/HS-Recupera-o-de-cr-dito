@@ -16,7 +16,7 @@ test('contrato de cobrança: minuta com os dados da empresa, aceite guarda texto
   assert.match(minuta.texto, /HS RECUPERAÇÃO DE CRÉDITO, CNPJ 37\.573\.934\/0001-22/);
   assert.match(minuta.texto, /CONTRATANTE: Empresa A Ltda, CNPJ \d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/);
   assert.match(minuta.texto, /não garante o recebimento/);
-  assert.match(minuta.texto, /• Até 90 dias de atraso: 10%\n• 91 a 180 dias de atraso: 15%/);
+  assert.match(minuta.texto, /• Até 180 dias de atraso: 10%\n• Acima de 180 dias de atraso: 15%/);
   assert.match(minuta.texto, /não há valor fixo/);
   await t.falha(B.adm, 'textoContrato', { contrato_id: novo.id }, 404);
   await t.falha(A.vis, 'aceitarContrato', { contrato_id: novo.id, aceite: true }, 403);

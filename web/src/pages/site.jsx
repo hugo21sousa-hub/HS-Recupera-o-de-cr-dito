@@ -22,7 +22,7 @@ const SERVICOS = [
   {
     nome: 'Acorly Cobrança Gerenciada',
     resumo: 'A equipe Acorly cobra por você.',
-    preco: 'Contrato próprio, por carteira, pacote de casos ou carteira completa.',
+    preco: 'Comissão só sobre o que entrar na sua conta: 10% para dívidas de até 180 dias de atraso e 15% acima disso. Comece pelo Piloto Sem Risco.',
     itens: [
       'Você escolhe quais dívidas encaminhar e autoriza os limites',
       'O Acorly valida a carteira e distribui entre os operadores',
@@ -31,6 +31,21 @@ const SERVICOS = [
       'Você acompanha tudo em tempo real pelo seu painel',
     ],
   },
+];
+
+const PILOTO = [
+  ['1. Diagnóstico grátis e anônimo', 'Você envia só o valor e a data de vencimento de cada atraso, sem nome, CPF ou telefone. Em até 2 dias úteis, recebe quanto dá para recuperar.'],
+  ['2. Piloto de 30 dias', 'Até 20 devedores escolhidos por você (comece pelos que já saíram ou que você deu como perdidos). Você vê e aprova as mensagens e define os limites de desconto e parcelamento uma única vez.'],
+  ['3. Você só paga se entrar', 'O devedor paga direto na conta da sua empresa. A comissão é de 10% sobre o que entrar no piloto. Se nada entrar, você não paga nada.'],
+];
+
+const GARANTIAS_PILOTO = [
+  'Diagnóstico sem nenhum dado pessoal dos seus clientes',
+  'Contrato com cláusulas de proteção de dados (LGPD) assinado antes de qualquer dado pessoal',
+  'Mensagens com o nome da sua empresa, em tom cordial e sem ameaças',
+  'Se um cliente seu reclamar, paramos o contato com ele na hora',
+  'Sem mensalidade no piloto e sem fidelidade',
+  'Depois do piloto, 10% fixos para dívidas de até 180 dias, por escrito',
 ];
 
 const PASSOS = [
@@ -52,7 +67,9 @@ const GARANTIAS = [
 const DUVIDAS = [
   ['O Acorly recebe o dinheiro das dívidas?', 'Não. O devedor paga diretamente para a sua empresa, pelos meios que você já usa (Pix, boleto, transferência). Você confirma o recebimento no sistema.'],
   ['Preciso contratar a cobrança gerenciada para usar o Acorly?', 'Não. Você pode usar só a plataforma e cobrar com a sua equipe, contratar a cobrança gerenciada ou usar as duas formas ao mesmo tempo.'],
-  ['Quanto custa a cobrança gerenciada?', 'Você paga uma comissão apenas sobre o que for efetivamente recebido, com percentual conforme o tempo de atraso da dívida (veja a tabela de referência em Planos). Se nada for recebido, não há comissão. Os percentuais finais são combinados com cada empresa e ficam no contrato. A contratação é feita por contrato próprio, por carteira específica, pacote de casos ou carteira completa.'],
+  ['O que é o Piloto Sem Risco?', 'Um teste de 30 dias da cobrança gerenciada com até 20 devedores escolhidos por você. Você vê e aprova as mensagens, define os limites de desconto e parcelamento, o devedor paga direto na sua conta e você paga 10% só do que entrar. Se nada entrar, não paga nada.'],
+  ['Preciso mandar dados dos meus clientes para o diagnóstico?', 'Não. O diagnóstico usa só o valor e a data de vencimento de cada atraso. Se você enviar uma planilha com nomes, CPF ou telefones, essas colunas são removidas no seu próprio computador antes do envio. Dados pessoais só são compartilhados se você decidir começar o piloto, depois de assinar o contrato com as cláusulas de proteção de dados.'],
+  ['Quanto custa a cobrança gerenciada?', 'Você paga uma comissão apenas sobre o que for efetivamente recebido: 10% para dívidas de até 180 dias de atraso e 15% acima disso (veja a tabela em Planos). Se nada for recebido, não há comissão. Os percentuais ficam no contrato.'],
   ['Outras empresas podem ver os meus dados?', 'Não. Cada empresa tem um ambiente isolado. A equipe Acorly só acessa os casos que você encaminhar e autorizar.'],
   ['Como a equipe Acorly negocia em meu nome?', 'Dentro dos limites que você define: desconto máximo, número de parcelas, entrada mínima, canais e horários de contato. Fora disso, a proposta vai para a sua aprovação.'],
   ['Posso importar a minha lista de devedores?', 'Sim. Basta uma planilha CSV (o Excel salva nesse formato). O sistema mostra uma prévia com os erros antes de importar.'],
@@ -65,7 +82,7 @@ export function Site() {
   const ano = new Date().getFullYear();
   const contato = dados?.contato || {};
   const ir = (id) => (e) => { e.preventDefault(); setMenu(false); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
-  const links = [['video', 'Vídeo'], ['como-funciona', 'Como funciona'], ['diagnostico', 'Diagnóstico grátis'], ['servicos', 'Serviços'], ['planos', 'Planos'], ['seguranca', 'Segurança'], ['duvidas', 'Dúvidas']];
+  const links = [['piloto', 'Piloto sem risco'], ['video', 'Vídeo'], ['como-funciona', 'Como funciona'], ['diagnostico', 'Diagnóstico grátis'], ['servicos', 'Serviços'], ['planos', 'Planos'], ['seguranca', 'Segurança'], ['duvidas', 'Dúvidas']];
 
   return (
     <div className="site">
@@ -86,14 +103,14 @@ export function Site() {
       <section className="site-hero">
         <div className="site-largura site-hero-in">
           <div className="site-hero-texto">
-            <span className="site-selo">Recuperação de crédito para empresas</span>
-            <h1>Recupere o que é seu, com organização e respeito ao seu cliente.</h1>
-            <p>O Acorly reúne em um só lugar o cadastro de dívidas, a cobrança, as negociações e a confirmação de pagamentos. Use a plataforma com a sua equipe ou deixe a cobrança com a equipe Acorly, acompanhando tudo pelo seu painel.</p>
+            <span className="site-selo">Piloto Sem Risco · Salvador</span>
+            <h1>Recupere o que é seu sem perder o cliente.</h1>
+            <p>Teste por 30 dias com até 20 devedores escolhidos por você. Você vê as mensagens antes, o devedor paga direto na conta da sua empresa e você <strong style={{ color: '#fff' }}>só paga 10% do que entrar</strong>. Se nada entrar, não paga nada.</p>
             <div className="row">
-              <Link className="btn prim site-btn-grande" to="/cadastro">Criar conta da empresa</Link>
-              <a className="btn site-btn-grande site-btn-claro" href="/demonstracao">Ver demonstração</a>
+              <Link className="btn prim site-btn-grande" to="/diagnostico">Começar pelo diagnóstico grátis</Link>
+              <Link className="btn site-btn-grande site-btn-claro" to="/mensagens">Veja as mensagens</Link>
             </div>
-            <p className="site-nota">Teste grátis por {dados?.dias_teste || 7} dias, sem cartão. O devedor paga direto para a sua empresa. Sem comissão no uso da plataforma.</p>
+            <p className="site-nota">Diagnóstico sem nome, CPF ou telefone dos seus clientes. Prefere cobrar com a sua equipe? <Link to="/cadastro" style={{ color: '#fff', textDecoration: 'underline' }}>Teste a plataforma grátis por {dados?.dias_teste || 7} dias</Link>, sem cartão.</p>
           </div>
           <div className="site-previa" aria-label="Exemplo de painel do sistema">
             <div className="site-previa-barra"><span /><span /><span /><em>Painel da empresa (exemplo)</em></div>
@@ -108,6 +125,22 @@ export function Site() {
               </ul>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section id="piloto" className="site-secao">
+        <div className="site-largura">
+          <h2 className="site-titulo">Piloto Sem Risco: 30 dias, 20 devedores, você só paga se entrar</h2>
+          <p className="site-sub">Para você conhecer a Acorly sem expor seus clientes e sem gastar nada antes do resultado.</p>
+          <div className="site-piloto-passos">
+            {PILOTO.map(([t, d]) => <article key={t} className="site-cartao"><h3 style={{ fontSize: 18 }}>{t}</h3><p style={{ margin: 0, lineHeight: 1.55 }}>{d}</p></article>)}
+          </div>
+          <ul className="site-piloto-garantias">{GARANTIAS_PILOTO.map((g) => <li key={g}>{g}</li>)}</ul>
+          <div className="row" style={{ marginTop: 20 }}>
+            <Link className="btn prim site-btn-grande" to="/diagnostico">Quero o diagnóstico grátis</Link>
+            <Link className="btn site-btn-grande" to="/mensagens">Ver as mensagens que o devedor recebe</Link>
+          </div>
+          <p className="small muted" style={{ marginTop: 10 }}>Para atender cada piloto com cuidado, abrimos poucas vagas por mês.</p>
         </div>
       </section>
 
@@ -152,7 +185,7 @@ export function Site() {
         <div className="site-largura site-estreita" style={{ textAlign: 'center' }}>
           <span className="site-selo" style={{ background: 'var(--azul-claro)', color: 'var(--azul)' }}>Gratuito e sem compromisso</span>
           <h2 className="site-titulo">Quanto da sua inadimplência dá para recuperar?</h2>
-          <p className="site-sub">Envie a planilha dos seus clientes em atraso. Em até 2 dias úteis, a equipe da HS devolve um diagnóstico: quanto pode ser recuperado, em quanto tempo e quanto custaria.</p>
+          <p className="site-sub">Envie só o valor e o vencimento de cada atraso, sem nome nem CPF. Em até 2 dias úteis, a equipe da HS devolve um diagnóstico: quanto pode ser recuperado, em quanto tempo e quanto custaria.</p>
           <div className="row" style={{ justifyContent: 'center' }}><Link className="btn prim site-btn-grande" to="/diagnostico">Quero meu diagnóstico gratuito</Link></div>
         </div>
       </section>
