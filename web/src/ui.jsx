@@ -161,7 +161,7 @@ function valorInicial(c, v) {
 export function converter(campos, valores) {
   const out = {}, erros = {};
   for (const c of campos) {
-    if (c.oculto) continue;
+    if (c.oculto || (c.mostrarSe && !c.mostrarSe(valores))) continue; // campo escondido não é validado nem enviado
     let v = valores[c.nome];
     const vazio = v === '' || v === undefined || v === null || (Array.isArray(v) && !v.length) || (c.tipo === 'checkbox' && v === false && c.obrigatorio);
     if (vazio) {

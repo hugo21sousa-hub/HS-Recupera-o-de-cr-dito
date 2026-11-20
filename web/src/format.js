@@ -77,7 +77,7 @@ const ROTULOS = {
   EM_CONFIRMACAO: 'Em conferência', EM_VALIDACAO: 'Em validação', NAO_VALIDADA: 'Não validada', VALIDADA: 'Validada', REPROVADA: 'Devolvida',
   CADASTRO_INCOMPLETO: 'Cadastro incompleto', EM_ANALISE: 'Em análise', CONCLUIDA: 'Concluída', NEGADA_FUNDAMENTADA: 'Negada (fundamentada)',
   PLATAFORMA: 'Plataforma (cobrança própria)', AMBOS: 'Plataforma + cobrança Acorly', CARTEIRA_SELECIONADA: 'Carteira selecionada', TODOS_ELEGIVEIS: 'Todos os elegíveis',
-  PACOTE_CASOS: 'Pacote de casos', CARTEIRA_ESPECIFICA: 'Carteira específica', CARTEIRA_COMPLETA: 'Carteira completa', PERSONALIZADA: 'Proposta personalizada',
+  PILOTO: 'Piloto Sem Risco', PACOTE_CASOS: 'Pacote de casos', CARTEIRA_ESPECIFICA: 'Carteira específica', CARTEIRA_COMPLETA: 'Carteira completa', PERSONALIZADA: 'Proposta personalizada',
   SEM_RESPOSTA: 'Sem resposta', NUMERO_INVALIDO: 'Número inválido', PROMESSA_PAGAMENTO: 'Promessa de pagamento', SOLICITOU_INTERRUPCAO: 'Pediu para não ser contatado',
   LIGACAO: 'Ligação', TRANSFERENCIA: 'Transferência', CARTAO: 'Cartão', CONFISSAO_DIVIDA: 'Confissão de dívida', COMPROVANTE_ENTREGA: 'Comprovante de entrega',
   CORRECAO: 'Correção', ELIMINACAO: 'Eliminação', INFORMACAO_COMPARTILHAMENTO: 'Informação sobre compartilhamento', OPOSICAO: 'Oposição', REVOGACAO_CONSENTIMENTO: 'Revogação de consentimento',

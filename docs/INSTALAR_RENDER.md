@@ -388,3 +388,29 @@ Em **Negócio → Financeiro da empresa**, só para o superadmin.
 - **Diagnóstico anônimo:** a planilha (Excel ou CSV) é lida no navegador, e só as colunas de valor e vencimento são enviadas. Nome, CPF e telefone não saem do computador do cliente.
 - **Comissão padrão: 10% para dívidas de até 180 dias e 15% acima disso.** Quem tinha a tabela antiga sem mudanças (10/15/20/25%) passa para a nova automaticamente na inicialização. Uma tabela personalizada não é alterada.
 - **Novo modelo de e-mail comercial "Piloto Sem Risco":** passa a ser o padrão no primeiro contato.
+
+## Diagnóstico, piloto e resultados
+
+**Enviar diagnóstico**
+- Onde: dentro do pedido, em Diagnósticos e prospecção → Pedidos e contatos.
+- O que vai no e-mail:
+  - os números da planilha anônima, ou o valor informado;
+  - a estimativa conservadora, digitada pela equipe e deixando claro que não é garantia;
+  - a comissão nesse cenário;
+  - o convite para o Piloto Sem Risco, com botão para o WhatsApp.
+- Depois do envio, o pedido passa para "Diagnóstico enviado" e o follow-up para.
+
+**Contrato "Piloto Sem Risco"**
+- Onde: em Contratos de cobrança → Nova proposta.
+- O que é preenchido sozinho: até 20 devedores, 30 dias de vigência, comissão de 10% fixos e sem mensalidade.
+- Avisos: a empresa e o superadmin recebem um aviso 5 dias antes do fim e outro no encerramento, com o resultado do piloto.
+- Depois do fim, o piloto não aceita devedores novos. Os acordos em andamento continuam sendo acompanhados.
+
+**Resultados da cobrança gerenciada**
+- Onde: em Indicadores do negócio.
+- O que mostra:
+  - taxa de recuperação real por faixa de atraso;
+  - tempo até o 1º pagamento;
+  - reclamações e pedidos de "não contatar";
+  - funil diagnóstico → piloto → continuidade;
+  - a lista de pilotos.

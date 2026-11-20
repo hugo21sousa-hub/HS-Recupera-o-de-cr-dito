@@ -110,6 +110,59 @@ function VisitasSite() {
   );
 }
 
+/** Resultados reais da cobrança gerenciada: a prova que vira argumento de venda. */
+function ResultadosCobranca() {
+  const { data: d, erro, recarregar } = useApi('resultadosCobranca', {});
+  const taxa = (bps) => (bps === null || bps === undefined ? '—' : pct(bps));
+  return (
+    <div className="card stack">
+      <h2 style={{ margin: 0 }}>Resultados da cobrança gerenciada</h2>
+      {erro ? <ErroCarga erro={erro} onRetry={recarregar} /> : !d ? <Carregando linhas={4} /> : (
+        <>
+          <div className="grid g4">
+            <Stat rotulo="Taxa de recuperação real" valor={taxa(d.total.taxa_bps)} ajuda={d.total.casos ? `${brl(d.total.recuperado_centavos)} de ${brl(d.total.encaminhado_centavos)} encaminhados` : 'Ainda sem casos encaminhados'} tom={d.total.recuperado_centavos ? 'ok' : undefined} />
+            <Stat rotulo="Tempo até o 1º pagamento" valor={d.tempo_primeiro_pagamento ? `${d.tempo_primeiro_pagamento.mediana_dias} dias` : '—'} ajuda={d.tempo_primeiro_pagamento ? `mediana de ${d.tempo_primeiro_pagamento.casos} caso(s)` : 'Sem pagamentos confirmados ainda'} />
+            <Stat rotulo="Casos com algum pagamento" valor={d.total.casos ? `${d.total.com_pagamento} de ${d.total.casos}` : '—'} />
+            <Stat rotulo="Reclamações e pedidos para parar" valor={d.reclamacoes.nao_contatar + d.reclamacoes.contestacoes} ajuda={`${d.reclamacoes.nao_contatar} pediram para não ser contatados · ${d.reclamacoes.contestacoes} contestações · ${d.reclamacoes.suspensos} casos suspensos`} tom={d.reclamacoes.nao_contatar + d.reclamacoes.contestacoes ? 'alerta' : undefined} />
+          </div>
+          <div className="grid g2">
+            <div className="stack" style={{ gap: 6 }}>
+              <strong className="small">Recuperação por tempo de atraso no envio</strong>
+              <table className="small"><thead><tr><th>Atraso</th><th className="num">Casos</th><th className="num">Encaminhado</th><th className="num">Recuperado</th><th className="num">Taxa</th></tr></thead><tbody>
+                {d.por_faixa.map((f) => <tr key={f.faixa}><td>{f.faixa}</td><td className="num">{f.casos}</td><td className="num">{brl(f.encaminhado_centavos)}</td><td className="num">{brl(f.recuperado_centavos)}</td><td className="num">{taxa(f.taxa_bps)}</td></tr>)}
+              </tbody></table>
+              <span className="small muted">Use estas taxas na estimativa do diagnóstico e no discurso de venda ("recuperamos X% das dívidas de até 180 dias"), sempre como resultado passado, não como promessa.</span>
+            </div>
+            <div className="stack" style={{ gap: 6 }}>
+              <strong className="small">Funil comercial</strong>
+              <table className="small"><tbody>
+                <tr><td>Pedidos de diagnóstico (site e indicações)</td><td className="num">{d.funil.pedidos_diagnostico}</td></tr>
+                <tr><td>Diagnósticos enviados</td><td className="num">{d.funil.diagnosticos_enviados}</td></tr>
+                <tr><td>Pilotos propostos</td><td className="num">{d.funil.pilotos_propostos}</td></tr>
+                <tr><td>Pilotos iniciados (contrato aceito)</td><td className="num">{d.funil.pilotos_iniciados}</td></tr>
+                <tr><td>Continuaram depois do piloto</td><td className="num">{d.funil.continuaram}</td></tr>
+              </tbody></table>
+            </div>
+          </div>
+          <div className="stack" style={{ gap: 6 }}>
+            <strong className="small">Pilotos Sem Risco</strong>
+            {d.pilotos.length ? (
+              <table className="small"><thead><tr><th>Empresa</th><th>Período</th><th className="num">Devedores</th><th className="num">Acordos</th><th className="num">Recuperado</th><th className="num">Comissão</th><th>Situação</th></tr></thead><tbody>
+                {d.pilotos.map((p) => (
+                  <tr key={p.id}>
+                    <td>{p.empresa}</td><td>{data(p.data_inicio)} a {data(p.data_fim)}</td><td className="num">{p.casos} / {p.limite}</td><td className="num">{p.acordos}</td><td className="num">{brl(p.recuperado_centavos)}</td><td className="num">{brl(p.comissao_centavos)}</td>
+                    <td>{!p.aceite ? <Badge status="PENDENTE">Aguardando aceite</Badge> : p.continuou ? <Badge status="ATIVA">Continuou</Badge> : p.dias_restantes !== null && p.dias_restantes >= 0 ? <Badge status="info">{p.dias_restantes} dia(s) restantes</Badge> : <Badge status="CANCELADA">Encerrado</Badge>}</td>
+                  </tr>
+                ))}
+              </tbody></table>
+            ) : <span className="small muted">Nenhum piloto ainda. Crie em <Link to="/hs/contratos">Contratos de cobrança</Link> → Nova proposta → modalidade "Piloto Sem Risco".</span>}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function IndicadoresNegocio() {
   const { data: d, carregando, erro, recarregar } = useApi('indicadoresNegocio', {});
   if (erro) return <ErroCarga erro={erro} onRetry={recarregar} />;
@@ -121,6 +174,7 @@ export function IndicadoresNegocio() {
       </Cabecalho>
 
       <VisitasSite />
+      <ResultadosCobranca />
 
       <div className="grid g4">
         <Stat rotulo="Receita recorrente (MRR)" valor={brl(d.mrr_centavos)} ajuda={`${d.em_dia} assinante(s) em dia · ticket médio ${brl(d.ticket_medio_centavos)}`} tom="ok" />

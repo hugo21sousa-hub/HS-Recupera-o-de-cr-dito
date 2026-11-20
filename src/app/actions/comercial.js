@@ -8,8 +8,9 @@ import { montarContrato, hashTexto, VERSAO_CONTRATO } from '../../core/contrato.
 import {
   AccessError, ValidationError, requirePerm, getById, find, criar, alterar, empresaAlvo, paginar, filtrosPermitidos, exigir, notificar, carregarCaso,
 } from '../context.js';
+import { padraoPiloto } from './resultados.js';
 
-const MODALIDADES_CONTRATO = ['PACOTE_CASOS', 'CARTEIRA_ESPECIFICA', 'CARTEIRA_COMPLETA', 'PERSONALIZADA'];
+const MODALIDADES_CONTRATO = ['PILOTO', 'PACOTE_CASOS', 'CARTEIRA_ESPECIFICA', 'CARTEIRA_COMPLETA', 'PERSONALIZADA'];
 
 // Valores padrão anteriores: planos ainda com estes números são atualizados para os novos na inicialização.
 // Planos que a HS já editou no painel ficam como estão.
@@ -245,6 +246,8 @@ export const actions = {
   salvarContrato: {
     perm: 'contrato.gerenciar',
     async run(ctx, input) {
+      // Piloto Sem Risco: até 20 devedores, 30 dias, 10% só sobre o recuperado e sem mensalidade
+      if (input.modalidade === 'PILOTO') { parseDataISO(input.data_inicio, 'data_inicio'); input = { ...input, ...padraoPiloto(input) }; }
       exigir(MODALIDADES_CONTRATO.includes(input.modalidade), 'Modalidade de contrato inválida');
       const empresa = await getById(ctx, 'Empresa', input.empresa_id);
       exigir(empresa, 'Empresa não encontrada');

@@ -55,7 +55,7 @@ export const ENTITIES = {
   ContratoServico: {
     description: 'Contrato de cobrança gerenciada Acorly',
     properties: {
-      ...EMP, modalidade: e(['PACOTE_CASOS', 'CARTEIRA_ESPECIFICA', 'CARTEIRA_COMPLETA', 'PERSONALIZADA'], 'Modalidade'), tipo_carteira: e(['CARTEIRA_SELECIONADA', 'TODOS_ELEGIVEIS'], 'Escopo'),
+      ...EMP, modalidade: e(['PILOTO', 'PACOTE_CASOS', 'CARTEIRA_ESPECIFICA', 'CARTEIRA_COMPLETA', 'PERSONALIZADA'], 'Modalidade'), tipo_carteira: e(['CARTEIRA_SELECIONADA', 'TODOS_ELEGIVEIS'], 'Escopo'),
       quantidade_casos_contratada: n('Limite de casos (pacote)'), valor_contratado_centavos: c('Preço do serviço'), forma_cobranca_servico: s('Periodicidade/forma de cobrança do serviço'),
       data_inicio: dt('Início da vigência'), data_fim: dt('Fim da vigência'), escopo: s('Escopo contratado'), limites: s('Limites'), documento: s('file_uri do contrato (privado)'),
       status: e(['SOLICITADO', 'PROPOSTO', 'ATIVO', 'ENCERRADO', 'CANCELADO'], 'Status', 'SOLICITADO'), aceite: b('Aceito pela empresa'), data_aceite: ts('Data do aceite'),
@@ -64,6 +64,7 @@ export const ENTITIES = {
       versao_contrato: s('Versão do modelo de contrato aceito'), texto_aceito: s('Texto integral do contrato no momento do aceite'),
       contrato_secoes: arr('Seções do contrato aceito [{titulo, paragrafos}]', { type: 'object' }), hash_texto: s('SHA-256 do texto aceito'),
       aceite_nome: s('Nome de quem aceitou'), aceite_email: s('E-mail de quem aceitou'), aceite_ip: s('IP do aceite'),
+      piloto_aviso_5d_em: dt('Aviso de fim do piloto (5 dias antes)'), piloto_aviso_fim_em: dt('Aviso de piloto encerrado'),
     },
     required: ['empresa_id', 'modalidade', 'status'],
   },
@@ -304,6 +305,7 @@ export const ENTITIES = {
       decisor_nome: s('Pessoa que decide'), decisor_cargo: s('Cargo de quem decide'), decisor_contato: s('Contato direto de quem decide'),
       cadencia_inicio: dt('Início da cadência de follow-up'), cadencia_etapa: n('Follow-ups feitos (0 a 3)'), proximo_followup: dt('Próximo follow-up'), cadencia_fim: s('Como a cadência terminou'),
       parceiro_id: ref('Parceiro que indicou'),
+      diagnostico_enviado_em: ts('Diagnóstico enviado ao cliente em'), diagnostico_resumo: { type: 'object', description: 'Resumo do diagnóstico enviado (valores e estimativa)' },
     },
     required: ['nome', 'empresa', 'status'],
   },

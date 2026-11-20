@@ -145,6 +145,49 @@ function Modelos() {
   );
 }
 
+/** Envia ao cliente o diagnóstico (números da planilha ou do valor informado, estimativa e convite ao Piloto Sem Risco). */
+function EnviarDiagnostico({ lead, onClose, onFeito }) {
+  const temAnalise = !!lead.analise?.vencido_centavos;
+  const [v, setV] = useState({ taxa_recuperacao: '20', prazo_dias: '90', valor_em_atraso: '', qtd_dividas: '', mensagem: '' });
+  const [previa, setPrevia] = useState(null);
+  const [erroPrevia, setErroPrevia] = useState(null);
+  const { executar, enviando } = useExecutar();
+  const set = (k) => (e) => setV({ ...v, [k]: e.target.value });
+  useEffect(() => {
+    const t = setTimeout(() => {
+      hs('previaDiagnosticoLead', { id: lead.id, ...v }).then((p) => { setPrevia(p); setErroPrevia(null); }).catch((e) => { setPrevia(null); setErroPrevia(e.message); });
+    }, 400);
+    return () => clearTimeout(t);
+  }, [v.taxa_recuperacao, v.prazo_dias, v.valor_em_atraso, v.qtd_dividas, v.mensagem]); // eslint-disable-line react-hooks/exhaustive-deps
+  const enviar = async () => { try { await executar('enviarDiagnosticoLead', { id: lead.id, ...v }, 'Diagnóstico enviado ao cliente'); onFeito(); onClose(); } catch { /* aviso já mostrado */ } };
+  return (
+    <Modal grande titulo={`Enviar diagnóstico: ${lead.empresa}`} onClose={onClose} rodape={<><button className="btn" onClick={onClose}>Cancelar</button><button className="btn prim" disabled={enviando || !previa} onClick={enviar}>Enviar para {lead.email}</button></>}>
+      <div className="stack">
+        <p className="small muted" style={{ margin: 0 }}>{temAnalise ? 'Os números vêm da planilha analisada.' : 'Sem planilha analisada: informe o valor total em atraso (ou o sistema usa o valor que o cliente informou no pedido).'} A estimativa é sua: o e-mail deixa claro que não é garantia de resultado.</p>
+        <div className="form-grid">
+          <div className="campo"><label>Estimativa conservadora de recuperação (%)</label><input inputMode="decimal" value={v.taxa_recuperacao} onChange={set('taxa_recuperacao')} /><span className="small muted">Comece baixo. Depois dos primeiros pilotos, use a taxa real em "Resultados da cobrança".</span></div>
+          <div className="campo"><label>Prazo da estimativa (dias)</label><input inputMode="numeric" value={v.prazo_dias} onChange={set('prazo_dias')} /></div>
+          {!temAnalise && <div className="campo"><label>Valor total em atraso (R$)</label><input inputMode="decimal" value={v.valor_em_atraso} onChange={set('valor_em_atraso')} placeholder={lead.valor_aberto_centavos ? brl(lead.valor_aberto_centavos) : '20.000,00'} /></div>}
+          {!temAnalise && <div className="campo"><label>Quantidade de dívidas (opcional)</label><input inputMode="numeric" value={v.qtd_dividas} onChange={set('qtd_dividas')} placeholder={lead.qtd_devedores || ''} /></div>}
+        </div>
+        <div className="campo"><label>Mensagem pessoal (opcional)</label><textarea rows={2} value={v.mensagem} onChange={set('mensagem')} placeholder="Ex.: Posso te ligar amanhã às 10h para explicar?" /></div>
+        {erroPrevia && <div className="aviso alerta small">{erroPrevia}</div>}
+        {previa && (
+          <div className="stack" style={{ gap: 6 }}>
+            <div className="grid g3">
+              <div className="card stat"><span className="rot">Em atraso</span><span className="val">{brl(previa.numeros.vencido_centavos)}</span></div>
+              <div className="card stat"><span className="rot">Estimativa de recuperação</span><span className="val">{brl(previa.estimado_centavos)}</span></div>
+              <div className="card stat"><span className="rot">Comissão nesse cenário</span><span className="val">{brl(previa.comissao_centavos)}</span></div>
+            </div>
+            <div className="small"><strong>Assunto:</strong> {previa.assunto}</div>
+            <div className="previa-email" dangerouslySetInnerHTML={{ __html: previa.html }} />
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
 function Cadencia({ lead, onMudou, onEmail }) {
   const epoca = useApi('epocaComercial', {});
   const { executar, enviando } = useExecutar();
@@ -205,6 +248,7 @@ function Detalhe({ lead: inicial, onClose, onFeito, onEmail }) {
   const [obs, setObs] = useState(lead.observacoes || '');
   const [dec, setDec] = useState({ decisor_nome: lead.decisor_nome || '', decisor_cargo: lead.decisor_cargo || '', decisor_contato: lead.decisor_contato || '', parceiro_id: lead.parceiro_id || '' });
   const [verRoteiro, setVerRoteiro] = useState(false);
+  const [diag, setDiag] = useState(false);
   const { executar, enviando } = useExecutar();
   const toast = useToast();
   const recarregarLead = async () => {
@@ -243,6 +287,13 @@ function Detalhe({ lead: inicial, onClose, onFeito, onEmail }) {
           {lead.nao_receber_comercial && <div className="aviso alerta small">Este contato pediu para não receber e-mails comerciais.</div>}
           {(envios.data || []).length ? <ul className="small" style={{ margin: 0, paddingLeft: 18 }}>{envios.data.map((e) => <li key={e.id}>{dataHora(e.enviado_em)} · {e.assunto}</li>)}</ul> : <span className="small muted">Nenhum e-mail enviado ainda.</span>}
         </div>
+        <div className="card row between" style={{ gap: 8 }}>
+          <div className="stack" style={{ gap: 2 }}>
+            <strong>Diagnóstico</strong>
+            <span className="small muted">{lead.diagnostico_enviado_em ? `Enviado em ${dataHora(lead.diagnostico_enviado_em)}${lead.diagnostico_resumo?.estimado_centavos ? ` · estimativa ${brl(lead.diagnostico_resumo.estimado_centavos)}` : ''}` : 'Ainda não enviado. O site promete a resposta em até 2 dias úteis.'}</span>
+          </div>
+          {lead.email && !lead.nao_receber_comercial && <button className={`btn sm${lead.diagnostico_enviado_em ? '' : ' prim'}`} onClick={() => setDiag(true)}>{lead.diagnostico_enviado_em ? 'Reenviar diagnóstico' : 'Enviar diagnóstico'}</button>}
+        </div>
         <Cadencia lead={lead} onMudou={recarregarLead} onEmail={(l) => { onClose(); onEmail(l); }} />
         <div className="stack" style={{ gap: 6 }}>
           <h3 style={{ margin: 0 }}>Quem decide</h3>
@@ -259,6 +310,7 @@ function Detalhe({ lead: inicial, onClose, onFeito, onEmail }) {
         </div>
         <div className="campo"><label>Anotações da equipe</label><textarea rows={4} value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Contatos feitos, proposta enviada, próximos passos…" /></div>
       </div>
+      {diag && <EnviarDiagnostico lead={lead} onClose={() => setDiag(false)} onFeito={recarregarLead} />}
       {verRoteiro && <RoteiroModal segmento={lead.segmento} empresa={lead.empresa} onClose={() => setVerRoteiro(false)} />}
     </Modal>
   );

@@ -22,9 +22,10 @@ import { actions as acompanhamento } from './actions/acompanhamento.js';
 import { actions as campanhas } from './actions/campanhas.js';
 import { actions as visitas } from './visitas.js';
 import { actions as financeiroHS } from './actions/financeiroHS.js';
+import { actions as resultados } from './actions/resultados.js';
 import { actions as prospects } from './actions/prospects.js';
 
-export const ACTIONS = { ...empresa, ...devedores, ...carteiras, ...operacoes, ...negociacao, ...pagamentos, ...relatorios, ...comercial, ...lgpd, ...whatsapp, ...mensagens, ...negocio, ...boletos, ...leads, ...conteudo, ...prospeccao, ...prospects, ...acompanhamento, ...campanhas, ...visitas, ...financeiroHS };
+export const ACTIONS = { ...empresa, ...devedores, ...carteiras, ...operacoes, ...negociacao, ...pagamentos, ...relatorios, ...comercial, ...lgpd, ...whatsapp, ...mensagens, ...negocio, ...boletos, ...leads, ...conteudo, ...prospeccao, ...prospects, ...acompanhamento, ...campanhas, ...visitas, ...financeiroHS, ...resultados };
 
 // Ações permitidas mesmo com empresa suspensa/cancelada (somente consulta essencial)
 const LIBERADAS_EMPRESA_BLOQUEADA = new Set(['meuPerfil', 'minhaAssinatura', 'listarNotificacoes', 'marcarNotificacaoLida', 'listarContratos', 'exportarDadosTitular']);

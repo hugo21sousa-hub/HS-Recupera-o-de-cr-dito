@@ -204,7 +204,7 @@ function ComissaoContrato({ inicial, padrao, onChange }) {
     <div className="stack">
       <h3 style={{ margin: 0 }}>Comissão do Acorly sobre valores recebidos</h3>
       <label className="check"><input type="checkbox" checked={propria} onChange={(e) => setPropria(e.target.checked)} />Usar tabela própria neste contrato</label>
-      {propria ? <EditorFaixas faixas={faixas} onChange={setFaixas} /> : <><p className="small muted" style={{ margin: 0 }}>Sem tabela própria, o contrato usa a tabela padrão vigente (abaixo).</p><TabelaComissao faixas={padrao} /></>}
+      {propria ? <EditorFaixas faixas={faixas} onChange={setFaixas} /> : <><p className="small muted" style={{ margin: 0 }}>Sem tabela própria, o contrato usa a tabela padrão vigente (abaixo). No Piloto Sem Risco, a comissão é de 10% fixos para qualquer atraso.</p><TabelaComissao faixas={padrao} /></>}
     </div>
   );
 }
@@ -221,11 +221,11 @@ export function ContratosHS() {
   const nomes = new Map((empresas.data?.itens || []).map((e) => [e.id, e.nome_fantasia || e.razao_social]));
   const campos = [
     { nome: 'empresa_id', rotulo: 'Empresa', tipo: 'select', obrigatorio: true, full: true, opcoes: (empresas.data?.itens || []).map((e) => ({ valor: e.id, rotulo: `${e.razao_social} · ${mascaraDoc(e.cnpj)}` })) },
-    { nome: 'modalidade', rotulo: 'Modalidade', tipo: 'select', obrigatorio: true, opcoes: ['PACOTE_CASOS', 'CARTEIRA_ESPECIFICA', 'CARTEIRA_COMPLETA', 'PERSONALIZADA'] },
-    { nome: 'quantidade_casos_contratada', rotulo: 'Quantidade de casos', tipo: 'numero', min: 1, max: 1000000, mostrarSe: (v) => v.modalidade === 'PACOTE_CASOS' },
-    { nome: 'valor_contratado_centavos', rotulo: 'Preço do serviço', tipo: 'dinheiro', permitirZero: true, obrigatorio: true },
-    { nome: 'forma_cobranca_servico', rotulo: 'Forma de cobrança do serviço', padrao: 'Mensal' },
-    { nome: 'data_inicio', rotulo: 'Início da vigência', tipo: 'data', obrigatorio: true, padrao: hojeISO() }, { nome: 'data_fim', rotulo: 'Fim da vigência (opcional)', tipo: 'data', ajuda: 'Deixe em branco: o contrato é por prazo indeterminado. Com data, o encaminhamento de dívidas para depois dela.' },
+    { nome: 'modalidade', rotulo: 'Modalidade', tipo: 'select', obrigatorio: true, opcoes: ['PILOTO', 'PACOTE_CASOS', 'CARTEIRA_ESPECIFICA', 'CARTEIRA_COMPLETA', 'PERSONALIZADA'], ajuda: 'Piloto Sem Risco: até 20 devedores, 30 dias, 10% só sobre o recuperado e sem mensalidade. Prazo, limite e comissão são preenchidos sozinhos.' },
+    { nome: 'quantidade_casos_contratada', rotulo: 'Quantidade de casos', tipo: 'numero', min: 1, max: 1000000, mostrarSe: (v) => v.modalidade === 'PACOTE_CASOS' || v.modalidade === 'PILOTO', ajuda: 'No piloto, no máximo 20 (vazio = 20).' },
+    { nome: 'valor_contratado_centavos', rotulo: 'Preço do serviço', tipo: 'dinheiro', permitirZero: true, obrigatorio: true, mostrarSe: (v) => v.modalidade !== 'PILOTO' },
+    { nome: 'forma_cobranca_servico', rotulo: 'Forma de cobrança do serviço', padrao: 'Mensal', mostrarSe: (v) => v.modalidade !== 'PILOTO' },
+    { nome: 'data_inicio', rotulo: 'Início da vigência', tipo: 'data', obrigatorio: true, padrao: hojeISO() }, { nome: 'data_fim', rotulo: 'Fim da vigência (opcional)', tipo: 'data', mostrarSe: (v) => v.modalidade !== 'PILOTO', ajuda: 'Deixe em branco: o contrato é por prazo indeterminado. Com data, o encaminhamento de dívidas para depois dela.' },
     { nome: 'escopo', rotulo: 'Escopo', tipo: 'textarea' }, { nome: 'limites', rotulo: 'Limites', tipo: 'textarea' },
   ];
   return (
