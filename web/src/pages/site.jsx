@@ -103,7 +103,7 @@ export function Site() {
       <section className="site-hero">
         <div className="site-largura site-hero-in">
           <div className="site-hero-texto">
-            <span className="site-selo">Piloto Sem Risco · Salvador</span>
+            <span className="site-selo">Piloto Sem Risco</span>
             <h1>Recupere o que é seu sem perder o cliente.</h1>
             <p>Teste por 30 dias com até 20 devedores escolhidos por você. Você vê as mensagens antes, o devedor paga direto na conta da sua empresa e você <strong style={{ color: '#fff' }}>só paga 10% do que entrar nos 30 dias</strong>. Se nada entrar, não paga nada.</p>
             <div className="row">
