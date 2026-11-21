@@ -10,16 +10,20 @@ export function Carrossel({ itens, intervalo = 6000, className = '', rotulo = 'D
   const toque = useRef(null);
   const n = itens.length;
   useEffect(() => {
-    if (pausa || n < 2 || semMovimento()) return undefined;
-    const t = setTimeout(() => setI((x) => (x + 1) % n), intervalo);
+    if (pausa || n < 2) return undefined;
+    // quem pediu menos movimento ainda vê os slides trocarem, só que mais devagar e sem deslizar
+    const t = setTimeout(() => setI((x) => (x + 1) % n), semMovimento() ? intervalo * 1.5 : intervalo);
     return () => clearTimeout(t);
   }, [i, pausa, n, intervalo]);
   const ir = (k) => setI(((k % n) + n) % n);
   return (
     <div className={`carrossel ${className}`} role="region" aria-roledescription="carrossel" aria-label={rotulo}
-      onMouseEnter={() => setPausa(true)} onMouseLeave={() => setPausa(false)} onFocus={() => setPausa(true)} onBlur={() => setPausa(false)}
-      onTouchStart={(e) => { toque.current = e.touches[0].clientX; setPausa(true); }}
-      onTouchEnd={(e) => { const d = e.changedTouches[0].clientX - (toque.current ?? 0); if (Math.abs(d) > 40) ir(i + (d < 0 ? 1 : -1)); setPausa(false); }}>
+      // pausa só com mouse de verdade em cima ou foco pelo teclado; no celular o toque não deixa o carrossel parado
+      onPointerEnter={(e) => { if (e.pointerType === 'mouse') setPausa(true); }} onPointerLeave={(e) => { if (e.pointerType === 'mouse') setPausa(false); }}
+      onFocus={(e) => { if (e.target.matches?.(':focus-visible')) setPausa(true); }} onBlur={() => setPausa(false)}
+      onTouchStart={(e) => { toque.current = e.touches[0].clientX; }}
+      onTouchEnd={(e) => { const d = e.changedTouches[0].clientX - (toque.current ?? 0); toque.current = null; if (Math.abs(d) > 40) ir(i + (d < 0 ? 1 : -1)); }}
+      onTouchCancel={() => { toque.current = null; }}>
       <div className="carrossel-trilho" style={{ transform: `translateX(-${i * 100}%)` }}>
         {itens.map((it, k) => (
           <div key={k} className="carrossel-slide" aria-hidden={k !== i} role="group" aria-roledescription="slide" aria-label={`${k + 1} de ${n}`}>

@@ -380,6 +380,6 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 }
 @media (prefers-reduced-motion: reduce) {
   .carrossel-trilho, .revela, .site-hero-carrossel .carrossel-slide .site-hero-texto > * { transition: none; }
-  .faixa-trilho, .ilustra, .ilustra-barra, .ilustra-bolha, .ilustra-anel { animation: none !important; }
-  .faixa { overflow-x: auto; }
+  .ilustra, .ilustra-barra, .ilustra-bolha, .ilustra-anel { animation: none !important; }
+  .faixa-trilho { animation-duration: 90s !important; }
 }
