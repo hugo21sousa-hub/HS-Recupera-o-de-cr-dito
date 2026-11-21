@@ -5,6 +5,7 @@ import { Marca } from '../layout.jsx';
 import { WhatsAppFlutuante, linkWhatsApp } from '../whatsapp.jsx';
 import { registrarVisita } from '../visitas.js';
 import { brl, rotulo, mascaraFone, pct } from '../format.js';
+import { Carrossel, Faixa, useRevelar, IlustraResultado, IlustraDiagnostico, IlustraMensagens, IlustraEquipe } from '../siteVisual.jsx';
 
 const SERVICOS = [
   {
@@ -34,10 +35,20 @@ const SERVICOS = [
 ];
 
 const PILOTO = [
-  ['1. Diagnóstico grátis e anônimo', 'Você envia só o valor e a data de vencimento de cada atraso, sem nome, CPF ou telefone. Em até 2 dias úteis, recebe quanto dá para recuperar.'],
-  ['2. Piloto de 30 dias', 'Até 20 devedores escolhidos por você. Comece pelos clientes que já saíram ou pelas dívidas com mais de 90 dias: assim quem ainda é seu cliente não recebe nenhum contato. Você vê e aprova as mensagens e define os limites de desconto e parcelamento; acordo fora desses limites só fecha com a sua aprovação.'],
-  ['3. Você só paga se entrar', 'O devedor paga direto na conta da sua empresa. A comissão é de 10% sobre o que entrar durante os 30 dias do piloto. Se nada entrar, você não paga nada.'],
+  ['1', 'Diagnóstico grátis e anônimo', 'Só o valor e o vencimento de cada atraso, sem nome nem CPF. Resposta em até 2 dias úteis.'],
+  ['2', 'Piloto de 30 dias', 'Até 20 devedores escolhidos por você, começando pelos que já saíram ou pelas dívidas antigas. Acordo fora dos seus limites só com o seu OK.'],
+  ['3', 'Você só paga se entrar', 'O devedor paga direto na sua conta. 10% só do que entrar nos 30 dias; se nada entrar, não paga nada.'],
 ];
+
+const SLIDES = [
+  { selo: 'Piloto Sem Risco', titulo: 'Recupere o que é seu sem perder o cliente.', texto: '30 dias com até 20 devedores. Você só paga 10% do que entrar na sua conta. Se nada entrar, não paga nada.', cta: ['/diagnostico', 'Começar pelo diagnóstico grátis'], cta2: ['/mensagens', 'Veja as mensagens'], Ilustra: IlustraResultado },
+  { selo: 'Diagnóstico grátis', titulo: 'Descubra quanto do seu dinheiro parado dá para recuperar.', texto: 'Envie só valor e vencimento, sem nome nem CPF. Em até 2 dias úteis você recebe o diagnóstico.', cta: ['/diagnostico', 'Quero o meu diagnóstico'], Ilustra: IlustraDiagnostico },
+  { selo: 'Cobrança cordial', titulo: 'Cobre com inteligência e sem constrangimento.', texto: 'Mensagens com o nome da sua empresa, sem ameaças e sem expor ninguém. O devedor paga direto na sua conta.', cta: ['/mensagens', 'Ver as mensagens'], Ilustra: IlustraMensagens },
+  { selo: 'Equipe dedicada', titulo: 'Uma equipe competente cuidando da sua carteira.', texto: 'Um operador responsável pela sua carteira, do primeiro contato ao pagamento. Você acompanha tudo pelo painel.', cta: ['/diagnostico', 'Falar sobre a minha carteira'], Ilustra: IlustraEquipe },
+];
+
+const FAIXA = ['Dinheiro direto na sua conta', 'Sem mensalidade no piloto', 'Comece pelos ex-clientes', 'Mensagens com o nome da sua empresa', 'Sem ameaças e sem exposição', 'Contrato com proteção de dados (LGPD)', 'Se o cliente reclamar, paramos na hora', 'Sem fidelidade', 'Diagnóstico sem dados pessoais'];
+
 
 const EQUIPE = [
   ['Equipe preparada para negociar', 'Quem fala com os seus devedores é uma equipe treinada para cobrança cordial e eficiente: escuta o devedor, oferece condições dentro do que você autorizou e conduz até o acordo.'],
@@ -46,15 +57,6 @@ const EQUIPE = [
   ['Você acompanha tudo', 'No seu painel você vê cada contato, cada proposta e cada pagamento, e fala com a equipe direto pelo WhatsApp sempre que quiser.'],
 ];
 
-const GARANTIAS_PILOTO = [
-  'Diagnóstico sem nenhum dado pessoal dos seus clientes',
-  'Comece só com ex-clientes ou dívidas antigas: quem ainda é seu cliente fica de fora',
-  'Contrato com cláusulas de proteção de dados (LGPD) assinado antes de qualquer dado pessoal',
-  'Mensagens com o nome da sua empresa, em tom cordial e sem ameaças',
-  'Se um cliente seu reclamar, paramos o contato com ele na hora',
-  'Sem mensalidade no piloto e sem fidelidade',
-  'Depois dos 30 dias, vale a tabela normal por tempo de atraso (veja em Planos)',
-];
 
 const PASSOS = [
   ['Cadastre', 'Inclua os clientes devedores e as dívidas, com documentos, ou importe uma planilha.'],
@@ -88,11 +90,13 @@ const DUVIDAS = [
 export function Site() {
   const [dados, setDados] = useState(null);
   const [menu, setMenu] = useState(false);
+  const [todasDuvidas, setTodasDuvidas] = useState(false);
+  useRevelar();
   useEffect(() => { publico().then(setDados).catch(() => setDados({ planos: [], contato: {} })); }, []);
   const ano = new Date().getFullYear();
   const contato = dados?.contato || {};
   const ir = (id) => (e) => { e.preventDefault(); setMenu(false); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
-  const links = [['piloto', 'Piloto sem risco'], ['video', 'Vídeo'], ['como-funciona', 'Como funciona'], ['diagnostico', 'Diagnóstico grátis'], ['servicos', 'Serviços'], ['planos', 'Planos'], ['seguranca', 'Segurança'], ['duvidas', 'Dúvidas']];
+  const links = [['piloto', 'Piloto sem risco'], ['como-funciona', 'Como funciona'], ['planos', 'Planos'], ['seguranca', 'Segurança'], ['duvidas', 'Dúvidas']];
 
   return (
     <div className="site">
@@ -111,52 +115,43 @@ export function Site() {
       </header>
 
       <section className="site-hero">
-        <div className="site-largura site-hero-in">
-          <div className="site-hero-texto">
-            <span className="site-selo">Piloto Sem Risco</span>
-            <h1>Recupere o que é seu sem perder o cliente.</h1>
-            <p>Teste por 30 dias com até 20 devedores escolhidos por você (comece pelos que já saíram). Nossa equipe cuida da cobrança, você vê as mensagens antes, o devedor paga direto na conta da sua empresa e você <strong style={{ color: '#fff' }}>só paga 10% do que entrar nos 30 dias</strong>. Se nada entrar, não paga nada.</p>
-            <div className="row">
-              <Link className="btn prim site-btn-grande" to="/diagnostico">Começar pelo diagnóstico grátis</Link>
-              <Link className="btn site-btn-grande site-btn-claro" to="/mensagens">Veja as mensagens</Link>
+        <div className="site-largura">
+          <Carrossel itens={SLIDES} intervalo={6500} className="site-hero-carrossel" rotulo="Destaques da Acorly" render={(sl) => (
+            <div className="site-hero-in">
+              <div className="site-hero-texto">
+                <span className="site-selo">{sl.selo}</span>
+                <h1>{sl.titulo}</h1>
+                <p>{sl.texto}</p>
+                <div className="row">
+                  <Link className="btn prim site-btn-grande" to={sl.cta[0]}>{sl.cta[1]}</Link>
+                  {sl.cta2 && <Link className="btn site-btn-grande site-btn-claro" to={sl.cta2[0]}>{sl.cta2[1]}</Link>}
+                </div>
+              </div>
+              <div className="site-hero-ilustra"><sl.Ilustra /></div>
             </div>
-            <p className="site-nota">Diagnóstico sem nome, CPF ou telefone dos seus clientes. Prefere cobrar com a sua equipe? <Link to="/cadastro" style={{ color: '#fff', textDecoration: 'underline' }}>Teste a plataforma grátis por {dados?.dias_teste || 7} dias</Link>, sem cartão.</p>
-          </div>
-          <div className="site-previa" aria-label="Exemplo de painel do sistema">
-            <div className="site-previa-barra"><span /><span /><span /><em>Painel da empresa (exemplo)</em></div>
-            <div className="site-previa-corpo">
-              <div className="site-previa-kpi destaque"><small>Recebido e confirmado</small><strong>R$ 18.420,00</strong></div>
-              <div className="site-previa-kpi"><small>Em negociação</small><strong>R$ 6.310,00</strong></div>
-              <div className="site-previa-kpi"><small>Saldo pendente</small><strong>R$ 42.980,00</strong></div>
-              <ul className="site-previa-lista">
-                <li><span>Maria S.</span><b className="badge ok">Pagamento confirmado</b></li>
-                <li><span>João P.</span><b className="badge alerta">Acordo em 3x</b></li>
-                <li><span>Pedro A.</span><b className="badge info">Em contato</b></li>
-              </ul>
-            </div>
-          </div>
+          )} />
         </div>
       </section>
+      <Faixa itens={FAIXA.map((t) => <><b>✓</b> {t}</>)} className="site-faixa" velocidade={45} />
 
       <section id="piloto" className="site-secao">
         <div className="site-largura">
-          <h2 className="site-titulo">Piloto Sem Risco: 30 dias, 20 devedores, você só paga se entrar</h2>
-          <p className="site-sub">Para você conhecer a Acorly sem expor seus clientes e sem gastar nada antes do resultado.</p>
+          <div className="revela" style={{ textAlign: 'center' }}>
+            <h2 className="site-titulo">Piloto Sem Risco: você só paga se entrar</h2>
+            <p className="site-sub" style={{ marginInline: 'auto' }}>30 dias, até 20 devedores, sem mensalidade e sem fidelidade. Depois, se quiser continuar, vale a tabela normal (veja em Planos).</p>
+          </div>
           <div className="site-piloto-passos">
-            {PILOTO.map(([t, d]) => <article key={t} className="site-cartao"><h3 style={{ fontSize: 18 }}>{t}</h3><p style={{ margin: 0, lineHeight: 1.55 }}>{d}</p></article>)}
+            {PILOTO.map(([n, t, d], k) => <article key={t} className="site-cartao site-passo-novo revela" style={{ transitionDelay: `${k * 0.12}s` }}><span className="site-num">{n}</span><h3>{t}</h3><p>{d}</p></article>)}
           </div>
-          <ul className="site-piloto-garantias">{GARANTIAS_PILOTO.map((g) => <li key={g}>{g}</li>)}</ul>
-          <div className="site-equipe">
-            <h3 className="site-equipe-titulo">Quem cuida da sua carteira: uma equipe competente, dedicada aos seus devedores</h3>
-            <div className="site-equipe-grade">
-              {EQUIPE.map(([t, d]) => <div key={t} className="site-equipe-item"><strong>{t}</strong><p>{d}</p></div>)}
+          <div className="site-equipe revela">
+            <div className="site-equipe-texto">
+              <span className="site-selo">Quem cuida da sua carteira</span>
+              <h3 className="site-equipe-titulo">Uma equipe competente, dedicada aos seus devedores</h3>
+              <Link className="btn site-btn-grande site-btn-branco" to="/diagnostico">Quero o diagnóstico grátis</Link>
             </div>
+            <Carrossel itens={EQUIPE} intervalo={4500} className="site-equipe-carrossel" rotulo="Como a equipe trabalha" render={([t, d]) => <div className="site-equipe-item"><strong>{t}</strong><p>{d}</p></div>} />
           </div>
-          <div className="row" style={{ marginTop: 20 }}>
-            <Link className="btn prim site-btn-grande" to="/diagnostico">Quero o diagnóstico grátis</Link>
-            <Link className="btn site-btn-grande" to="/mensagens">Ver as mensagens que o devedor recebe</Link>
-          </div>
-          <p className="small muted" style={{ marginTop: 10 }}>Para atender cada piloto com cuidado, abrimos poucas vagas por mês.</p>
+          <p className="small muted" style={{ marginTop: 12, textAlign: 'center' }}>Para atender cada piloto com cuidado, abrimos poucas vagas por mês.</p>
         </div>
       </section>
 
@@ -174,7 +169,7 @@ export function Site() {
       <section id="como-funciona" className="site-secao">
         <div className="site-largura">
           <h2 className="site-titulo">Como funciona</h2>
-          <ol className="site-passos">
+          <ol className="site-passos revela">
             {PASSOS.map(([t, d], i) => <li key={t}><span className="site-num">{i + 1}</span><h3>{t}</h3><p>{d}</p></li>)}
           </ol>
         </div>
@@ -184,7 +179,7 @@ export function Site() {
         <div className="site-largura">
           <h2 className="site-titulo">Dois jeitos de recuperar</h2>
           <p className="site-sub">Comece com um e mude quando quiser. Também dá para usar os dois ao mesmo tempo: parte das dívidas com a sua equipe e parte com o Acorly.</p>
-          <div className="site-servicos">
+          <div className="site-servicos revela">
             {SERVICOS.map((s) => (
               <article key={s.nome} className="site-cartao">
                 <h3>{s.nome}</h3>
@@ -210,7 +205,7 @@ export function Site() {
         <div className="site-largura">
           <h2 className="site-titulo">Planos da plataforma</h2>
           <p className="site-sub">Comece com {dados?.dias_teste || 7} dias grátis, sem cartão. Depois, preço mensal fixo: não cobramos porcentagem sobre o que você recuperar.</p>
-          <div className="site-planos">
+          <div className="site-planos revela">
             {!dados ? <p className="muted">Carregando planos…</p> : dados.planos.length ? dados.planos.map((p, i) => (
               <article key={p.nome} className={`site-cartao site-plano ${i === 1 ? 'recomendado' : ''}`}>
                 {i === 1 && <span className="site-selo-plano">Mais escolhido</span>}
@@ -242,9 +237,9 @@ export function Site() {
       <section id="seguranca" className="site-secao site-secao-escura">
         <div className="site-largura">
           <h2 className="site-titulo">Feito para dar confiança a você e ao seu cliente</h2>
-          <div className="site-garantias">
-            {GARANTIAS.map(([t, d]) => <div key={t}><h3>{t}</h3><p>{d}</p></div>)}
-          </div>
+        </div>
+        <Faixa className="site-faixa-cartoes" velocidade={55} itens={GARANTIAS.map(([t, d]) => <div className="site-garantia-cartao"><h3>{t}</h3><p>{d}</p></div>)} />
+        <div className="site-largura">
         </div>
       </section>
 
@@ -252,8 +247,9 @@ export function Site() {
         <div className="site-largura site-estreita">
           <h2 className="site-titulo">Dúvidas frequentes</h2>
           <div className="site-faq">
-            {DUVIDAS.map(([q, a]) => <details key={q}><summary>{q}</summary><p>{a}</p></details>)}
+            {(todasDuvidas ? DUVIDAS : DUVIDAS.slice(0, 5)).map(([q, a]) => <details key={q}><summary>{q}</summary><p>{a}</p></details>)}
           </div>
+          {!todasDuvidas && <div style={{ textAlign: 'center', marginTop: 14 }}><button className="btn" onClick={() => setTodasDuvidas(true)}>Ver todas as dúvidas ({DUVIDAS.length})</button></div>}
         </div>
       </section>
 
