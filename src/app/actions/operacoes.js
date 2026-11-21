@@ -22,6 +22,15 @@ async function cargaOperador(ctx, operador_id) {
   return (await find(ctx, 'CasoCobranca', { operador_id })).filter((c) => casoAtivo(c) && c.status_operacional !== 'SUSPENSO').length;
 }
 
+/** Operador responsável pela carteira da empresa: quem já conduz casos ativos dela (uma carteira, um operador). */
+async function operadorDaCarteira(ctx, empresa_id) {
+  const ativos = (await find(ctx, 'CasoCobranca', { empresa_id, modalidade_cobranca: 'HS_GERENCIADA' })).filter((c) => c.operador_id && casoAtivo(c));
+  if (!ativos.length) return null;
+  const conta = new Map();
+  for (const c of ativos) conta.set(c.operador_id, (conta.get(c.operador_id) || 0) + 1);
+  return [...conta.entries()].sort((a, b) => b[1] - a[1])[0][0];
+}
+
 async function operadorValido(ctx, operador_id) {
   const op = await getById(ctx, 'UsuarioPlataforma', operador_id);
   if (!op || op.perfil !== 'OPERADOR_HS' || op.status !== 'ATIVO') throw new ValidationError('Operador inválido ou inativo');
@@ -175,7 +184,10 @@ export const actions = {
     },
   },
 
-  /** Distribuição por capacidade: menor carga relativa primeiro; fila por prioridade e antiguidade. */
+  /**
+   * Distribuição automática: cada carteira (empresa) fica com um único operador.
+   * Casos novos de uma empresa vão para o operador que já cuida dela; empresa nova vai para o operador com menor carga relativa.
+   */
   distribuirAutomatico: {
     perm: 'caso.distribuir',
     async run(ctx, input = {}) {
@@ -188,25 +200,39 @@ export const actions = {
       for (const o of ops) carga.set(o.id, await cargaOperador(ctx, o.id));
       let atribuidos = 0;
       const limite = Math.min(Number(input.limite) || fila.length, fila.length);
+      const dono = new Map(); // empresa → operador da carteira
       for (const caso of fila.slice(0, limite)) {
-        const livres = ops.filter((o) => carga.get(o.id) < (o.capacidade_casos || 50))
-          .sort((a, b) => carga.get(a.id) / (a.capacidade_casos || 50) - carga.get(b.id) / (b.capacidade_casos || 50));
-        if (!livres.length) break;
-        await atribuir(ctx, caso, livres[0]);
-        carga.set(livres[0].id, carga.get(livres[0].id) + 1);
+        if (!dono.has(caso.empresa_id)) dono.set(caso.empresa_id, await operadorDaCarteira(ctx, caso.empresa_id));
+        let op = ops.find((o) => o.id === dono.get(caso.empresa_id));
+        if (!op) {
+          const livres = ops.filter((o) => carga.get(o.id) < (o.capacidade_casos || 50))
+            .sort((a, b) => carga.get(a.id) / (a.capacidade_casos || 50) - carga.get(b.id) / (b.capacidade_casos || 50));
+          if (!livres.length) continue;
+          op = livres[0];
+          dono.set(caso.empresa_id, op.id);
+        }
+        // a carteira não é dividida: o operador dela recebe o caso mesmo acima da capacidade de referência
+        await atribuir(ctx, caso, op, { forcar: true });
+        carga.set(op.id, carga.get(op.id) + 1);
         atribuidos++;
       }
       return { atribuidos, restantes_na_fila: fila.length - atribuidos };
     },
   },
 
-  /** Operador puxa o próximo caso da fila (respeita a própria capacidade). */
+  /** Operador puxa o próximo caso da fila (respeita a própria capacidade e não pega carteira de outro operador). */
   puxarProximoCaso: {
     perm: 'caso.puxar_fila',
     async run(ctx) {
-      const fila = (await find(ctx, 'CasoCobranca', { modalidade_cobranca: 'HS_GERENCIADA', status_operacional: 'AGUARDANDO_OPERADOR' }))
+      const todos = (await find(ctx, 'CasoCobranca', { modalidade_cobranca: 'HS_GERENCIADA', status_operacional: 'AGUARDANDO_OPERADOR' }))
         .sort((a, b) => (PRIORIDADE[a.prioridade] ?? 2) - (PRIORIDADE[b.prioridade] ?? 2) || (a.data_recebimento > b.data_recebimento ? 1 : -1));
-      if (!fila.length) return { caso: null, mensagem: 'Fila vazia' };
+      const dono = new Map();
+      const fila = [];
+      for (const c of todos) {
+        if (!dono.has(c.empresa_id)) dono.set(c.empresa_id, await operadorDaCarteira(ctx, c.empresa_id));
+        if (!dono.get(c.empresa_id) || dono.get(c.empresa_id) === ctx.user.id) fila.push(c);
+      }
+      if (!fila.length) return { caso: null, mensagem: todos.length ? 'Os casos na fila são de carteiras de outros operadores' : 'Fila vazia' };
       const op = await operadorValido(ctx, ctx.user.id);
       return { caso: await atribuir(ctx, fila[0], op) };
     },

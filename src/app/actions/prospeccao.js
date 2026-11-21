@@ -103,7 +103,7 @@ Sou {{remetente}}, da HS Recuperação de Crédito, de Salvador. Ajudamos {{segm
 Para você conhecer sem risco, temos o **Piloto Sem Risco**:
 - **Diagnóstico grátis e anônimo:** você envia só o valor e o vencimento de cada atraso, sem nome nem CPF, e em até 2 dias úteis mostramos quanto dá para recuperar.
 - **30 dias com até 20 devedores escolhidos por você:** comece pelos clientes que já saíram ou pelas dívidas com mais de 90 dias, assim quem ainda é seu cliente não recebe nenhum contato. Você vê e aprova as mensagens antes, e elas saem com o nome da {{empresa}}.
-- **Uma equipe dedicada à sua carteira:** nossa equipe é preparada para negociar com cordialidade, dentro do Código de Defesa do Consumidor e da LGPD. Cada devedor tem um operador responsável e você acompanha tudo pelo painel.
+- **Uma equipe dedicada à sua carteira:** nossa equipe é preparada para negociar com cordialidade, dentro do Código de Defesa do Consumidor e da LGPD. A sua carteira tem um operador responsável e você acompanha tudo pelo painel.
 - **O devedor paga direto na conta da sua empresa** e você paga **10% só do que entrar nos 30 dias**. Se nada entrar, não paga nada.
 - Se algum cliente seu reclamar, paramos o contato com ele na hora.
 
@@ -152,7 +152,10 @@ ${ASSINATURA}`,
   const piloto = MODELOS_COMERCIAIS.find((m) => m.nome === 'Piloto Sem Risco');
   const inicio = piloto.corpo.indexOf('- **30 dias com até 20 devedores');
   const fim = piloto.corpo.indexOf('- **O devedor paga direto');
-  piloto.anteriores = [piloto.corpo.slice(0, inicio) + '- **30 dias com até 20 devedores escolhidos por você:** você vê e aprova as mensagens antes, e elas saem com o nome da {{empresa}}.\n' + piloto.corpo.slice(fim)];
+  piloto.anteriores = [
+    piloto.corpo.slice(0, inicio) + '- **30 dias com até 20 devedores escolhidos por você:** você vê e aprova as mensagens antes, e elas saem com o nome da {{empresa}}.\n' + piloto.corpo.slice(fim),
+    piloto.corpo.replace('A sua carteira tem um operador responsável', 'Cada devedor tem um operador responsável'),
+  ];
 }
 
 export async function garantirModelos(ctx) {

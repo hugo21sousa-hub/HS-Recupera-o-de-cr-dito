@@ -70,25 +70,29 @@ test('validação, reprovação e distribuição por capacidade', async () => {
   assert.ok(notifsB.itens.some((n) => n.tipo === 'VALIDACAO_REPROVADA'));
   const r = await t.ok('gestor@hs.com', 'validarCaso', { caso_ids: val.itens.filter((c) => c.id !== reprovado.id).map((c) => c.id), aprovado: true });
   assert.equal(r.aprovados, 5);
-  // capacidade: 2 operadores × 2 = 4 casos; 1 fica na fila
+  // uma carteira, um operador: os 3 casos de A ficam com um operador e os 2 de B com o outro (a carteira não é dividida)
   const dist = await t.ok('gestor@hs.com', 'distribuirAutomatico', {});
-  assert.equal(dist.atribuidos, 4);
-  assert.equal(dist.restantes_na_fila, 1);
+  assert.equal(dist.atribuidos, 5);
+  assert.equal(dist.restantes_na_fila, 0);
   const ops = await t.ok('gestor@hs.com', 'listarOperadores');
-  assert.deepEqual(ops.map((o) => o.carga_atual).sort(), [2, 2]);
+  assert.deepEqual(ops.map((o) => o.carga_atual).sort(), [2, 3]);
+  const casos = (await t.db.CasoCobranca.filter({})).filter((c) => c.operador_id);
+  for (const emp of [A.empresa.id, B.empresa.id]) assert.equal(new Set(casos.filter((c) => c.empresa_id === emp).map((c) => c.operador_id)).size, 1);
+  const opA = casos.find((c) => c.empresa_id === A.empresa.id).operador_id;
+  const outro = opA === t.op1.id ? t.op2 : t.op1;
   // manual acima da capacidade só com "forcar"
-  const fila = await t.ok('gestor@hs.com', 'listarCasos', { escopo: 'fila' });
-  await t.falha('gestor@hs.com', 'atribuirCaso', { caso_id: fila.itens[0].id, operador_id: t.op1.id }, 422);
-  const at = await t.ok('gestor@hs.com', 'atribuirCaso', { caso_id: fila.itens[0].id, operador_id: t.op1.id, forcar: true });
-  assert.equal(at.operador_id, t.op1.id);
+  const casoA = casos.find((c) => c.empresa_id === A.empresa.id);
+  await t.falha('gestor@hs.com', 'atribuirCaso', { caso_id: casoA.id, operador_id: outro.id }, 422);
+  const at = await t.ok('gestor@hs.com', 'atribuirCaso', { caso_id: casoA.id, operador_id: outro.id, forcar: true });
+  assert.equal(at.operador_id, outro.id);
   const det = await t.ok('gestor@hs.com', 'detalheCaso', { caso_id: at.id });
   assert.equal(det.atribuicoes[0].atribuido_por, (await t.ok('gestor@hs.com', 'meuPerfil')).usuario.id);
   // reatribuição registra histórico
-  await t.ok('super@hs.com', 'alterarUsuario', { usuario_id: t.op2.id, capacidade_casos: 10 });
-  await t.ok('gestor@hs.com', 'atribuirCaso', { caso_id: at.id, operador_id: t.op2.id });
+  await t.ok('super@hs.com', 'alterarUsuario', { usuario_id: opA, capacidade_casos: 10 });
+  await t.ok('gestor@hs.com', 'atribuirCaso', { caso_id: at.id, operador_id: opA });
   const det2 = await t.ok('gestor@hs.com', 'detalheCaso', { caso_id: at.id });
   assert.equal(det2.atribuicoes.filter((a) => a.status === 'ATIVA').length, 1);
-  assert.equal(det2.atribuicoes.length, 2);
+  assert.equal(det2.atribuicoes.length, 3, "automática, manual e de volta");
 });
 
 test('registro de contato com salvaguardas (canal, interrupção, abuso, limite diário)', async () => {
@@ -179,4 +183,19 @@ test('não permite nova proposta enquanto há acordo ativo', async () => {
   const ac = (await t.ok('op1@hs.com', 'listarAcordos', {})).itens[0];
   await t.ok('op1@hs.com', 'encerrarAcordo', { acordo_id: ac.id, motivo: 'Devedor desistiu' });
   await t.ok('op1@hs.com', 'proporNegociacao', { caso_id: caso.id, desconto_bps: 0, entrada_centavos: 100000, quantidade_parcelas: 0 });
+});
+
+test('operador puxando a fila não pega caso de carteira de outro operador', async () => {
+  const t = await cenario();
+  const { A } = t.empresas;
+  await t.ok(A.adm, 'encaminharParaHS', { tipo_selecao: 'DIVIDAS', divida_ids: A.dividas.map((d) => d.id), contrato_servico_id: A.contrato.id, autorizacao: AUTORIZACAO, confirmacao: true });
+  const val = await t.ok('gestor@hs.com', 'listarCasos', { escopo: 'validacao' });
+  await t.ok('gestor@hs.com', 'validarCaso', { caso_ids: val.itens.map((c) => c.id), aprovado: true });
+  const primeiro = await t.ok('op1@hs.com', 'puxarProximoCaso');
+  assert.ok(primeiro.caso);
+  const doOutro = await t.ok('op2@hs.com', 'puxarProximoCaso');
+  assert.equal(doOutro.caso, null);
+  assert.match(doOutro.mensagem, /outros operadores/);
+  const segundo = await t.ok('op1@hs.com', 'puxarProximoCaso');
+  assert.equal(segundo.caso.empresa_id, A.empresa.id);
 });

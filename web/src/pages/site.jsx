@@ -25,7 +25,7 @@ const SERVICOS = [
     preco: 'Comissão só sobre o que entrar na sua conta, conforme o tempo de atraso (veja a tabela em Planos). Comece pelo Piloto Sem Risco: 10% nos primeiros 30 dias.',
     itens: [
       'Você escolhe quais dívidas encaminhar e autoriza os limites',
-      'O Acorly valida a carteira e distribui entre os operadores',
+      'O Acorly valida a carteira e define o operador responsável por ela',
       'Contatos por WhatsApp, telefone e e-mail, dentro das regras',
       'Propostas fora do limite chegam para a sua aprovação',
       'Você acompanha tudo em tempo real pelo seu painel',
@@ -41,7 +41,7 @@ const PILOTO = [
 
 const EQUIPE = [
   ['Equipe preparada para negociar', 'Quem fala com os seus devedores é uma equipe treinada para cobrança cordial e eficiente: escuta o devedor, oferece condições dentro do que você autorizou e conduz até o acordo.'],
-  ['Um responsável por cada caso', 'Cada devedor encaminhado tem um operador da Acorly responsável por ele, do primeiro contato ao pagamento. Nada fica esquecido.'],
+  ['Um responsável pela sua carteira', 'A sua carteira tem um operador da Acorly responsável por ela, que acompanha todos os seus devedores do primeiro contato ao pagamento e conhece a sua empresa. Nada fica esquecido.'],
   ['Regras que protegem o seu cliente', 'Atendimento dentro do Código de Defesa do Consumidor e da LGPD: horário comercial, sem ameaças, sem expor ninguém e sem falar com terceiros.'],
   ['Você acompanha tudo', 'No seu painel você vê cada contato, cada proposta e cada pagamento, e fala com a equipe direto pelo WhatsApp sempre que quiser.'],
 ];
@@ -76,7 +76,7 @@ const DUVIDAS = [
   ['O Acorly recebe o dinheiro das dívidas?', 'Não. O devedor paga diretamente para a sua empresa, pelos meios que você já usa (Pix, boleto, transferência). Você confirma o recebimento no sistema.'],
   ['Preciso contratar a cobrança gerenciada para usar o Acorly?', 'Não. Você pode usar só a plataforma e cobrar com a sua equipe, contratar a cobrança gerenciada ou usar as duas formas ao mesmo tempo.'],
   ['Por onde começo sem arriscar quem ainda é meu cliente?', 'Pelos clientes que já saíram ou pelas dívidas com mais de 90 dias, que você talvez já tenha dado como perdidas. Assim ninguém que ainda frequenta ou compra da sua empresa é contatado no piloto, e você vê o resultado antes de decidir encaminhar outros casos.'],
-  ['Quem vai falar com os meus clientes?', 'A equipe da Acorly, preparada para negociar com cordialidade e dentro do Código de Defesa do Consumidor e da LGPD. Cada devedor tem um operador responsável, as mensagens saem com o nome da sua empresa e você acompanha cada contato pelo painel.'],
+  ['Quem vai falar com os meus clientes?', 'A equipe da Acorly, preparada para negociar com cordialidade e dentro do Código de Defesa do Consumidor e da LGPD. A sua carteira tem um operador responsável, as mensagens saem com o nome da sua empresa e você acompanha cada contato pelo painel.'],
   ['O que é o Piloto Sem Risco?', 'Um teste de 30 dias da cobrança gerenciada com até 20 devedores escolhidos por você. Você vê e aprova as mensagens, define os limites de desconto e parcelamento, o devedor paga direto na sua conta e você paga 10% só do que entrar nesses 30 dias. Se nada entrar, não paga nada. Depois do piloto, se você continuar, vale a tabela normal de comissão por tempo de atraso.'],
   ['Preciso mandar dados dos meus clientes para o diagnóstico?', 'Não. O diagnóstico usa só o valor e a data de vencimento de cada atraso. Se você enviar uma planilha com nomes, CPF ou telefones, essas colunas são removidas no seu próprio computador antes do envio. Dados pessoais só são compartilhados se você decidir começar o piloto, depois de assinar o contrato com as cláusulas de proteção de dados.'],
   ['Quanto custa a cobrança gerenciada?', 'Você paga uma comissão apenas sobre o que for efetivamente recebido, com percentual conforme o tempo de atraso da dívida (veja a tabela em Planos). Se nada for recebido, não há comissão. No Piloto Sem Risco, a comissão é de 10% sobre o que entrar nos 30 dias do piloto. Os percentuais ficam no contrato.'],

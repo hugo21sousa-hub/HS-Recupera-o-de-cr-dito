@@ -118,7 +118,7 @@ export function Distribuicao() {
   const ativos = (ops.data || []).filter((o) => o.status === 'ATIVO');
   return (
     <div className="stack">
-      <Cabecalho titulo="Aguardando distribuição" sub="Atribua manualmente ou distribua pela capacidade de cada operador.">
+      <Cabecalho titulo="Aguardando distribuição" sub="Cada carteira (empresa) fica com um único operador: a distribuição automática manda os casos novos para quem já cuida daquela empresa, e carteira nova vai para o operador com menos carga. Também dá para atribuir manualmente.">
         <button className="btn prim" onClick={async () => { const x = await executar('distribuirAutomatico', {}); toast.ok(`${x.atribuidos} caso(s) distribuído(s); ${x.restantes_na_fila} na fila`); setR(r + 1); }}>Distribuir automaticamente</button>
       </Cabecalho>
       <div className="grid g4">{ativos.map((o) => <Stat key={o.id} rotulo={o.nome} valor={`${o.carga_atual}/${o.capacidade_casos}`} tom={o.carga_atual >= o.capacidade_casos ? 'critico' : ''} ajuda="casos ativos / capacidade" />)}</div>
