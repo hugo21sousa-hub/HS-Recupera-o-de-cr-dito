@@ -35,12 +35,20 @@ const SERVICOS = [
 
 const PILOTO = [
   ['1. Diagnóstico grátis e anônimo', 'Você envia só o valor e a data de vencimento de cada atraso, sem nome, CPF ou telefone. Em até 2 dias úteis, recebe quanto dá para recuperar.'],
-  ['2. Piloto de 30 dias', 'Até 20 devedores escolhidos por você (comece pelos que já saíram ou que você deu como perdidos). Você vê e aprova as mensagens e define os limites de desconto e parcelamento uma única vez.'],
+  ['2. Piloto de 30 dias', 'Até 20 devedores escolhidos por você. Comece pelos clientes que já saíram ou pelas dívidas com mais de 90 dias: assim quem ainda é seu cliente não recebe nenhum contato. Você vê e aprova as mensagens e define os limites de desconto e parcelamento; acordo fora desses limites só fecha com a sua aprovação.'],
   ['3. Você só paga se entrar', 'O devedor paga direto na conta da sua empresa. A comissão é de 10% sobre o que entrar durante os 30 dias do piloto. Se nada entrar, você não paga nada.'],
+];
+
+const EQUIPE = [
+  ['Equipe preparada para negociar', 'Quem fala com os seus devedores é uma equipe treinada para cobrança cordial e eficiente: escuta o devedor, oferece condições dentro do que você autorizou e conduz até o acordo.'],
+  ['Um responsável por cada caso', 'Cada devedor encaminhado tem um operador da Acorly responsável por ele, do primeiro contato ao pagamento. Nada fica esquecido.'],
+  ['Regras que protegem o seu cliente', 'Atendimento dentro do Código de Defesa do Consumidor e da LGPD: horário comercial, sem ameaças, sem expor ninguém e sem falar com terceiros.'],
+  ['Você acompanha tudo', 'No seu painel você vê cada contato, cada proposta e cada pagamento, e fala com a equipe direto pelo WhatsApp sempre que quiser.'],
 ];
 
 const GARANTIAS_PILOTO = [
   'Diagnóstico sem nenhum dado pessoal dos seus clientes',
+  'Comece só com ex-clientes ou dívidas antigas: quem ainda é seu cliente fica de fora',
   'Contrato com cláusulas de proteção de dados (LGPD) assinado antes de qualquer dado pessoal',
   'Mensagens com o nome da sua empresa, em tom cordial e sem ameaças',
   'Se um cliente seu reclamar, paramos o contato com ele na hora',
@@ -67,6 +75,8 @@ const GARANTIAS = [
 const DUVIDAS = [
   ['O Acorly recebe o dinheiro das dívidas?', 'Não. O devedor paga diretamente para a sua empresa, pelos meios que você já usa (Pix, boleto, transferência). Você confirma o recebimento no sistema.'],
   ['Preciso contratar a cobrança gerenciada para usar o Acorly?', 'Não. Você pode usar só a plataforma e cobrar com a sua equipe, contratar a cobrança gerenciada ou usar as duas formas ao mesmo tempo.'],
+  ['Por onde começo sem arriscar quem ainda é meu cliente?', 'Pelos clientes que já saíram ou pelas dívidas com mais de 90 dias, que você talvez já tenha dado como perdidas. Assim ninguém que ainda frequenta ou compra da sua empresa é contatado no piloto, e você vê o resultado antes de decidir encaminhar outros casos.'],
+  ['Quem vai falar com os meus clientes?', 'A equipe da Acorly, preparada para negociar com cordialidade e dentro do Código de Defesa do Consumidor e da LGPD. Cada devedor tem um operador responsável, as mensagens saem com o nome da sua empresa e você acompanha cada contato pelo painel.'],
   ['O que é o Piloto Sem Risco?', 'Um teste de 30 dias da cobrança gerenciada com até 20 devedores escolhidos por você. Você vê e aprova as mensagens, define os limites de desconto e parcelamento, o devedor paga direto na sua conta e você paga 10% só do que entrar nesses 30 dias. Se nada entrar, não paga nada. Depois do piloto, se você continuar, vale a tabela normal de comissão por tempo de atraso.'],
   ['Preciso mandar dados dos meus clientes para o diagnóstico?', 'Não. O diagnóstico usa só o valor e a data de vencimento de cada atraso. Se você enviar uma planilha com nomes, CPF ou telefones, essas colunas são removidas no seu próprio computador antes do envio. Dados pessoais só são compartilhados se você decidir começar o piloto, depois de assinar o contrato com as cláusulas de proteção de dados.'],
   ['Quanto custa a cobrança gerenciada?', 'Você paga uma comissão apenas sobre o que for efetivamente recebido, com percentual conforme o tempo de atraso da dívida (veja a tabela em Planos). Se nada for recebido, não há comissão. No Piloto Sem Risco, a comissão é de 10% sobre o que entrar nos 30 dias do piloto. Os percentuais ficam no contrato.'],
@@ -105,7 +115,7 @@ export function Site() {
           <div className="site-hero-texto">
             <span className="site-selo">Piloto Sem Risco</span>
             <h1>Recupere o que é seu sem perder o cliente.</h1>
-            <p>Teste por 30 dias com até 20 devedores escolhidos por você. Você vê as mensagens antes, o devedor paga direto na conta da sua empresa e você <strong style={{ color: '#fff' }}>só paga 10% do que entrar nos 30 dias</strong>. Se nada entrar, não paga nada.</p>
+            <p>Teste por 30 dias com até 20 devedores escolhidos por você (comece pelos que já saíram). Nossa equipe cuida da cobrança, você vê as mensagens antes, o devedor paga direto na conta da sua empresa e você <strong style={{ color: '#fff' }}>só paga 10% do que entrar nos 30 dias</strong>. Se nada entrar, não paga nada.</p>
             <div className="row">
               <Link className="btn prim site-btn-grande" to="/diagnostico">Começar pelo diagnóstico grátis</Link>
               <Link className="btn site-btn-grande site-btn-claro" to="/mensagens">Veja as mensagens</Link>
@@ -136,6 +146,12 @@ export function Site() {
             {PILOTO.map(([t, d]) => <article key={t} className="site-cartao"><h3 style={{ fontSize: 18 }}>{t}</h3><p style={{ margin: 0, lineHeight: 1.55 }}>{d}</p></article>)}
           </div>
           <ul className="site-piloto-garantias">{GARANTIAS_PILOTO.map((g) => <li key={g}>{g}</li>)}</ul>
+          <div className="site-equipe">
+            <h3 className="site-equipe-titulo">Quem cuida da sua carteira: uma equipe competente, dedicada aos seus devedores</h3>
+            <div className="site-equipe-grade">
+              {EQUIPE.map(([t, d]) => <div key={t} className="site-equipe-item"><strong>{t}</strong><p>{d}</p></div>)}
+            </div>
+          </div>
           <div className="row" style={{ marginTop: 20 }}>
             <Link className="btn prim site-btn-grande" to="/diagnostico">Quero o diagnóstico grátis</Link>
             <Link className="btn site-btn-grande" to="/mensagens">Ver as mensagens que o devedor recebe</Link>

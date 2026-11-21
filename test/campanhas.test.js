@@ -140,3 +140,16 @@ test('campanhas antigas abertas ao mesmo tempo entram em fila pela ordem de cria
   const l = await t.ok(S, 'listarCampanhas');
   assert.deepEqual(l.itens.map((x) => [x.nome, x.status, x.posicao_fila]), [['Terceira', 'AGUARDANDO', 3], ['Segunda', 'AGUARDANDO', 2], ['Primeira', 'ATIVA', 1]]);
 });
+
+test('modelo "Piloto Sem Risco" não editado recebe o texto novo; o editado fica como está', async () => {
+  const { MODELOS_COMERCIAIS } = await import('../src/app/actions/prospeccao.js');
+  const piloto = MODELOS_COMERCIAIS.find((m) => m.nome === 'Piloto Sem Risco');
+  const t = await base();
+  const antigo = await t.db.ModeloComercial.create({ nome: 'Piloto Sem Risco', assunto: 'x', corpo: piloto.anteriores[0], ativo: true, ordem: 1 });
+  let ms = await t.ok(S, 'listarModelosComerciais');
+  assert.match(ms.find((m) => m.id === antigo.id).corpo, /clientes que já saíram/);
+  assert.match(ms.find((m) => m.id === antigo.id).corpo, /equipe dedicada/);
+  await t.db.ModeloComercial.update(antigo.id, { corpo: 'meu texto' });
+  ms = await t.ok(S, 'listarModelosComerciais');
+  assert.equal(ms.find((m) => m.id === antigo.id).corpo, 'meu texto');
+});

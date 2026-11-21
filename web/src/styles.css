@@ -311,3 +311,13 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 @media (max-width: 760px) { .site-piloto-garantias { grid-template-columns: 1fr; } }
 .site-piloto-garantias li { padding-left: 24px; position: relative; line-height: 1.5; }
 .site-piloto-garantias li::before { content: '✓'; position: absolute; left: 0; color: var(--ok); font-weight: 800; }
+
+/* Site: a equipe que cuida da carteira (seção do piloto) */
+.site-equipe { margin-top: 24px; padding: 22px; border-radius: 16px; background: linear-gradient(135deg, var(--azul-escuro, #002a9e), var(--azul, #0043ff)); color: #fff; }
+.site-equipe-titulo { margin: 0 0 14px; font-size: 20px; color: #fff; }
+.site-equipe-grade { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.site-equipe-item { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); border-radius: 12px; padding: 14px; }
+.site-equipe-item strong { display: block; margin-bottom: 6px; }
+.site-equipe-item p { margin: 0; font-size: 14px; line-height: 1.55; opacity: .92; }
+@media (max-width: 900px) { .site-equipe-grade { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .site-equipe-grade { grid-template-columns: 1fr; } .site-equipe { padding: 18px 16px; } }
