@@ -20,15 +20,20 @@ function DetalheEmpresa({ empresa: e, onClose, onFeito }) {
     const r = await confirmar({ titulo: `Alterar empresa para ${rotulo(status)}`, pedirMotivo: true, perigo: status !== 'ATIVA', mensagem: status === 'ATIVA' ? 'A empresa poderá encaminhar cobranças ao Acorly.' : 'Os usuários da empresa terão o acesso limitado.' });
     if (r) { await executar('alterarStatusEmpresa', { empresa_id: e.id, status, motivo: r.motivo }, 'Status atualizado'); onFeito(); onClose(); }
   };
+  const marcarTeste = async () => {
+    const ok = await confirmar({ titulo: e.conta_teste ? 'Voltar a contar esta empresa' : 'Marcar como conta de teste', mensagem: e.conta_teste ? 'A empresa volta a entrar nos indicadores do negócio, nos resultados da cobrança e no DRE.' : 'Use para contas internas ou criadas para testar o sistema. A empresa sai dos indicadores do negócio, dos resultados da cobrança e do DRE. Nada é apagado.' });
+    if (ok) { await executar('marcarContaTeste', { empresa_id: e.id, conta_teste: !e.conta_teste }, e.conta_teste ? 'A empresa volta a contar nos indicadores' : 'Marcada como conta de teste'); onFeito(); onClose(); }
+  };
   return (
     <Modal titulo={e.razao_social} onClose={onClose} grande rodape={<>
+      <button className="btn" onClick={marcarTeste}>{e.conta_teste ? 'Voltar a contar nos indicadores' : 'Marcar como conta de teste'}</button>
       {e.status !== 'ATIVA' && <button className="btn ok" onClick={() => mudar('ATIVA')}>Validar e ativar</button>}
       {e.status === 'ATIVA' && <button className="btn perigo" onClick={() => mudar('SUSPENSA')}>Suspender</button>}
       {e.status !== 'CANCELADA' && <button className="btn perigo" onClick={() => mudar('CANCELADA')}>Cancelar</button>}
     </>}>
       <div className="stack">
         <div className="aviso info small">Acesso administrativo: consultas a dados desta empresa ficam registradas na auditoria.</div>
-        <Dl itens={[['Nome fantasia', e.nome_fantasia], ['CNPJ', mascaraDoc(e.cnpj)], ['E-mail', e.email], ['Telefone', e.telefone], ['Endereço', e.endereco], ['Responsável legal', e.responsavel_legal], ['Contato', [e.contato_nome, e.contato_telefone, e.contato_email].filter(Boolean).join(' · ') || '—'], ['Serviço', rotulo(e.modalidade_servico)], ['Cadastro', dataHora(e.data_cadastro)], ['Status', <Badge key="s" status={e.status} />], ['Último motivo', e.motivo_status || '—']]} />
+        <Dl itens={[['Nome fantasia', e.nome_fantasia], ['CNPJ', mascaraDoc(e.cnpj)], ['E-mail', e.email], ['Telefone', e.telefone], ['Endereço', e.endereco], ['Responsável legal', e.responsavel_legal], ['Contato', [e.contato_nome, e.contato_telefone, e.contato_email].filter(Boolean).join(' · ') || '—'], ['Serviço', rotulo(e.modalidade_servico)], ['Cadastro', dataHora(e.data_cadastro)], ['Status', <Badge key="s" status={e.status} />], ['Último motivo', e.motivo_status || '—'], ['Nos indicadores', e.conta_teste ? 'Não (conta de teste)' : 'Sim']]} />
         <h3>Usuários</h3>
         <table><tbody>{(usuarios.data?.itens || []).map((u) => <tr key={u.id}><td>{u.nome}</td><td>{u.email}</td><td>{rotulo(u.perfil)}</td><td><Badge status={u.status} /></td></tr>)}</tbody></table>
         <h3>Assinatura</h3>
@@ -47,7 +52,7 @@ export function Empresas() {
     <div className="stack">
       <Cabecalho titulo="Empresas" sub="Todas as empresas cadastradas. Valide cadastros novos e gerencie a situação de cada uma." />
       <Tabela acao="listarEmpresas" recarregar={r} filtros={[{ nome: 'status', rotulo: 'Status', opcoes: STATUS_EMPRESA }, { nome: 'modalidade_servico', rotulo: 'Serviço', opcoes: ['PLATAFORMA', 'HS_GERENCIADA', 'AMBOS'] }]} colunas={[
-        { titulo: 'Razão social', render: (e) => <button className="btn link" onClick={() => setSel(e)}>{e.razao_social}</button> },
+        { titulo: 'Razão social', render: (e) => <><button className="btn link" onClick={() => setSel(e)}>{e.razao_social}</button>{e.conta_teste && <> <Badge status="info">teste</Badge></>}</> },
         { titulo: 'CNPJ', render: (e) => mascaraDoc(e.cnpj) }, { titulo: 'Serviço', render: (e) => rotulo(e.modalidade_servico) },
         { titulo: 'Cadastro', render: (e) => data(e.data_cadastro) }, { titulo: 'Status', render: (e) => <Badge status={e.status} /> },
       ]} vazio={<Vazio titulo="Nenhuma empresa cadastrada" />} />

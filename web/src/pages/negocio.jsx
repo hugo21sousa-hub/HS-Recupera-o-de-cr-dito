@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Cabecalho, useApi, Carregando, ErroCarga, Vazio, Stat, Badge } from '../ui.jsx';
 import { brl, data, dataHora, pct } from '../format.js';
+import { aparelhoIgnorado, ignorarEsteAparelho } from '../visitas.js';
 
 const nomeMes = (m) => { const [a, mm] = m.split('-'); return `${['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'][Number(mm) - 1]}/${a.slice(2)}`; };
 
@@ -61,6 +62,8 @@ function GraficoVisitas({ serie }) {
 /** Visitas do site: contadas sem cookies, de forma anônima. */
 function VisitasSite() {
   const [dias, setDias] = useState(30);
+  const [ignorado, setIgnorado] = useState(aparelhoIgnorado());
+  const alternarAparelho = () => { ignorarEsteAparelho(!ignorado); setIgnorado(!ignorado); };
   const { data: v, carregando, erro, recarregar } = useApi('visitasSite', { dias }, [dias]);
   const variacao = v && v.visitantes_anterior ? Math.round(((v.visitantes - v.visitantes_anterior) / v.visitantes_anterior) * 100) : null;
   return (
@@ -102,8 +105,13 @@ function VisitasSite() {
             </div>
           )}
           <p className="small muted" style={{ margin: 0 }}>
-            Contagem anônima e sem cookies: não guardamos IP nem identificamos ninguém, e robôs são ignorados. Para saber qual post trouxe a visita, use links com etiqueta, por exemplo na bio do Instagram: <span style={{ userSelect: 'all' }}>acorly.com.br/?utm_source=instagram&amp;utm_campaign=bio</span>. Acessos de quem está logado no sistema não contam.
+            Contagem anônima e sem cookies: não guardamos IP nem identificamos ninguém, e robôs são ignorados. Para saber qual post trouxe a visita, use links com etiqueta, por exemplo na bio do Instagram: <span style={{ userSelect: 'all' }}>acorly.com.br/?utm_source=instagram&amp;utm_campaign=bio</span>. Não contam: acessos de quem está logado e de aparelhos da equipe (todo aparelho em que alguém da equipe Acorly entra no sistema passa a ser ignorado, mesmo depois de sair da conta).
           </p>
+          <div className="row small" style={{ gap: 8, alignItems: 'center' }}>
+            <span>{ignorado ? '✓ As visitas deste aparelho não contam.' : 'As visitas deste aparelho estão sendo contadas.'}</span>
+            <button className="btn sm" onClick={alternarAparelho}>{ignorado ? 'Voltar a contar este aparelho' : 'Não contar este aparelho'}</button>
+          </div>
+          <span className="small muted">Para o seu celular não contar: entre no sistema uma vez por ele (no mesmo navegador que você usa para abrir o site).</span>
         </>
       )}
     </div>
@@ -169,7 +177,7 @@ export function IndicadoresNegocio() {
   if (carregando && !d) return <Carregando linhas={8} />;
   return (
     <div className="stack">
-      <Cabecalho titulo="Indicadores do negócio" sub={`Assinaturas da plataforma e comissão da cobrança gerenciada, calculadas dos registros reais. Atualizado em ${dataHora(d.gerado_em)}.`}>
+      <Cabecalho titulo="Indicadores do negócio" sub={`Assinaturas da plataforma e comissão da cobrança gerenciada, calculadas dos registros reais. Atualizado em ${dataHora(d.gerado_em)}.${d.contas_teste ? ` ${d.contas_teste} conta(s) de teste fora dos números.` : ''}`}>
         <button className="btn" onClick={recarregar}>Atualizar</button>
       </Cabecalho>
 
@@ -230,6 +238,7 @@ export function IndicadoresNegocio() {
         {d.ultimos_cancelamentos.length ? <table><thead><tr><th>Empresa</th><th>Plano</th><th className="num">Mensalidade</th><th>Quando</th></tr></thead><tbody>
           {d.ultimos_cancelamentos.map((c, i) => <tr key={i}><td>{c.empresa}</td><td>{c.plano}</td><td className="num">{brl(c.valor_centavos)}</td><td>{dataHora(c.em)}</td></tr>)}
         </tbody></table> : <Vazio titulo="Nenhum cancelamento" />}
+        <p className="small muted">Para os números ficarem reais, marque as suas contas de teste em <Link to="/hs/empresas">Empresas</Link> → abrir a empresa → "Marcar como conta de teste": elas saem dos indicadores, dos resultados da cobrança e do DRE. Pagamentos do ambiente de testes do Asaas (sandbox) e estornos já são descontados automaticamente.</p>
         <p className="small muted">Detalhes de cada empresa em <Link to="/hs/empresas">Empresas</Link> e <Link to="/hs/planos">Planos e assinaturas</Link>.</p>
       </div>
     </div>

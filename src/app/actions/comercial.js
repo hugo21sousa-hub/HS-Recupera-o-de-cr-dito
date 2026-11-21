@@ -118,7 +118,7 @@ export async function processarWebhookAsaas(ctx, ev) {
     case 'SUBSCRIPTION_DELETED': case 'SUBSCRIPTION_INACTIVATED': patch = { status: 'CANCELADA' }; break;
     default: break;
   }
-  await ctx.db.EventoAssinatura.create({ empresa_id: a.empresa_id, assinatura_id: a.id, tipo: ev.event, payload: JSON.stringify({ pagamento: ev.payment?.id, valor: ev.payment?.value, liquido: ev.payment?.netValue, status: ev.payment?.status }), origem: 'GATEWAY', data_hora: agora });
+  await ctx.db.EventoAssinatura.create({ empresa_id: a.empresa_id, assinatura_id: a.id, tipo: ev.event, payload: JSON.stringify({ pagamento: ev.payment?.id, valor: ev.payment?.value, liquido: ev.payment?.netValue, status: ev.payment?.status, ambiente: ctx.asaas?.ambiente || null }), origem: 'GATEWAY', data_hora: agora });
   if (patch) {
     await alterar(ctx, 'Assinatura', a, patch, `GATEWAY_${ev.event}`);
     if (patch.status === 'ATIVA' || patch.status === 'INADIMPLENTE') await notificar(ctx, a.empresa_id, { perfis: ['ADMIN_EMPRESA'], tipo: 'ASSINATURA', titulo: patch.status === 'ATIVA' ? 'Pagamento da assinatura confirmado' : 'Assinatura com pagamento pendente', mensagem: patch.status === 'ATIVA' ? 'Seu plano está ativo.' : 'Regularize a fatura para manter o plano.', link: '/assinatura' });

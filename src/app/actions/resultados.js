@@ -3,6 +3,7 @@ import { formatBRL } from '../../core/money.js';
 import { diasAtraso } from '../../core/dates.js';
 import { AccessError, getById, find, exigir, notificar, alterar } from '../context.js';
 import { enviarComercial, montar } from './prospeccao.js';
+import { empresasDeTeste } from './negocio.js';
 
 const pctBR = (bps) => `${(bps / 100).toFixed(bps % 100 ? 1 : 0).replace('.', ',')}%`;
 export const hojeBR = (ctx) => new Date(ctx.now().getTime() - 3 * 3600e3).toISOString().slice(0, 10);
@@ -173,7 +174,8 @@ export const actions = {
     perm: 'plano.gerenciar',
     async run(ctx) {
       const hoje = hojeBR(ctx);
-      const casos = (await find(ctx, 'CasoCobranca', {})).filter((c) => c.modalidade_cobranca === 'HS_GERENCIADA' && c.contrato_servico_id);
+      const teste = await empresasDeTeste(ctx);
+      const casos = (await find(ctx, 'CasoCobranca', {})).filter((c) => c.modalidade_cobranca === 'HS_GERENCIADA' && c.contrato_servico_id && !teste.has(c.empresa_id));
       const pags = (await find(ctx, 'Pagamento', { status_confirmacao: 'CONFIRMADO' })).filter((p) => p.caso_id);
       const porCaso = new Map();
       for (const p of pags) (porCaso.get(p.caso_id) || porCaso.set(p.caso_id, []).get(p.caso_id)).push(p);
@@ -203,7 +205,7 @@ export const actions = {
       const contestacoes = casos.filter((c) => c.status_operacional === 'CONTESTACAO').length;
       // funil comercial
       const leads = await find(ctx, 'Lead', {});
-      const contratos = await find(ctx, 'ContratoServico', {});
+      const contratos = (await find(ctx, 'ContratoServico', {})).filter((c) => !teste.has(c.empresa_id));
       const pilotos = contratos.filter((c) => c.modalidade === 'PILOTO');
       const empresasPiloto = new Set(pilotos.filter((c) => c.aceite).map((c) => c.empresa_id));
       const continuaram = new Set(contratos.filter((c) => c.modalidade !== 'PILOTO' && c.aceite && empresasPiloto.has(c.empresa_id)).map((c) => c.empresa_id));

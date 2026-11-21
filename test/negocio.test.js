@@ -30,7 +30,7 @@ test('indicadores do negócio: assinantes, MRR, tolerância, teste grátis e rec
   const c = await empresa('atrasada', 33);
   await t.ok('super@hs.com', 'salvarAssinatura', { empresa_id: c.id, plano_id: plano('ACORLY PROFISSIONAL').id, data_inicio: '2026-10-09', data_vencimento: '2026-11-09' });
   const d = await empresa('asaas', 34);
-  t.estado.extras.asaas = { disponivel: true, ambiente: 'sandbox', criarCliente: async () => ({ id: 'cus_d' }), criarAssinatura: async () => ({ id: 'sub_d' }), cobrancasDaAssinatura: async () => ({ data: [] }), cancelarAssinatura: async () => {} };
+  t.estado.extras.asaas = { disponivel: true, ambiente: 'producao', criarCliente: async () => ({ id: 'cus_d' }), criarAssinatura: async () => ({ id: 'sub_d' }), cobrancasDaAssinatura: async () => ({ data: [] }), cancelarAssinatura: async () => {} };
   await t.ok(d.adm, 'assinarPlano', { plano_id: plano('ACORLY EMPRESARIAL').id });
   await processarWebhookAsaas(sys(), { id: 'e1', event: 'PAYMENT_CONFIRMED', payment: { id: 'pay_d1', subscription: 'sub_d', value: 159.9, dueDate: '2026-11-11' } });
   await processarWebhookAsaas(sys(), { id: 'e2', event: 'PAYMENT_RECEIVED', payment: { id: 'pay_d1', subscription: 'sub_d', value: 159.9, dueDate: '2026-11-11' } });
@@ -50,6 +50,43 @@ test('indicadores do negócio: assinantes, MRR, tolerância, teste grátis e rec
   assert.equal(r.meses.length, 6);
   assert.equal(r.meses[5].mes, '2026-11');
   await t.falha(b.adm, 'indicadoresNegocio', {}, 403);
+});
+
+test('indicadores reais: conta de teste fica fora, pagamento do sandbox não é receita e estorno é descontado', async () => {
+  const { t, plano, empresa, sys } = await base();
+  const real = await empresa('real', 51);
+  const interna = await empresa('interna', 52);
+  for (const e of [real, interna]) await t.ok('super@hs.com', 'salvarAssinatura', { empresa_id: e.id, plano_id: plano('ACORLY ESSENCIAL').id, data_inicio: '2026-11-01', data_vencimento: '2026-12-01' });
+  await t.falha(real.adm, 'marcarContaTeste', { empresa_id: interna.id, conta_teste: true }, 403);
+  await t.ok('super@hs.com', 'marcarContaTeste', { empresa_id: interna.id, conta_teste: true });
+  let r = await t.ok('super@hs.com', 'indicadoresNegocio');
+  assert.equal(r.assinantes_ativos, 1, 'a conta de teste não conta como assinante');
+  assert.equal(r.mrr_centavos, 4990);
+  assert.equal(r.contas_teste, 1);
+
+  // pagamento feito no ambiente de testes do Asaas não é receita
+  const s = await empresa('sandbox', 53);
+  t.estado.extras.asaas = { disponivel: true, ambiente: 'sandbox', criarCliente: async () => ({ id: 'cus_s' }), criarAssinatura: async () => ({ id: 'sub_s' }), cobrancasDaAssinatura: async () => ({ data: [] }), cancelarAssinatura: async () => {} };
+  await t.ok(s.adm, 'assinarPlano', { plano_id: plano('ACORLY EMPRESARIAL').id });
+  await processarWebhookAsaas(sys(), { id: 's1', event: 'PAYMENT_CONFIRMED', payment: { id: 'pay_s', subscription: 'sub_s', value: 159.9, dueDate: '2026-11-11' } });
+  r = await t.ok('super@hs.com', 'indicadoresNegocio');
+  assert.equal(r.recebido_mes_centavos, 0, 'sandbox não entra');
+
+  // produção: pagamento conta e o estorno sai
+  const p = await empresa('producao', 54);
+  t.estado.extras.asaas = { ...t.estado.extras.asaas, ambiente: 'producao', criarCliente: async () => ({ id: 'cus_p' }), criarAssinatura: async () => ({ id: 'sub_p' }) };
+  await t.ok(p.adm, 'assinarPlano', { plano_id: plano('ACORLY EMPRESARIAL').id });
+  await processarWebhookAsaas(sys(), { id: 'p1', event: 'PAYMENT_CONFIRMED', payment: { id: 'pay_p', subscription: 'sub_p', value: 159.9, netValue: 157.9, dueDate: '2026-11-11' } });
+  r = await t.ok('super@hs.com', 'indicadoresNegocio');
+  assert.equal(r.recebido_mes_centavos, 15990);
+  await processarWebhookAsaas(sys(), { id: 'p2', event: 'PAYMENT_REFUNDED', payment: { id: 'pay_p', subscription: 'sub_p', value: 159.9, dueDate: '2026-11-11' } });
+  await processarWebhookAsaas(sys(), { id: 'p3', event: 'PAYMENT_REFUNDED', payment: { id: 'pay_p', subscription: 'sub_p', value: 159.9, dueDate: '2026-11-11' } });
+  r = await t.ok('super@hs.com', 'indicadoresNegocio');
+  assert.equal(r.recebido_mes_centavos, 0, 'estorno descontado uma única vez');
+
+  await t.ok('super@hs.com', 'marcarContaTeste', { empresa_id: interna.id, conta_teste: false });
+  r = await t.ok('super@hs.com', 'indicadoresNegocio');
+  assert.equal(r.contas_teste, 0);
 });
 
 test('lembretes à empresa: mensalidade 3 dias antes e fim do teste grátis, uma vez cada', async () => {

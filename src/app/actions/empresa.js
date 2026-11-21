@@ -116,6 +116,16 @@ export const actions = {
     },
   },
 
+  /** Marca a empresa como conta interna ou de teste (fica fora dos indicadores do negócio e do DRE). */
+  marcarContaTeste: {
+    perm: 'empresa.gerenciar_todas',
+    async run(ctx, { empresa_id, conta_teste }) {
+      const empresa = await getById(ctx, 'Empresa', empresa_id);
+      if (!empresa) throw new AccessError('Empresa não encontrada', 404);
+      return alterar(ctx, 'Empresa', empresa, { conta_teste: !!conta_teste }, 'MARCAR_CONTA_TESTE');
+    },
+  },
+
   listarEmpresas: {
     perm: 'empresa.gerenciar_todas',
     async run(ctx, input = {}) {

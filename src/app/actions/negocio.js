@@ -1,31 +1,53 @@
 // Indicadores do negócio (superadmin): assinantes, receita recorrente, inadimplência, cancelamentos,
 // testes grátis e comissão da cobrança gerenciada. Somente leitura, calculado dos registros reais.
 import { find, getById } from '../context.js';
-import { situacaoAcesso } from '../acesso.js';
+import { situacaoAcesso, DIAS_TESTE } from '../acesso.js';
 
 const mesDe = (iso) => String(iso || '').slice(0, 7);
 const PAGO = new Set(['PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED']);
+const ESTORNO = new Set(['PAYMENT_REFUNDED', 'PAYMENT_CHARGEBACK_REQUESTED']);
+const CANCELAMENTO = new Set(['SUBSCRIPTION_DELETED', 'SUBSCRIPTION_INACTIVATED']);
+
+/** Empresas que ficam fora dos números: contas internas ou de teste marcadas pelo superadmin. */
+export async function empresasDeTeste(ctx) {
+  return new Set((await find(ctx, 'Empresa', {})).filter((e) => e.conta_teste).map((e) => e.id));
+}
 
 /**
- * Receitas automáticas por mês (AAAA-MM): mensalidades recebidas pelo Asaas (bruto e taxa, quando o Asaas informa o líquido)
- * e comissão da cobrança gerenciada sobre pagamentos confirmados.
+ * Receitas automáticas por mês (AAAA-MM): mensalidades recebidas pelo Asaas (bruto e taxa, quando o Asaas informa o líquido),
+ * menos estornos, e comissão da cobrança gerenciada sobre pagamentos confirmados.
+ * Ficam de fora: contas de teste e pagamentos do ambiente de testes (sandbox) do Asaas.
  */
 export async function receitasPorMes(ctx) {
   const assinaturas = new Map(), taxas = new Map(), comissao = new Map();
-  const vistos = new Set();
-  for (const ev of (await find(ctx, 'EventoAssinatura', { origem: 'GATEWAY' })).filter((x) => PAGO.has(x.tipo))) {
+  const teste = await empresasDeTeste(ctx);
+  const ambienteEmpresa = new Map((await find(ctx, 'Empresa', {})).map((e) => [e.id, e.asaas_ambiente]));
+  const vistos = new Set(), estornados = new Set();
+  const eventos = (await find(ctx, 'EventoAssinatura', { origem: 'GATEWAY' })).filter((x) => !teste.has(x.empresa_id)).sort((a, b) => ((a.data_hora || '') > (b.data_hora || '') ? 1 : -1));
+  // pagamentos antes dos estornos (o estorno só desconta um pagamento já contado)
+  for (const ev of [...eventos.filter((x) => PAGO.has(x.tipo)), ...eventos.filter((x) => ESTORNO.has(x.tipo))]) {
+    const pago = PAGO.has(ev.tipo), estorno = ESTORNO.has(ev.tipo);
+    if (!pago && !estorno) continue;
     let p = {};
     try { p = JSON.parse(ev.payload || '{}'); } catch { /* ignora */ }
+    if ((p.ambiente || ambienteEmpresa.get(ev.empresa_id)) === 'sandbox') continue;
     const chave = p.pagamento || ev.id;
-    if (vistos.has(chave)) continue;
-    vistos.add(chave);
     const m = mesDe(ev.data_hora);
     const bruto = Math.round(Number(p.valor || 0) * 100);
+    if (estorno) {
+      // estorno de um pagamento já contado: sai da receita no mês em que foi devolvido
+      if (!vistos.has(chave) || estornados.has(chave)) continue;
+      estornados.add(chave);
+      assinaturas.set(m, (assinaturas.get(m) || 0) - bruto);
+      continue;
+    }
+    if (vistos.has(chave)) continue;
+    vistos.add(chave);
     assinaturas.set(m, (assinaturas.get(m) || 0) + bruto);
     if (p.liquido != null && Number(p.liquido) > 0) taxas.set(m, (taxas.get(m) || 0) + Math.max(0, bruto - Math.round(Number(p.liquido) * 100)));
   }
   for (const pg of await find(ctx, 'Pagamento', { status_confirmacao: 'CONFIRMADO' })) {
-    if (!pg.comissao_hs_centavos) continue;
+    if (!pg.comissao_hs_centavos || teste.has(pg.empresa_id)) continue;
     const m = mesDe(pg.data_confirmacao);
     comissao.set(m, (comissao.get(m) || 0) + pg.comissao_hs_centavos);
   }
@@ -49,8 +71,10 @@ export const actions = {
       const agora = ctx.now().toISOString();
       const hoje = agora.slice(0, 10);
       const mesAtual = mesDe(hoje);
-      const empresas = await find(ctx, 'Empresa', {});
-      const assinaturas = await find(ctx, 'Assinatura', {});
+      const todas = await find(ctx, 'Empresa', {});
+      const empresas = todas.filter((e) => !e.conta_teste);
+      const ids = new Set(empresas.map((e) => e.id));
+      const assinaturas = (await find(ctx, 'Assinatura', {})).filter((a) => ids.has(a.empresa_id));
       const planos = new Map((await find(ctx, 'Plano', {})).map((p) => [p.id, p]));
       const nomeEmpresa = (e) => e?.nome_fantasia || e?.razao_social || '—';
 
@@ -85,8 +109,11 @@ export const actions = {
       const { assinaturas: recebidoPorMes, comissao: comissaoPorMes } = await receitasPorMes(ctx);
 
       // Cancelamentos: assinaturas pagas que foram canceladas (por mês)
-      const cancelamentos = assinaturas.filter((a) => a.status === 'CANCELADA' && (a.ultimo_pagamento_em || a.gateway !== 'ASAAS'));
-      const canceladasMes = cancelamentos.filter((a) => mesDe(a.updated_date) === mesAtual);
+      // Data real do cancelamento: o aviso de cancelamento do Asaas; sem ele, a última alteração da assinatura
+      const canceladaEm = new Map();
+      for (const ev of await find(ctx, 'EventoAssinatura', {})) if (CANCELAMENTO.has(ev.tipo) && ev.assinatura_id && !canceladaEm.has(ev.assinatura_id)) canceladaEm.set(ev.assinatura_id, ev.data_hora);
+      const cancelamentos = assinaturas.filter((a) => a.status === 'CANCELADA' && (a.ultimo_pagamento_em || a.gateway !== 'ASAAS')).map((a) => ({ ...a, cancelada_em: canceladaEm.get(a.id) || a.updated_date }));
+      const canceladasMes = cancelamentos.filter((a) => mesDe(a.cancelada_em) === mesAtual);
       const empresasCanceladasMes = empresas.filter((e) => e.status === 'CANCELADA' && mesDe(e.updated_date) === mesAtual);
       const totalCancelMes = new Set([...canceladasMes.map((a) => a.empresa_id), ...empresasCanceladasMes.map((e) => e.id)]).size;
       const pagantes = porModo.ATIVO + porModo.TOLERANCIA;
@@ -98,7 +125,7 @@ export const actions = {
       for (const e of empresas) {
         const inicio = (e.data_cadastro || e.created_date || '').slice(0, 10);
         if (!inicio) continue;
-        const fimTeste = new Date(Date.parse(inicio) + 6 * 864e5).toISOString().slice(0, 10);
+        const fimTeste = new Date(Date.parse(inicio) + (DIAS_TESTE - 1) * 864e5).toISOString().slice(0, 10);
         if (fimTeste >= hoje || fimTeste < limite60) continue;
         testesEncerrados++;
         if (assinaturas.some((a) => a.empresa_id === e.id && (a.ultimo_pagamento_em || (a.gateway !== 'ASAAS' && ['ATIVA', 'INADIMPLENTE', 'CANCELADA', 'SUBSTITUIDA'].includes(a.status))))) convertidos++;
@@ -106,11 +133,12 @@ export const actions = {
 
       const meses = ultimosMeses(hoje, 6).map((m) => ({ mes: m, assinaturas_centavos: recebidoPorMes.get(m) || 0, comissao_centavos: comissaoPorMes.get(m) || 0 }));
       const ultimosCancelamentos = [];
-      for (const a of cancelamentos.sort((x, y) => ((x.updated_date || '') < (y.updated_date || '') ? 1 : -1)).slice(0, 10)) {
-        ultimosCancelamentos.push({ empresa: nomeEmpresa(await getById(ctx, 'Empresa', a.empresa_id)), plano: planos.get(a.plano_id)?.nome || '—', valor_centavos: a.valor_contratado_centavos || 0, em: a.updated_date });
+      for (const a of cancelamentos.sort((x, y) => ((x.cancelada_em || '') < (y.cancelada_em || '') ? 1 : -1)).slice(0, 10)) {
+        ultimosCancelamentos.push({ empresa: nomeEmpresa(await getById(ctx, 'Empresa', a.empresa_id)), plano: planos.get(a.plano_id)?.nome || '—', valor_centavos: a.valor_contratado_centavos || 0, em: a.cancelada_em });
       }
       return {
         gerado_em: agora,
+        contas_teste: todas.length - empresas.length,
         assinantes_ativos: pagantes,
         em_dia: porModo.ATIVO,
         em_tolerancia: porModo.TOLERANCIA,

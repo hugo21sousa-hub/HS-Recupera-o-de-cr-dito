@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { hs, auth, onSessaoExpirada } from './api.js';
+import { ignorarEsteAparelho } from './visitas.js';
 
 const Ctx = createContext(null);
 const PERFIS_HS = ['SUPERADMIN_HS', 'GESTOR_OPERACOES_HS', 'OPERADOR_HS', 'MARKETING_HS'];
@@ -11,6 +12,8 @@ export function SessaoProvider({ children }) {
       const { logado } = await auth.sessao();
       if (!logado) { setEstado({ carregando: false, logado: false, perfil: null }); return; }
       const perfil = await hs('meuPerfil');
+      // Aparelho da equipe Acorly: as próximas visitas ao site feitas nele (mesmo deslogado) não contam
+      if (PERFIS_HS.includes(perfil?.usuario?.perfil)) ignorarEsteAparelho(true);
       setEstado({ carregando: false, logado: true, perfil });
     } catch (e) {
       setEstado({ carregando: false, logado: false, perfil: null, erro: e.status === 401 ? null : e });

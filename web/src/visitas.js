@@ -14,9 +14,19 @@ function origemDaSessao() {
   }
 }
 
+const CHAVE_NAO_CONTAR = 'acorly_nao_contar';
+
+/** Este aparelho é da equipe Acorly? Então as visitas dele não entram na estatística (nem depois de sair da conta). */
+export function aparelhoIgnorado() {
+  try { return localStorage.getItem(CHAVE_NAO_CONTAR) === '1'; } catch { return false; }
+}
+export function ignorarEsteAparelho(sim = true) {
+  try { if (sim) localStorage.setItem(CHAVE_NAO_CONTAR, '1'); else localStorage.removeItem(CHAVE_NAO_CONTAR); } catch { /* navegador sem armazenamento */ }
+}
+
 /** evento: VISITA (página vista), WHATSAPP, CADASTRO. Falhas são ignoradas: estatística nunca atrapalha o site. */
 export function registrarVisita(evento = 'VISITA', pagina = window.location.pathname) {
-  if (DEMO || navigator.doNotTrack === '1' || navigator.webdriver) return;
+  if (DEMO || navigator.doNotTrack === '1' || navigator.webdriver || aparelhoIgnorado()) return;
   try {
     fetch('/api/publico/visita', {
       method: 'POST', keepalive: true, credentials: 'omit',
