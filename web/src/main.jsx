@@ -71,7 +71,8 @@ function Raiz() {
   if (ehConvite) return <Routes><Route path="/convite/:token" element={<Convite />} /></Routes>;
   if (loc.pathname === '/termos' || loc.pathname === '/privacidade') return <Documento tipo={loc.pathname.slice(1)} />;
   if (loc.pathname === '/diagnostico') return <Diagnostico />;
-  if (loc.pathname === '/mensagens') return <MensagensPublicas />;
+  // /mensagens é a página pública de exemplos; para quem cobra pelo sistema, é a Central de mensagens
+  if (loc.pathname === '/mensagens' && !s.pode('interacao.registrar')) return <MensagensPublicas />;
   if (s.perfil?.seguranca?.exige_2fa && !s.perfil?.seguranca?.dois_fatores_ativo) return <Exigir2FA />;
   if (s.perfil?.precisa_onboarding && !s.ehHS) return <Routes><Route path="*" element={<Onboarding />} /></Routes>;
   if (s.usuario?.status && s.usuario.status !== 'ATIVO') return <Vazio titulo="Acesso bloqueado">Fale com o administrador da sua empresa.</Vazio>;

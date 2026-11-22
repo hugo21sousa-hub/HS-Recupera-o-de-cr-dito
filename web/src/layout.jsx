@@ -182,6 +182,7 @@ export function Layout() {
         </nav>
         <div style={{ marginTop: 'auto' }} className="small">
           <NavLink to="/conta" className={({ isActive }) => (isActive ? 'ativo' : '')}>Minha conta</NavLink>
+          {!s.ehHS && <a href="/manual-acorly.pdf" target="_blank" rel="noreferrer">Manual do Cliente (PDF)</a>}
           <a href="/privacidade" target="_blank" rel="noreferrer">Política de privacidade</a>
         </div>
       </aside>

@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Manual do Cliente Acorly</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 18mm 16mm; }
+  :root { --azul: #0043ff; --navy: #001452; --texto: #1f2937; --t2: #4b5563; --borda: #e2e8f0; --claro: #e6edff; --ok: #15803d; --alerta: #b45309; }
+  * { box-sizing: border-box; }
+  body { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--texto); font-size: 10.5pt; line-height: 1.55; margin: 0; }
+  h1 { font-size: 22pt; color: var(--navy); margin: 0 0 6px; letter-spacing: -.01em; }
+  h2 { font-size: 13.5pt; color: var(--navy); margin: 20px 0 6px; }
+  h3 { font-size: 11pt; color: var(--azul); margin: 14px 0 4px; }
+  p { margin: 0 0 8px; }
+  ol, ul { margin: 0 0 10px; padding-left: 20px; }
+  li { margin: 2px 0; }
+  .capitulo { page-break-before: always; }
+  .cap-num { display: inline-block; background: var(--azul); color: #fff; font-weight: 800; border-radius: 8px; padding: 2px 10px; font-size: 10pt; margin-bottom: 8px; }
+  .faixa { height: 5px; border-radius: 3px; background: linear-gradient(90deg, #0043ff 0%, #31d6ff 30%, #31ff5e 52%, #ff31ff 76%, #ff8c00 100%); margin: 6px 0 16px; }
+  figure { margin: 10px 0 14px; page-break-inside: avoid; }
+  figure img { width: 100%; border: 1px solid var(--borda); border-radius: 8px; display: block; }
+  figcaption { font-size: 8.5pt; color: var(--t2); margin-top: 4px; }
+  .dica, .atencao, .regra { border-radius: 8px; padding: 9px 12px; margin: 10px 0; page-break-inside: avoid; font-size: 10pt; }
+  .dica { background: var(--claro); border-left: 4px solid var(--azul); }
+  .atencao { background: #fdf3e2; border-left: 4px solid var(--alerta); }
+  .regra { background: #e7f6ec; border-left: 4px solid var(--ok); }
+  .btn { display: inline-block; background: var(--azul); color: #fff; border-radius: 5px; padding: 0 6px; font-weight: 600; font-size: 9.5pt; white-space: nowrap; }
+  .menu { display: inline-block; background: var(--navy); color: #fff; border-radius: 5px; padding: 0 6px; font-weight: 600; font-size: 9.5pt; white-space: nowrap; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 12px; font-size: 9.5pt; page-break-inside: avoid; }
+  th, td { text-align: left; border-bottom: 1px solid var(--borda); padding: 5px 6px; vertical-align: top; }
+  th { background: #f5f7fa; color: var(--navy); }
+  .capa { height: 255mm; display: flex; flex-direction: column; justify-content: space-between; }
+  .capa-topo { background: linear-gradient(160deg, #001452 0%, #0030b8 55%, #0043ff 100%); color: #fff; border-radius: 14px; padding: 40px 34px; }
+  .capa-topo h1 { color: #fff; font-size: 30pt; line-height: 1.1; margin: 18px 0 10px; }
+  .capa-topo p { color: #dde6ff; font-size: 12pt; }
+  .logo { font-size: 30pt; font-weight: 900; letter-spacing: -.03em; }
+  .sumario ol { columns: 2; column-gap: 24px; font-size: 10.5pt; }
+  .sumario li { break-inside: avoid; margin-bottom: 4px; }
+  .passos li { margin-bottom: 4px; }
+  .duas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .cartao { border: 1px solid var(--borda); border-radius: 8px; padding: 10px 12px; page-break-inside: avoid; }
+  .cartao strong { color: var(--navy); }
+</style>
+</head>
+<body>
+
+<section class="capa">
+  <div class="capa-topo">
+    <div class="logo">acorly</div>
+    <div class="faixa" style="width:120px"></div>
+    <h1>Manual do Cliente</h1>
+    <p>Passo a passo de todas as funções da plataforma Acorly: cadastrar devedores e dívidas, cobrar com a sua equipe, encaminhar à equipe Acorly, negociar, confirmar pagamentos e acompanhar os resultados.</p>
+  </div>
+  <div>
+    <p><strong>Para quem é:</strong> administradores, equipe financeira e demais usuários das empresas clientes da Acorly.</p>
+    <p><strong>Acesso:</strong> <strong>acorly.com.br</strong>, pelo navegador do computador ou do celular. Não é preciso instalar nada.</p>
+    <p><strong>Atendimento:</strong> contato@acorly.com.br · WhatsApp (71) 92005-4062</p>
+    <p style="color:#6b7280;font-size:9pt">Versão de novembro de 2026. As imagens usam dados fictícios de exemplo. Acorly é uma plataforma da HS Recuperação de Crédito, CNPJ 37.573.934/0001-22.</p>
+  </div>
+</section>
+
+<section class="capitulo sumario">
+  <h1>Sumário</h1>
+  <div class="faixa"></div>
+  <ol>
+    <li>Como a Acorly funciona</li>
+    <li>Primeiro acesso: criar a conta e cadastrar a empresa</li>
+    <li>Entrar, senha e segurança</li>
+    <li>Conhecendo a tela: menu, avisos e perfis</li>
+    <li>Dashboard</li>
+    <li>Clientes e devedores</li>
+    <li>Dívidas</li>
+    <li>Parcelas</li>
+    <li>Importar planilha</li>
+    <li>Cobrar com a sua equipe (cobrança própria)</li>
+    <li>Central de mensagens</li>
+    <li>Negociar e formalizar acordos</li>
+    <li>Cobrança pela equipe Acorly: contrato e comissão</li>
+    <li>Carteiras</li>
+    <li>Encaminhar dívidas à Acorly</li>
+    <li>Acompanhar as Cobranças Acorly e aprovar propostas</li>
+    <li>Pagamentos: registrar, conferir e confirmar</li>
+    <li>Relatórios e prestação de contas</li>
+    <li>Usuários da sua empresa</li>
+    <li>Assinatura e planos</li>
+    <li>Configurações</li>
+    <li>Regras de cobrança respeitosa e LGPD</li>
+    <li>Dúvidas frequentes e atendimento</li>
+  </ol>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">1</span>
+  <h1>Como a Acorly funciona</h1>
+  <div class="faixa"></div>
+  <p>A Acorly organiza a recuperação dos valores que seus clientes devem à sua empresa. Você pode usar de duas formas, ou das duas ao mesmo tempo:</p>
+  <div class="duas">
+    <div class="cartao"><strong>A. Plataforma (cobrança própria)</strong><br>A sua equipe cobra pelo sistema: cadastra as dívidas, envia mensagens prontas por WhatsApp e e-mail, negocia, formaliza acordos e confirma os pagamentos. Você paga só a assinatura mensal, sem comissão sobre o que recuperar.</div>
+    <div class="cartao"><strong>B. Cobrança gerenciada (equipe Acorly)</strong><br>Você encaminha as dívidas e a equipe Acorly faz os contatos e as negociações em nome da sua empresa, dentro dos limites que você autorizar. Você paga uma comissão apenas sobre o que for efetivamente recebido. Exige um contrato próprio.</div>
+  </div>
+  <div class="regra"><strong>Três regras que valem sempre:</strong>
+    <ol>
+      <li><strong>O dinheiro vai direto para a sua empresa.</strong> O devedor paga pelo seu Pix, boleto ou conta. A Acorly nunca recebe valores de devedores.</li>
+      <li><strong>Só conta como recuperado o que você confirma.</strong> Propostas e acordos aparecem separados; o saldo da dívida só diminui quando você confirma o pagamento.</li>
+      <li><strong>Cobrança respeitosa.</strong> As mensagens saem com o nome da sua empresa, sem ameaças e sem expor ninguém, dentro do Código de Defesa do Consumidor e da LGPD.</li>
+    </ol>
+  </div>
+  <h2>O caminho de uma dívida, em resumo</h2>
+  <ol class="passos">
+    <li><strong>Cadastre</strong> o devedor e a dívida (um a um ou por planilha).</li>
+    <li><strong>Escolha quem cobra:</strong> <span class="btn">Iniciar cobrança própria</span> (sua equipe) ou <span class="btn">Encaminhar ao Acorly</span> (equipe Acorly).</li>
+    <li><strong>Contate e negocie:</strong> mensagens, simulador de desconto e parcelas, proposta e acordo.</li>
+    <li><strong>Confirme o pagamento</strong> quando o dinheiro entrar na sua conta.</li>
+    <li><strong>Acompanhe</strong> no Dashboard e nos Relatórios.</li>
+  </ol>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">2</span>
+  <h1>Primeiro acesso: criar a conta e cadastrar a empresa</h1>
+  <div class="faixa"></div>
+  <h2>2.1 Criar a sua conta</h2>
+  <ol class="passos">
+    <li>Acesse <strong>acorly.com.br</strong> e clique em <span class="btn">Criar conta</span>, no topo da página.</li>
+    <li>Preencha <strong>Seu nome</strong>, <strong>E-mail</strong> e <strong>Senha</strong> (mínimo de 8 caracteres, com letras e números).</li>
+    <li>Clique em <span class="btn">Criar conta</span>. Se o sistema pedir, informe o código de 6 dígitos enviado ao seu e-mail (confira também a caixa de spam).</li>
+  </ol>
+  <figure><img src="img/cadastro.jpg"><figcaption>Tela de criação de conta.</figcaption></figure>
+  <h2>2.2 Cadastrar a empresa</h2>
+  <p>Logo após criar a conta, o sistema pede os dados da empresa:</p>
+  <ul>
+    <li><strong>Obrigatórios:</strong> razão social, CNPJ, e-mail da empresa, telefone, responsável legal, endereço completo e o seu nome como administrador da conta.</li>
+    <li><strong>Opcionais:</strong> nome fantasia e um contato (nome, telefone e e-mail).</li>
+    <li>Marque <strong>"Li e aceito os Termos de Uso"</strong> e <strong>"Li e aceito a Política de Privacidade"</strong>.</li>
+  </ul>
+  <div class="dica">O <strong>nome fantasia</strong> é o nome que aparece nas mensagens enviadas aos seus devedores. Use o nome pelo qual seus clientes conhecem a sua empresa.</div>
+  <h2>2.3 Escolher como quer usar a Acorly</h2>
+  <p>Em seguida, escolha uma das opções (você pode mudar depois em <span class="menu">Configurações → Serviço</span>):</p>
+  <ul>
+    <li><strong>A. Quero utilizar a plataforma:</strong> sua equipe cobra pelo sistema.</li>
+    <li><strong>B. Quero contratar a cobrança do Acorly:</strong> a equipe Acorly cobra por você.</li>
+    <li><strong>Quero os dois:</strong> parte das dívidas você cobra; outra parte você encaminha à Acorly.</li>
+  </ul>
+  <h2>2.4 Teste grátis e validação</h2>
+  <ul>
+    <li>A plataforma pode ser usada <strong>grátis por 7 dias</strong>, sem cartão, com até 20 devedores e 3 usuários.</li>
+    <li>Para a cobrança gerenciada, a Acorly <strong>valida os dados da empresa</strong> antes de liberar o encaminhamento. A situação do cadastro aparece na tela inicial.</li>
+    <li>Ao final do teste, escolha um plano em <span class="menu">Assinatura</span> (capítulo 20). Sem plano, os dados ficam disponíveis apenas para consulta.</li>
+  </ul>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">3</span>
+  <h1>Entrar, senha e segurança</h1>
+  <div class="faixa"></div>
+  <h2>3.1 Entrar</h2>
+  <ol class="passos">
+    <li>Em <strong>acorly.com.br</strong>, clique em <span class="btn">Entrar</span>.</li>
+    <li>Informe o <strong>E-mail</strong> e a <strong>Senha</strong> e clique em <span class="btn">Entrar</span>.</li>
+    <li>Se a verificação em duas etapas estiver ativa, informe o código do aplicativo autenticador ou o código enviado ao seu e-mail.</li>
+  </ol>
+  <h2>3.2 Esqueci minha senha</h2>
+  <ol class="passos">
+    <li>Na tela de entrada, clique em <strong>Esqueci minha senha</strong>.</li>
+    <li>Informe o e-mail cadastrado. Você recebe um link para criar uma nova senha.</li>
+    <li>Se o e-mail não chegar, o administrador da sua empresa pode gerar um <strong>Link de acesso</strong> em <span class="menu">Usuários</span> (capítulo 19).</li>
+  </ol>
+  <h2>3.3 Minha conta: trocar a senha e ativar a verificação em duas etapas</h2>
+  <ol class="passos">
+    <li>Clique no seu nome, no canto superior direito, e depois em <strong>Minha conta</strong>.</li>
+    <li>Para trocar a senha: preencha a senha atual e a nova e clique em <span class="btn">Alterar senha</span>.</li>
+    <li>Para ativar a <strong>verificação em duas etapas</strong>: instale um aplicativo autenticador gratuito (Google Authenticator, Microsoft Authenticator, Authy), leia o QR Code exibido e digite o código de 6 dígitos para confirmar.</li>
+  </ol>
+  <div class="dica">Recomendamos ativar a verificação em duas etapas para todos os usuários: além da senha, o acesso pede um código que muda a cada 30 segundos no seu celular.</div>
+  <h2>3.4 Sair</h2>
+  <p>Clique em <span class="btn">Sair</span>, no canto superior direito. Em computadores compartilhados, sempre saia ao terminar.</p>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">4</span>
+  <h1>Conhecendo a tela: menu, avisos e perfis</h1>
+  <div class="faixa"></div>
+  <figure><img src="img/painel.jpg"><figcaption>Tela inicial (Dashboard), com o menu à esquerda e os avisos no sino, no topo.</figcaption></figure>
+  <h2>4.1 O menu lateral</h2>
+  <table>
+    <tr><th>Seção</th><th>Itens</th></tr>
+    <tr><td><strong>Visão geral</strong></td><td>Dashboard</td></tr>
+    <tr><td><strong>Cadastros</strong></td><td>Clientes e devedores · Dívidas · Parcelas · Importar planilha</td></tr>
+    <tr><td><strong>Cobrança</strong></td><td>Minhas cobranças · Central de mensagens · Cobranças Acorly · Carteiras · Negociações · Acordos · Pagamentos</td></tr>
+    <tr><td><strong>Gestão</strong></td><td>Relatórios · Usuários · Contratos · Assinatura · Configurações</td></tr>
+  </table>
+  <p>No celular, o menu abre pelo botão <strong>☰</strong>, no canto superior esquerdo. Os números em vermelho ao lado de <strong>Negociações</strong> e <strong>Pagamentos</strong> mostram quantos itens esperam por você.</p>
+  <h2>4.2 Avisos (o sino)</h2>
+  <p>O sino, no topo, mostra os avisos da sua conta: proposta aguardando aprovação, pagamento informado, cobrança atualizada, fatura da assinatura e outros. Clique no aviso para ir direto à tela correspondente.</p>
+  <h2>4.3 Perfis de usuário</h2>
+  <table>
+    <tr><th>Perfil</th><th>O que pode fazer</th></tr>
+    <tr><td><strong>Administrador</strong></td><td>Tudo: cadastra devedores e dívidas, cobra, encaminha à Acorly, aprova propostas, confirma pagamentos, convida usuários, aceita contratos, gerencia a assinatura e as configurações.</td></tr>
+    <tr><td><strong>Financeiro</strong></td><td>Aprova ou rejeita propostas e confere e confirma pagamentos.</td></tr>
+    <tr><td><strong>Visualizador</strong></td><td>Apenas consulta as informações, sem alterar nada.</td></tr>
+  </table>
+  <p>Alguns itens do menu só aparecem conforme o perfil e o plano contratado (por exemplo, Carteiras, Importar planilha e Relatórios estão nos planos Profissional ou superior).</p>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">5</span>
+  <h1>Dashboard</h1>
+  <div class="faixa"></div>
+  <p>O Dashboard mostra os <strong>valores reais da sua carteira</strong>. Só pagamentos confirmados por você contam como recuperados.</p>
+  <ul>
+    <li><strong>Indicadores:</strong> Recebido e confirmado, Saldo ainda pendente, Saldo total em atraso, Valor original das dívidas, Informado como pago (a conferir), Em negociação, Acordos formalizados e Encaminhado ao Acorly.</li>
+    <li><strong>Período:</strong> use os campos <strong>De</strong> e <strong>Até</strong> para filtrar as datas.</li>
+    <li><strong>Pagamentos nos últimos 12 meses:</strong> gráfico mês a mês. Clique em <span class="btn">Ver tabela</span> para ver os números.</li>
+    <li><strong>Casos de cobrança por status:</strong> quantos estão em contato, negociando, em acordo, pagos etc.</li>
+    <li><strong>Atalhos:</strong> <span class="btn">Nova dívida</span> e <span class="btn">Informar</span> (pagamento) levam direto às ações mais usadas.</li>
+  </ul>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">6</span>
+  <h1>Clientes e devedores</h1>
+  <div class="faixa"></div>
+  <p>Aqui ficam as pessoas e empresas que têm valores em aberto com a sua empresa.</p>
+  <figure><img src="img/devedores.jpg"><figcaption>Lista de devedores, com busca e situação de cada um.</figcaption></figure>
+  <h2>6.1 Cadastrar um devedor</h2>
+  <ol class="passos">
+    <li>Clique em <span class="menu">Clientes e devedores</span> e depois em <span class="btn">Novo devedor</span>.</li>
+    <li>Preencha os campos obrigatórios: <strong>Nome / razão social</strong>, <strong>Tipo de pessoa</strong> (física ou jurídica) e <strong>CPF/CNPJ</strong>.</li>
+    <li>Preencha os contatos: <strong>Telefone</strong>, <strong>WhatsApp</strong>, <strong>E-mail</strong> e o <strong>Canal preferido</strong>. Sem um contato, não é possível enviar mensagens.</li>
+    <li>Se quiser, informe o <strong>Endereço</strong> e <strong>Observações</strong>.</li>
+    <li>Clique em <span class="btn">Salvar</span>.</li>
+  </ol>
+  <figure><img src="img/novo-devedor.jpg"><figcaption>Formulário de novo devedor.</figcaption></figure>
+  <h2>6.2 Consultar e editar</h2>
+  <p>Clique no nome do devedor para ver os dados, as dívidas e o histórico de contatos. Na mesma tela você pode <span class="btn">Editar</span> os dados e, se o devedor pedir para não ser contatado, clicar em <span class="btn">Registrar pedido de não contato</span>: a partir daí, o sistema bloqueia novos contatos e o devedor aparece com a etiqueta <strong>Não contatar</strong>. Para voltar a contatar, use <span class="btn">Liberar contato</span>.</p>
+  <div class="dica">Para cadastrar muitos devedores de uma vez, use <span class="menu">Importar planilha</span> (capítulo 9).</div>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">7</span>
+  <h1>Dívidas</h1>
+  <div class="faixa"></div>
+  <p>Cada dívida mostra o valor original, o saldo atualizado e a situação. Use os filtros <strong>Vence de</strong> e <strong>até</strong> para localizar por vencimento.</p>
+  <figure><img src="img/dividas.jpg"><figcaption>Lista de dívidas com atraso, saldo, modalidade e status.</figcaption></figure>
+  <h2>7.1 Cadastrar uma dívida</h2>
+  <ol class="passos">
+    <li>Clique em <span class="menu">Dívidas</span> e depois em <span class="btn">Nova dívida</span>.</li>
+    <li>Escolha o <strong>Devedor</strong> (ele precisa estar cadastrado).</li>
+    <li>Informe a <strong>Descrição</strong> (ex.: "Mensalidade de março"), a <strong>Origem</strong> e o <strong>Documento de referência</strong> (nota, contrato, carnê).</li>
+    <li>Informe o <strong>Valor original</strong>, os <strong>Encargos contratuais</strong> (se houver) e o <strong>Vencimento</strong>.</li>
+    <li>Clique em <span class="btn">Salvar</span>.</li>
+  </ol>
+  <figure><img src="img/nova-divida.jpg"><figcaption>Formulário de nova dívida.</figcaption></figure>
+  <h2>7.2 A tela da dívida</h2>
+  <p>Clique em uma dívida para abrir o detalhe. No topo ficam as ações principais:</p>
+  <table>
+    <tr><th>Botão</th><th>Para que serve</th></tr>
+    <tr><td><span class="btn">Editar</span></td><td>Corrigir os dados da dívida.</td></tr>
+    <tr><td><span class="btn">Registrar pagamento</span></td><td>Informar um valor que o devedor pagou (capítulo 17).</td></tr>
+    <tr><td><span class="btn">Iniciar cobrança própria</span></td><td>Abrir a cobrança pela sua equipe (capítulo 10).</td></tr>
+    <tr><td><span class="btn">Encaminhar ao Acorly</span></td><td>Enviar a dívida para a equipe Acorly cobrar (capítulo 15).</td></tr>
+    <tr><td><span class="btn">Ver tabela de comissão</span></td><td>Ver o percentual que valeria se a dívida fosse encaminhada hoje, conforme o tempo de atraso.</td></tr>
+    <tr><td><span class="btn">Retirar do Acorly</span></td><td>Aparece nas dívidas já encaminhadas: tira a dívida da cobrança gerenciada, conforme as regras do contrato.</td></tr>
+  </table>
+  <figure><img src="img/divida-detalhe.jpg"><figcaption>Detalhe da dívida: ações no topo, valores, situação e abas.</figcaption></figure>
+  <p>Abaixo dos valores ficam as abas:</p>
+  <ul>
+    <li><strong>Parcelas:</strong> se a dívida já era parcelada, clique em <span class="btn">Definir parcelas originais</span> e informe as parcelas e vencimentos.</li>
+    <li><strong>Documentos:</strong> anexe nota, contrato ou comprovante da dívida. Os arquivos ficam privados e só abrem por link temporário.</li>
+    <li><strong>Pagamentos:</strong> pagamentos informados e confirmados desta dívida.</li>
+    <li><strong>Histórico financeiro:</strong> todas as mudanças de saldo, com data e responsável.</li>
+    <li><strong>Cobranças:</strong> os casos de cobrança (própria ou Acorly) ligados a esta dívida.</li>
+  </ul>
+  <div class="atencao"><strong>Cancelar dívida</strong> (no fim da tela) serve para dívidas lançadas por engano ou perdoadas. Informe o motivo; a ação fica registrada.</div>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">8</span>
+  <h1>Parcelas</h1>
+  <div class="faixa"></div>
+  <p>Mostra, em ordem de vencimento, todas as parcelas: as <strong>originais</strong> (definidas na dívida) e as <strong>de acordos</strong> (criadas quando um acordo é formalizado). Para cada parcela você vê devedor, origem, número, vencimento, valor, saldo e status.</p>
+  <figure><img src="img/parcelas.jpg"><figcaption>Lista de parcelas em ordem de vencimento.</figcaption></figure>
+  <div class="dica">Use esta tela no início de cada semana para ver as parcelas que vencem e lembrar os devedores antes do vencimento.</div>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">9</span>
+  <h1>Importar planilha</h1>
+  <div class="faixa"></div>
+  <p>Cadastre devedores e dívidas em lote a partir de um arquivo CSV.</p>
+  <ol class="passos">
+    <li>Clique em <span class="menu">Importar planilha</span> e em <span class="btn">Baixar modelo CSV</span>.</li>
+    <li>Abra o modelo no Excel (ou outro programa de planilhas) e preencha uma linha por dívida, com os dados do devedor.</li>
+    <li>Salve como <strong>CSV</strong> (Arquivo → Salvar como → CSV).</li>
+    <li>Volte à tela, selecione o arquivo e confira a <strong>prévia</strong>: o sistema mostra as linhas com erro antes de importar.</li>
+    <li>Corrija o que for preciso e confirme a importação.</li>
+  </ol>
+  <figure><img src="img/importar.jpg"><figcaption>Tela de importação com o modelo para baixar.</figcaption></figure>
+  <div class="regra"><strong>Regras da planilha:</strong>
+    <ul>
+      <li>Valores no formato 1.234,56 ou 1234.56; datas em DD/MM/AAAA ou AAAA-MM-DD.</li>
+      <li>Separador ponto e vírgula (;) ou vírgula (,).</li>
+      <li>Devedores repetidos (mesmo CPF/CNPJ) são reaproveitados e dívidas idênticas são ignoradas.</li>
+      <li>Máximo de 5.000 linhas por arquivo. Planilhas do Excel precisam ser salvas como CSV antes.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">10</span>
+  <h1>Cobrar com a sua equipe (cobrança própria)</h1>
+  <div class="faixa"></div>
+  <h2>10.1 Abrir a cobrança</h2>
+  <ol class="passos">
+    <li>Abra a dívida (<span class="menu">Dívidas</span> → clique na dívida).</li>
+    <li>Clique em <span class="btn">Iniciar cobrança própria</span>. Um caso de cobrança é criado e aparece em <span class="menu">Minhas cobranças</span>.</li>
+  </ol>
+  <figure><img src="img/cobrancas.jpg"><figcaption>Minhas cobranças: casos conduzidos pela sua equipe, com responsável, último contato, próxima tarefa e status.</figcaption></figure>
+  <h2>10.2 A tela do caso</h2>
+  <p>Clique em um caso para abrir. No topo ficam os valores, o tempo de atraso e o último contato; à direita, os dados do devedor.</p>
+  <figure><img src="img/caso-detalhe.jpg"><figcaption>Tela do caso de cobrança, com as ações e as abas de histórico, negociação, acordos, pagamentos, tarefas e documentos.</figcaption></figure>
+  <table>
+    <tr><th>Ação</th><th>Como usar</th></tr>
+    <tr><td><span class="btn">Enviar mensagem</span></td><td>Escolha <strong>WhatsApp</strong> ou <strong>E-mail</strong>, escolha um <strong>Modelo</strong> (Primeiro contato, Lembrete, Proposta de acordo, Lembrete de parcela do acordo) ou escreva uma mensagem livre. No WhatsApp, clique em <span class="btn">Abrir no WhatsApp</span>: o aplicativo abre com o texto pronto e você só aperta Enviar. O envio fica registrado no histórico.</td></tr>
+    <tr><td><span class="btn">Registrar resposta</span></td><td>Anote o que o devedor respondeu (por exemplo, "vai pagar dia 10").</td></tr>
+    <tr><td><span class="btn">Registrar contato</span></td><td>Registre uma ligação ou contato feito fora do sistema.</td></tr>
+    <tr><td><span class="btn">Nova tarefa</span></td><td>Agende um retorno (data e o que fazer). O caso volta para a Fila do dia nessa data.</td></tr>
+    <tr><td><span class="btn">Informar pagamento</span></td><td>Registre um pagamento recebido (capítulo 17).</td></tr>
+    <tr><td><strong>Alterar status…</strong></td><td>Em contato, Devedor respondeu, Em negociação, Sem sucesso ou Contestação.</td></tr>
+    <tr><td><span class="btn">Suspender</span></td><td>Pausa a cobrança (por exemplo, se o devedor contestar a dívida). Pode ser reativada depois.</td></tr>
+  </table>
+  <figure><img src="img/enviar-mensagem.jpg"><figcaption>Enviar mensagem: escolha o canal e o modelo; o texto já vem preenchido com os dados do devedor.</figcaption></figure>
+  <div class="regra">O sistema limita a <strong>3 contatos por dia</strong> por devedor, respeita o horário autorizado e bloqueia textos com ameaça ou exposição. Quem pediu para não ser contatado não recebe mensagens.</div>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">11</span>
+  <h1>Central de mensagens</h1>
+  <div class="faixa"></div>
+  <p>A Central reúne, em um só lugar, quem precisa ser contatado hoje e tudo o que já foi enviado e respondido.</p>
+  <ul>
+    <li><strong>Fila do dia:</strong> retornos agendados, parcelas de acordo vencendo, primeiro contato pendente e casos sem contato há 3 dias ou mais. Clique em cada item para enviar a mensagem.</li>
+    <li><strong>Histórico:</strong> todas as mensagens enviadas e respostas registradas, com data, canal e responsável.</li>
+  </ul>
+  <figure><img src="img/central.jpg"><figcaption>Central de mensagens com a Fila do dia e o Histórico.</figcaption></figure>
+  <div class="dica">Rotina sugerida: abra a <strong>Fila do dia</strong> todas as manhãs e trabalhe a lista de cima para baixo. Devedores que já receberam 3 contatos no dia ou pediram para não ser contatados não aparecem.</div>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">12</span>
+  <h1>Negociar e formalizar acordos</h1>
+  <div class="faixa"></div>
+  <h2>12.1 Simular e propor</h2>
+  <ol class="passos">
+    <li>No caso de cobrança, abra a aba <strong>Negociação</strong>.</li>
+    <li>No <strong>Simulador de negociação</strong>, informe o <strong>Desconto (%)</strong>, a <strong>Entrada (R$)</strong> e o <strong>Vencimento da entrada</strong>, o número de <strong>Parcelas</strong> e o <strong>1º vencimento</strong>.</li>
+    <li>Confira as <strong>Condições da proposta</strong>: valor proposto, entrada e a tabela de parcelas com datas e valores.</li>
+    <li>Clique em <span class="btn">Registrar proposta</span>. Se ela estiver fora dos limites autorizados, use <span class="btn">Enviar para aprovação do credor</span>: ela segue para <span class="menu">Negociações</span>.</li>
+  </ol>
+  <figure><img src="img/negociacao.jpg"><figcaption>Simulador de negociação: desconto, entrada e parcelas calculados na hora.</figcaption></figure>
+  <h2>12.2 Formalizar o acordo</h2>
+  <p>Quando o devedor aceita, clique em <span class="btn">Formalizar acordo</span>. As parcelas do acordo passam a aparecer em <span class="menu">Parcelas</span> e na Fila do dia, perto do vencimento.</p>
+  <h2>12.3 Acompanhar</h2>
+  <ul>
+    <li><span class="menu">Negociações</span>: todas as propostas. A aba <strong>Aguardando minha aprovação</strong> mostra o que depende de você; use <span class="btn">Aprovar</span> ou <span class="btn">Rejeitar</span>.</li>
+    <li><span class="menu">Acordos</span>: acordos formalizados com aceite, valor acordado, desconto, entrada, parcelas e status.</li>
+  </ul>
+  <div class="atencao">Proposta e acordo <strong>não são dinheiro recuperado</strong>. O saldo só cai quando você confirma cada pagamento.</div>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">13</span>
+  <h1>Cobrança pela equipe Acorly: contrato e comissão</h1>
+  <div class="faixa"></div>
+  <p>Para a equipe Acorly cobrar por você, é preciso ter um <strong>contrato de cobrança gerenciada</strong> aceito.</p>
+  <h2>13.1 Aceitar o contrato</h2>
+  <ol class="passos">
+    <li>Quando a Acorly enviar uma proposta, você recebe um aviso. Abra <span class="menu">Contratos</span>.</li>
+    <li>Clique em <span class="btn">Ver contrato</span> e leia até o fim.</li>
+    <li>Marque a caixa de aceite e clique em <span class="btn">Aceitar contrato</span>. O aceite eletrônico vale como assinatura e fica registrado com nome, e-mail, data, hora e IP.</li>
+  </ol>
+  <p>Se o botão estiver desativado, complete os dados da empresa em <span class="menu">Configurações</span>. O texto aceito fica guardado e pode ser consultado a qualquer momento em <span class="btn">Ver contrato</span>.</p>
+  <h2>13.2 Piloto Sem Risco</h2>
+  <p>Para conhecer o serviço, a Acorly oferece o <strong>Piloto Sem Risco</strong>: 30 dias, até 20 devedores escolhidos por você, comissão de 10% apenas sobre o que entrar nesse período; se nada entrar, você não paga nada. Depois dos 30 dias, se continuar, vale a tabela normal.</p>
+  <h2>13.3 Como a comissão é calculada</h2>
+  <table>
+    <tr><th>Atraso da dívida no dia do encaminhamento</th><th>Comissão de referência</th></tr>
+    <tr><td>até 90 dias</td><td>10%</td></tr>
+    <tr><td>91 a 180 dias</td><td>15%</td></tr>
+    <tr><td>181 a 365 dias</td><td>20%</td></tr>
+    <tr><td>acima de 365 dias</td><td>25%</td></tr>
+  </table>
+  <p>A comissão incide <strong>somente sobre o que você efetivamente receber e confirmar</strong>. Na tela de cada dívida, o quadro "Cobrança pela equipe Acorly" mostra o percentual e um exemplo em reais antes de você encaminhar. As condições finais ficam no seu contrato.</p>
+  <figure><img src="img/contratos.jpg"><figcaption>Contratos de cobrança gerenciada, com modalidade, comissão, vigência e status.</figcaption></figure>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">14</span>
+  <h1>Carteiras</h1>
+  <div class="faixa"></div>
+  <p>Carteiras agrupam dívidas para organizar a cobrança ou encaminhar um lote de uma vez à Acorly (por exemplo, "Mensalidades 2025" ou "Ex-alunos").</p>
+  <ol class="passos">
+    <li>Clique em <span class="menu">Carteiras</span> e em <span class="btn">Nova carteira</span>.</li>
+    <li>Informe o <strong>Nome</strong>, uma <strong>Descrição</strong> e o <strong>Uso previsto</strong>, e clique em <span class="btn">Salvar</span>.</li>
+    <li>Abra a carteira e adicione as dívidas desejadas.</li>
+  </ol>
+  <figure><img src="img/carteiras.jpg"><figcaption>Lista de carteiras com quantidade de dívidas, valor total e status.</figcaption></figure>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">15</span>
+  <h1>Encaminhar dívidas à Acorly</h1>
+  <div class="faixa"></div>
+  <p>Com o contrato aceito, o encaminhamento é feito em <strong>4 etapas</strong>. Abra <span class="menu">Cobranças Acorly</span> e clique em <span class="btn">Encaminhar ao Acorly</span> (ou use o mesmo botão na tela de uma dívida).</p>
+  <figure><img src="img/encaminhar.jpg"><figcaption>Encaminhamento: Seleção, Conferência, Limites e Autorização.</figcaption></figure>
+  <ol class="passos">
+    <li><strong>Seleção:</strong> escolha o <strong>Contrato de cobrança gerenciada</strong> e como selecionar: <strong>Por carteira</strong>, <strong>Dívidas individuais</strong> ou <strong>Todos os elegíveis</strong> (todas as dívidas que cumprem os requisitos do contrato). Clique em <span class="btn">Conferir seleção</span>.</li>
+    <li><strong>Conferência:</strong> o sistema mostra quais dívidas podem ser encaminhadas e quais não podem, com o motivo (por exemplo, falta de contato ou de documento).</li>
+    <li><strong>Limites:</strong> defina até onde a equipe Acorly pode negociar sem consultar você:
+      <ul>
+        <li><strong>Desconto máximo</strong> (padrão 20%);</li>
+        <li><strong>Parcelas máximas</strong> (padrão 6, com a entrada);</li>
+        <li><strong>Entrada mínima</strong> (padrão 10%);</li>
+        <li><strong>Janela de contato</strong> (padrão 08:00 às 20:00) e <strong>Canais autorizados</strong> (WhatsApp, telefone, e-mail);</li>
+        <li>opcional: <strong>"Toda proposta precisa da minha aprovação, mesmo dentro dos limites"</strong>;</li>
+        <li><strong>Condições e orientações para a equipe Acorly</strong> (texto livre).</li>
+      </ul></li>
+    <li><strong>Autorização:</strong> leia o resumo, marque <strong>"Li e autorizo expressamente, em nome da empresa, nos termos acima"</strong> e confirme.</li>
+  </ol>
+  <div class="dica"><strong>Comece pelos clientes que já saíram</strong> ou pelas dívidas com mais de 90 dias: assim ninguém que ainda é seu cliente recebe contato no início, e você vê o resultado antes de encaminhar outros casos.</div>
+  <p>Depois do encaminhamento, a Acorly valida a carteira e define o <strong>operador responsável pela sua carteira</strong>, que acompanha todos os seus devedores do primeiro contato ao pagamento. A autorização pode ser consultada em <span class="btn">Autorizações</span>, na tela Cobranças Acorly.</p>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">16</span>
+  <h1>Acompanhar as Cobranças Acorly e aprovar propostas</h1>
+  <div class="faixa"></div>
+  <p>Em <span class="menu">Cobranças Acorly</span> você acompanha, em tempo real, cada caso encaminhado: responsável, último contato, próxima tarefa, prioridade e status.</p>
+  <figure><img src="img/cobranca-hs.jpg"><figcaption>Cobranças Acorly: casos encaminhados à equipe Acorly.</figcaption></figure>
+  <ul>
+    <li>Clique em um caso para ver o <strong>histórico de contatos</strong>, as propostas, os acordos e os pagamentos.</li>
+    <li>Quando a equipe Acorly fizer uma proposta <strong>fora dos limites</strong> (ou se você exigiu aprovar todas), você recebe um aviso. Abra <span class="menu">Negociações</span> → <strong>Aguardando minha aprovação</strong> e clique em <span class="btn">Aprovar</span> ou <span class="btn">Rejeitar</span>.</li>
+    <li>Se um cliente seu reclamar, avise a Acorly: o contato com ele é interrompido na hora.</li>
+  </ul>
+  <figure><img src="img/negociacoes.jpg"><figcaption>Negociações aguardando a sua aprovação.</figcaption></figure>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">17</span>
+  <h1>Pagamentos: registrar, conferir e confirmar</h1>
+  <div class="faixa"></div>
+  <p>O devedor paga <strong>direto à sua empresa</strong>. O pagamento só entra como recuperado depois que você confere no extrato e confirma.</p>
+  <h2>17.1 Registrar um pagamento</h2>
+  <ol class="passos">
+    <li>Abra a dívida e clique em <span class="btn">Registrar pagamento</span> (ou <span class="btn">Informar pagamento</span> na tela do caso).</li>
+    <li>Informe o <strong>Valor pago</strong>, a <strong>Data do pagamento</strong> e a <strong>Forma</strong> (Pix, Boleto, Transferência, Cartão, Dinheiro ou Outro).</li>
+    <li>Se tiver, informe o <strong>ID da transação</strong> (evita registrar o mesmo pagamento duas vezes) e anexe o <strong>comprovante</strong>.</li>
+    <li>Se já conferiu no extrato, marque <strong>"Já conferi no extrato: confirmar o recebimento agora"</strong>.</li>
+    <li>Clique em <span class="btn">Salvar</span>.</li>
+  </ol>
+  <figure><img src="img/registrar-pagamento.jpg"><figcaption>Registrar pagamento recebido.</figcaption></figure>
+  <h2>17.2 Conferir os pagamentos informados</h2>
+  <p>Quando a equipe Acorly (ou o devedor, pelo comprovante) informa um pagamento, ele aparece em <span class="menu">Pagamentos</span> → <strong>Informados</strong>.</p>
+  <ol class="passos">
+    <li>Confira no extrato bancário se o valor entrou.</li>
+    <li>Clique em <span class="btn">Confirmar</span> (entrou) ou <span class="btn">Rejeitar</span> (não entrou). Use <span class="btn">Conferir</span> para marcar que está verificando.</li>
+  </ol>
+  <figure><img src="img/pagamentos.jpg"><figcaption>Pagamentos por situação: Informados, Em conferência, Confirmados, Rejeitados e Todos.</figcaption></figure>
+  <div class="atencao">O comprovante sozinho não prova o pagamento. Confirme apenas valores que entraram na sua conta. Nas cobranças Acorly, a coluna <strong>Comissão Acorly</strong> mostra a comissão de cada pagamento confirmado.</div>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">18</span>
+  <h1>Relatórios e prestação de contas</h1>
+  <div class="faixa"></div>
+  <figure><img src="img/relatorios.jpg"><figcaption>Relatórios: prestação de contas e exportação em planilha.</figcaption></figure>
+  <h2>18.1 Prestação de contas</h2>
+  <ol class="passos">
+    <li>Clique em <span class="menu">Relatórios</span> e em <span class="btn">Gerar prestação de contas</span>.</li>
+    <li>Escolha o <strong>Contrato</strong> e o período (<strong>Início</strong> e <strong>Fim</strong>).</li>
+    <li>O relatório lista casos, valores negociados e recuperados (confirmados). Clique em <span class="btn">Baixar PDF</span> para guardar ou enviar à contabilidade.</li>
+  </ol>
+  <h2>18.2 Exportar planilha (CSV)</h2>
+  <p>Em <strong>Exportar planilha</strong>, clique em <span class="btn">Dívidas</span>, <span class="btn">Pagamentos</span> ou <span class="btn">Casos de cobrança</span> para baixar os dados e abrir no Excel. A exportação está nos planos Empresarial e Ilimitado.</p>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">19</span>
+  <h1>Usuários da sua empresa</h1>
+  <div class="faixa"></div>
+  <figure><img src="img/usuarios.jpg"><figcaption>Usuários com acesso à plataforma.</figcaption></figure>
+  <h2>19.1 Convidar um usuário</h2>
+  <ol class="passos">
+    <li>Clique em <span class="menu">Usuários</span> e em <span class="btn">Convidar usuário</span>.</li>
+    <li>Informe <strong>Nome</strong>, <strong>E-mail</strong> e <strong>Perfil</strong> (Administrador, Financeiro ou Visualizador; veja o capítulo 4).</li>
+    <li>Clique em <span class="btn">Convidar</span>. A pessoa recebe um e-mail para definir a senha; se o e-mail não chegar, use <span class="btn">Link de acesso</span>.</li>
+  </ol>
+  <h2>19.2 Outras ações</h2>
+  <ul>
+    <li><span class="btn">Link de acesso</span>: gera um link para o primeiro acesso ou para quem esqueceu a senha. Envie à pessoa por um canal seguro.</li>
+    <li><span class="btn">Editar</span>: muda o nome ou o perfil.</li>
+    <li><span class="btn">Bloquear</span>: tira o acesso de quem saiu da empresa, sem apagar o histórico.</li>
+  </ul>
+  <p>O número de usuários depende do plano (por exemplo, 2 no Essencial e 5 no Profissional).</p>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">20</span>
+  <h1>Assinatura e planos</h1>
+  <div class="faixa"></div>
+  <p>Em <span class="menu">Assinatura</span> você vê o plano atual, o valor, o vencimento, os limites e a situação. A assinatura é da plataforma; <strong>não há comissão</strong> sobre valores que a sua equipe recuperar.</p>
+  <figure><img src="img/assinatura.jpg"><figcaption>Plano atual e planos disponíveis.</figcaption></figure>
+  <table>
+    <tr><th>Plano</th><th>Mensal</th><th>Limites</th><th>Recursos</th></tr>
+    <tr><td>Essencial</td><td>R$ 49,90</td><td>100 devedores · 2 usuários</td><td>Devedores, dívidas, pagamentos e dashboard</td></tr>
+    <tr><td>Profissional</td><td>R$ 89,90</td><td>500 devedores · 5 usuários</td><td>+ carteiras, importação, negociação e relatórios</td></tr>
+    <tr><td>Empresarial</td><td>R$ 159,90</td><td>1.000 devedores · 15 usuários</td><td>+ exportação</td></tr>
+    <tr><td>Ilimitado</td><td>R$ 259,90</td><td>ilimitados</td><td>Todos os recursos</td></tr>
+  </table>
+  <h2>Assinar ou mudar de plano</h2>
+  <ol class="passos">
+    <li>Clique em <span class="btn">Assinar</span> (ou <span class="btn">Mudar para este plano</span>) no plano desejado e depois em <span class="btn">Gerar fatura</span>.</li>
+    <li>Pague a fatura por Pix, boleto ou cartão (cobrança pelo Asaas). O plano é ativado assim que o pagamento for confirmado.</li>
+    <li>Se houver fatura em atraso, aparece o aviso com o botão <span class="btn">Pagar agora</span>. Depois de 5 dias de tolerância, a conta passa para somente consulta até a regularização.</li>
+  </ol>
+  <p style="font-size:9.5pt;color:#4b5563">Valores de novembro de 2026; confira os preços atualizados na tela Assinatura.</p>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">21</span>
+  <h1>Configurações</h1>
+  <div class="faixa"></div>
+  <figure><img src="img/configuracoes.jpg"><figcaption>Configurações, com as abas no topo.</figcaption></figure>
+  <table>
+    <tr><th>Aba</th><th>O que fazer</th></tr>
+    <tr><td><strong>Dados da empresa</strong></td><td>Atualize razão social, nome fantasia, e-mail, telefone, responsável legal, endereço e contato. Clique em <span class="btn">Salvar</span>.</td></tr>
+    <tr><td><strong>Serviço</strong></td><td>Veja e mude a forma de uso (plataforma, cobrança Acorly ou ambos). Casos já encaminhados seguem o contrato; para tirar uma dívida, use "Retirar do Acorly" na tela da dívida.</td></tr>
+    <tr><td><strong>Privacidade e retenção</strong></td><td>Defina por quantos meses os dados ficam guardados após a quitação, se é obrigatório anexar documento para encaminhar dívidas à Acorly e quem é o encarregado de dados (DPO) da sua empresa.</td></tr>
+    <tr><td><strong>Solicitações de titulares</strong></td><td>Registre pedidos de devedores sobre seus dados (acesso, correção, eliminação e outros direitos da LGPD, art. 18). Prazo de resposta: 15 dias. Use <span class="btn">Registrar solicitação</span>.</td></tr>
+    <tr><td><strong>Modelos de mensagem</strong></td><td>Veja e crie seus próprios modelos com <span class="btn">Novo modelo</span>. Use as variáveis <strong>{{nome}}</strong>, <strong>{{credor}}</strong>, <strong>{{valor}}</strong> e <strong>{{vencimento}}</strong>, que são trocadas pelos dados de cada devedor. Textos com ameaça ou exposição são recusados.</td></tr>
+    <tr><td><strong>Integrações</strong></td><td>Mostra o que está ativo: WhatsApp Business, e-mail e pagamento da assinatura. Quando o WhatsApp automático não está ativo, o envio é feito pelo link do WhatsApp, com o texto pronto.</td></tr>
+  </table>
+  <figure><img src="img/modelos.jpg"><figcaption>Modelos de mensagem com variáveis.</figcaption></figure>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">22</span>
+  <h1>Regras de cobrança respeitosa e LGPD</h1>
+  <div class="faixa"></div>
+  <p>A Acorly foi feita para recuperar o seu dinheiro <strong>sem perder o seu cliente</strong>. Por isso, o próprio sistema aplica estas regras:</p>
+  <ul>
+    <li>Contato só no horário autorizado (padrão das 8h às 20h) e no máximo <strong>3 contatos por dia</strong> por devedor.</li>
+    <li>Mensagens com ameaça, palavras ofensivas ou exposição do devedor são bloqueadas (Código de Defesa do Consumidor, art. 42).</li>
+    <li>A cobrança é feita só com o próprio devedor: nunca com familiares, vizinhos ou colegas de trabalho.</li>
+    <li>Quem pede para não ser contatado tem o pedido respeitado na hora.</li>
+    <li>Cada empresa só vê os próprios dados. A equipe Acorly só acessa os casos que você encaminhar e autorizar.</li>
+    <li>Todas as alterações ficam registradas (quem fez, o quê e quando).</li>
+  </ul>
+  <div class="dica"><strong>Boas práticas para a sua equipe:</strong> trate o devedor pelo nome, ofereça condições claras, registre cada contato e cada promessa de pagamento, e confirme os pagamentos no mesmo dia em que entrarem no extrato.</div>
+</section>
+
+<section class="capitulo">
+  <span class="cap-num">23</span>
+  <h1>Dúvidas frequentes e atendimento</h1>
+  <div class="faixa"></div>
+  <h3>A Acorly recebe o dinheiro das dívidas?</h3>
+  <p>Não. O devedor paga diretamente à sua empresa, pelos meios que você já usa. Você confirma o recebimento no sistema.</p>
+  <h3>Por que o saldo da dívida não diminuiu depois do acordo?</h3>
+  <p>Porque acordo não é pagamento. O saldo só cai quando você confirma cada pagamento em <span class="menu">Pagamentos</span>.</p>
+  <h3>A mensagem do WhatsApp não foi enviada sozinha. É normal?</h3>
+  <p>Sim, quando o WhatsApp automático não está ativo: o sistema abre o WhatsApp com o texto pronto e você aperta Enviar. O envio fica registrado no histórico do caso.</p>
+  <h3>Posso usar a plataforma e a cobrança Acorly ao mesmo tempo?</h3>
+  <p>Sim. Escolha "Quero os dois" em <span class="menu">Configurações → Serviço</span>: parte das dívidas você cobra, parte você encaminha.</p>
+  <h3>Posso tirar uma dívida da cobrança Acorly?</h3>
+  <p>Sim, pelo botão <span class="btn">Retirar do Acorly</span> na tela da dívida, conforme as regras do contrato.</p>
+  <h3>Um devedor pediu para não ser mais contatado. O que faço?</h3>
+  <p>Abra o devedor em <span class="menu">Clientes e devedores</span> e clique em <span class="btn">Registrar pedido de não contato</span>. O sistema bloqueia novos contatos com ele.</p>
+  <h3>Esqueci a senha e o e-mail de redefinição não chegou.</h3>
+  <p>Confira a caixa de spam. Se ainda assim não chegar, peça ao administrador da sua empresa um <span class="btn">Link de acesso</span> em <span class="menu">Usuários</span>, ou fale com a Acorly.</p>
+  <h2>Atendimento</h2>
+  <div class="cartao">
+    <p><strong>E-mail:</strong> contato@acorly.com.br</p>
+    <p><strong>WhatsApp:</strong> (71) 92005-4062</p>
+    <p><strong>Site:</strong> acorly.com.br · Termos de Uso e Política de Privacidade no rodapé do site.</p>
+  </div>
+  <p style="margin-top:18px;color:#6b7280;font-size:9pt">Acorly · uma plataforma da HS Recuperação de Crédito · CNPJ 37.573.934/0001-22 · Salvador/BA.</p>
+</section>
+
+</body>
+</html>

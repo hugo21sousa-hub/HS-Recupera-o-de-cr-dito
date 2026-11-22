@@ -118,7 +118,7 @@ export function Assinatura() {
   if (carregando && !d) return <Carregando />;
   return (
     <div className="stack">
-      <Cabecalho titulo="Assinatura" sub="Plano da plataforma. Não há comissão sobre valores recuperados." />
+      <Cabecalho titulo="Assinatura" sub="Plano da plataforma. Não há comissão sobre valores recuperados."><a className="btn" href="/manual-acorly.pdf" target="_blank" rel="noreferrer">Baixar o Manual do Cliente</a></Cabecalho>
       <div className="card">
         {d.atual ? <Dl itens={[['Plano', d.plano?.nome], ['Valor mensal', brl(d.atual.valor_contratado_centavos)], ['Início', data(d.atual.data_inicio)], ['Vencimento', data(d.atual.data_vencimento)], ['Limites', `${d.plano?.limite_devedores || '∞'} devedores · ${d.plano?.limite_usuarios || '∞'} usuários`], ['Status', <Badge key="s" status={d.atual.status} />]]} />
           : d.acesso?.modo === 'TESTE'

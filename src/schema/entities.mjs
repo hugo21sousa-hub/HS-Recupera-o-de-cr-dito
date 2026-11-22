@@ -26,6 +26,7 @@ export const ENTITIES = {
       motivo_status: s('Motivo da última mudança de status'), modalidade_servico: e(['PLATAFORMA', 'HS_GERENCIADA', 'AMBOS'], 'Serviço escolhido no onboarding'),
       data_cadastro: ts('Data de cadastro'), aceite_termos_em: ts('Aceite dos termos'), asaas_cliente_id: s('Cliente no gateway de assinatura'), asaas_ambiente: s('Ambiente do gateway (sandbox/producao)'), asaas_notificacoes_em: ts('Avisos de cobrança configurados no Asaas'), avisos_teste: arr('Avisos de fim do teste já enviados'), aviso_bloqueio_para: dt('Aviso de último dia da tolerância enviado'), aceite_privacidade_em: ts('Aceite da política de privacidade'), versao_termos: s('Versão aceita'),
       conta_teste: b('Conta interna ou de teste: fica fora dos indicadores do negócio e do DRE'),
+      manual_enviado_em: ts('Manual do cliente enviado por e-mail (boas-vindas da assinatura)'),
     },
     required: ['razao_social', 'cnpj', 'email', 'status'],
   },

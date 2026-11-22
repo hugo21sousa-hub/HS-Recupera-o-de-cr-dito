@@ -164,3 +164,25 @@ test('Asaas: avisos ao cliente só por e-mail (sem SMS, ligação ou WhatsApp)',
   assert.deepEqual([n2.enabled, n2.emailEnabledForCustomer, n2.smsEnabledForCustomer], [true, true, false]);
   assert.deepEqual([n3.enabled, n3.emailEnabledForCustomer, n3.whatsappEnabledForCustomer], [false, false, false]);
 });
+
+test('manual do cliente: enviado por e-mail (com PDF anexo) na primeira ativação da assinatura, uma única vez', async () => {
+  const { t, plano, empresa, sys } = await base();
+  const e = await empresa('manual', 61);
+  const enviados = [];
+  const ctxEmail = () => ({ ...sys(), email: { disponivel: true, enviar: async (m) => { enviados.push(m); return true; }, notificacao: async () => true }, manualCliente: async () => Buffer.from('%PDF-teste'), urlBase: 'https://acorly.com.br' });
+  const { enviarManualBoasVindas } = await import('../src/app/actions/comercial.js');
+  let c = ctxEmail();
+  assert.equal(await enviarManualBoasVindas(c, e.id), true);
+  for (const f of c.aposConfirmar) await f();
+  assert.equal(enviados.length, 1);
+  assert.equal(enviados[0].para, e.adm);
+  assert.equal(enviados[0].anexos[0].nome, 'Manual-do-Cliente-Acorly.pdf');
+  assert.equal(enviados[0].botao.url, 'https://acorly.com.br/manual-acorly.pdf');
+  c = ctxEmail();
+  assert.equal(await enviarManualBoasVindas(c, e.id), false, 'não repete');
+  assert.equal(c.aposConfirmar.length, 0);
+  // ativação manual pelo superadmin também dispara (empresa nova)
+  const e2 = await empresa('manual2', 62);
+  await t.ok('super@hs.com', 'salvarAssinatura', { empresa_id: e2.id, plano_id: plano('ACORLY ESSENCIAL').id, data_inicio: '2026-11-01', data_vencimento: '2026-12-01' });
+  assert.ok((await t.db.Empresa.filter({})).find((x) => x.id === e2.id).manual_enviado_em);
+});

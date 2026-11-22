@@ -64,11 +64,12 @@ ${botao ? `<p style="margin:20px 0"><a href="${esc(botao.url)}" style="backgroun
     return { html, texto };
   }
 
-  async function enviar({ para, assunto, titulo, paragrafos, botao }) {
+  async function enviar({ para, assunto, titulo, paragrafos, botao, anexos = [] }) {
     if (!t) return false;
     const { html, texto } = modelo(titulo || assunto, paragrafos, botao);
+    const attachments = anexos.map((a) => ({ filename: a.nome, content: a.conteudo, contentType: a.mime || 'application/pdf' }));
     try {
-      const info = await t.sendMail({ from: remetente, to: para, subject: assunto, text: texto, html });
+      const info = await t.sendMail({ from: remetente, to: para, subject: assunto, text: texto, html, ...(attachments.length ? { attachments } : {}) });
       enviados.push({ para, assunto, info });
       return true;
     } catch (e) {

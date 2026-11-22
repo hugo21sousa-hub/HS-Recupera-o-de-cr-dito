@@ -121,9 +121,43 @@ export async function processarWebhookAsaas(ctx, ev) {
   await ctx.db.EventoAssinatura.create({ empresa_id: a.empresa_id, assinatura_id: a.id, tipo: ev.event, payload: JSON.stringify({ pagamento: ev.payment?.id, valor: ev.payment?.value, liquido: ev.payment?.netValue, status: ev.payment?.status, ambiente: ctx.asaas?.ambiente || null }), origem: 'GATEWAY', data_hora: agora });
   if (patch) {
     await alterar(ctx, 'Assinatura', a, patch, `GATEWAY_${ev.event}`);
+    if (patch.status === 'ATIVA') await enviarManualBoasVindas(ctx, a.empresa_id);
     if (patch.status === 'ATIVA' || patch.status === 'INADIMPLENTE') await notificar(ctx, a.empresa_id, { perfis: ['ADMIN_EMPRESA'], tipo: 'ASSINATURA', titulo: patch.status === 'ATIVA' ? 'Pagamento da assinatura confirmado' : 'Assinatura com pagamento pendente', mensagem: patch.status === 'ATIVA' ? 'Seu plano está ativo.' : 'Regularize a fatura para manter o plano.', link: '/assinatura' });
   }
   return { ok: true, status: patch?.status };
+}
+
+/**
+ * Boas-vindas da assinatura: na primeira ativação do plano, os administradores da empresa recebem o
+ * Manual do Cliente (PDF anexado, com link para baixar). Envia uma única vez por empresa.
+ */
+export async function enviarManualBoasVindas(ctx, empresa_id) {
+  const empresa = await getById(ctx, 'Empresa', empresa_id);
+  if (!empresa || empresa.manual_enviado_em) return false;
+  const admins = (await find(ctx, 'UsuarioPlataforma', { empresa_id, status: 'ATIVO' })).filter((u) => u.perfil === 'ADMIN_EMPRESA');
+  if (!admins.length) return false;
+  await ctx.db.Empresa.update(empresa.id, { manual_enviado_em: ctx.now().toISOString() });
+  await notificar(ctx, empresa.id, { perfis: ['ADMIN_EMPRESA'], tipo: 'MANUAL', titulo: 'Manual do Cliente Acorly', mensagem: 'Seu plano está ativo. O Manual do Cliente, com o passo a passo de todas as funções, foi enviado ao seu e-mail e pode ser baixado em Minha conta ou em Assinatura.', link: '/assinatura' });
+  if (ctx.aposConfirmar && ctx.email?.disponivel) {
+    const url = `${ctx.urlBase || ''}/manual-acorly.pdf`;
+    ctx.aposConfirmar.push(async () => {
+      const pdf = ctx.manualCliente ? await ctx.manualCliente() : null;
+      for (const u of admins) {
+        await ctx.email.enviar({
+          para: u.email, assunto: 'Bem-vindo à Acorly: seu Manual do Cliente', titulo: 'Seu plano está ativo',
+          paragrafos: [
+            `Olá, ${String(u.nome || '').split(' ')[0] || 'tudo bem'}! A assinatura da ${empresa.nome_fantasia || empresa.razao_social} na Acorly está ativa.`,
+            'Enviamos o Manual do Cliente com o passo a passo de todas as funções: cadastrar devedores e dívidas, importar planilhas, cobrar pelo WhatsApp e e-mail, negociar, encaminhar à equipe Acorly, confirmar pagamentos e gerar relatórios.',
+            pdf ? 'O manual está em anexo e também pode ser baixado pelo botão abaixo.' : 'Baixe o manual pelo botão abaixo.',
+            'Dúvidas: contato@acorly.com.br ou WhatsApp (71) 92005-4062.',
+          ],
+          botao: { texto: 'Baixar o Manual do Cliente', url },
+          anexos: pdf ? [{ nome: 'Manual-do-Cliente-Acorly.pdf', conteudo: pdf, mime: 'application/pdf' }] : [],
+        });
+      }
+    });
+  }
+  return true;
 }
 
 export const actions = {
@@ -200,6 +234,7 @@ export const actions = {
       const dados = { empresa_id: empresa.id, plano_id: plano.id, data_inicio: input.data_inicio, data_vencimento: input.data_vencimento, status: input.status || 'ATIVA', valor_contratado_centavos: valor, gateway: null, gateway_assinatura_id: null };
       const r = input.id ? await alterar(ctx, 'Assinatura', await getById(ctx, 'Assinatura', input.id), dados) : await criar(ctx, 'Assinatura', dados);
       await ctx.db.EventoAssinatura.create({ empresa_id: empresa.id, assinatura_id: r.id, tipo: input.id ? 'ALTERADA' : 'CRIADA', payload: JSON.stringify(dados), origem: 'MANUAL', data_hora: ctx.now().toISOString() });
+      if (dados.status === 'ATIVA') await enviarManualBoasVindas(ctx, empresa.id);
       return r;
     },
   },

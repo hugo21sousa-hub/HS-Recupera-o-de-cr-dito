@@ -11,6 +11,7 @@ import { importarProspects } from '../app/actions/prospects.js';
 import { timingSafeEqual, createHash } from 'node:crypto';
 import { registrarEvento, classificarOrigem, ehRobo, dispositivo, compactarVisitas } from '../app/visitas.js';
 import { readFileSync, existsSync, statSync, writeFileSync, mkdirSync, createReadStream } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { join, extname, resolve, sep } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { abrirBanco } from './db.js';
@@ -78,7 +79,9 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
     if (eventosVisita.size > 5000) eventosVisita.clear();
     await transacao((pos) => registrarEvento(ctxSistema(pos), { visitante: visitanteAnonimo(ip, ua), dispositivo: dispositivo(ua), ...dados }));
   };
-  const integracoes = { email, descadastro, urlBase, contato: { email: env.CONTATO_EMAIL || 'contato@acorly.com.br', whatsapp: env.CONTATO_WHATSAPP || WHATSAPP_ACORLY }, whatsapp: whatsapp.disponivel ? whatsapp : null, asaas: asaas.disponivel ? asaas : null };
+  // Manual do cliente (PDF em web/public): anexado ao e-mail de boas-vindas da assinatura
+  const manualCliente = async () => { try { return await readFile(join(webDir, 'manual-acorly.pdf')); } catch { return null; } };
+  const integracoes = { email, descadastro, urlBase, manualCliente, contato: { email: env.CONTATO_EMAIL || 'contato@acorly.com.br', whatsapp: env.CONTATO_WHATSAPP || WHATSAPP_ACORLY }, whatsapp: whatsapp.disponivel ? whatsapp : null, asaas: asaas.disponivel ? asaas : null };
 
   /** Executa em transação; efeitos externos (e-mails) só depois do COMMIT. */
   async function transacao(fn) {
