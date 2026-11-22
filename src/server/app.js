@@ -30,6 +30,7 @@ import { processarWebhookAsaas } from '../app/actions/comercial.js';
 import { executarRetencao } from '../app/retencao.js';
 import { PERFIS_HS } from '../core/permissions.js';
 import { TABELA_PADRAO, TABELA_DUAS_FAIXAS, rotuloFaixa } from '../core/comissao.js';
+import { TEMPO_MINIMO_MS } from '../core/diagnostico.js';
 import { exemplosPublicos, MODELOS_PADRAO } from '../app/actions/mensagens.js';
 
 // WhatsApp oficial da Acorly (botão flutuante do site e assinatura dos e-mails); CONTATO_WHATSAPP no Render substitui.
@@ -285,7 +286,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
       let d;
       try { d = JSON.parse(corpo.toString('utf8') || '{}'); } catch { return json(res, 400, { ok: false, error: 'Envio inválido' }); }
       // Anti-robô: campo invisível preenchido ou envio rápido demais
-      if (d.site || Number(d.tempo_ms) < 2500) return json(res, 200, { ok: true, data: { recebido: true } });
+      if (d.site || Number(d.tempo_ms) < TEMPO_MINIMO_MS) return json(res, 200, { ok: true, data: { recebido: true } });
       enviosDiagnostico.set(ip, [...envios, agoraMs]);
       const TIPOS = { csv: 'text/csv', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', pdf: 'application/pdf' };
       const r = await transacao(async (pos) => {

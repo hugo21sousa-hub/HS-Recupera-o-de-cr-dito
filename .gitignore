@@ -9,3 +9,4 @@ web/dist-demo/
 # Análise de negócio (founder skills): estratégia e números internos, fora do repositório público
 founder/
 __pycache__/
+.gstack/

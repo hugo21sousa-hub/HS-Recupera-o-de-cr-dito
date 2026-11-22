@@ -2,7 +2,8 @@
 // carteira (quando a planilha é CSV), aviso à equipe e acompanhamento comercial.
 import { parseCSV } from '../../core/csvImport.js';
 import { parseReais, formatBRL } from '../../core/money.js';
-import { emailValido, somenteDigitos } from '../../core/documento.js';
+import { somenteDigitos } from '../../core/documento.js';
+import { conferirPedidoDiagnostico } from '../../core/diagnostico.js';
 import { diasAtraso } from '../../core/dates.js';
 import { faixaPara, calcularComissao, TABELA_PADRAO, rotuloFaixa } from '../../core/comissao.js';
 import { ValidationError, AccessError, getById, find, criar, alterar, exigir, notificar, paginar, filtrosPermitidos } from '../context.js';
@@ -60,11 +61,8 @@ function validarPedido(d) {
     qtd_devedores: Math.max(0, Math.min(1e7, parseInt(d.qtd_devedores, 10) || 0)) || null, mensagem: t(d.mensagem, 2000),
     origem: t(d.origem, 200), cidade: t(d.cidade, 80),
   };
-  exigir(pedido.nome.length >= 2, 'Informe o seu nome');
-  exigir(pedido.empresa.length >= 2, 'Informe o nome da empresa');
-  exigir(emailValido(pedido.email), 'Informe um e-mail válido');
-  exigir(!pedido.whatsapp || pedido.whatsapp.length >= 10, 'WhatsApp inválido: informe DDD e número');
-  exigir(d.aceite_privacidade === true, 'É preciso concordar com a Política de Privacidade');
+  const problema = conferirPedidoDiagnostico(d);
+  exigir(!problema, problema);
   let valor = null;
   if (d.valor_aberto) { try { valor = parseReais(d.valor_aberto); } catch { throw new ValidationError('Valor em aberto inválido'); } }
   pedido.valor_aberto_centavos = valor && valor > 0 ? valor : null;

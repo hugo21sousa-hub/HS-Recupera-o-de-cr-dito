@@ -5,6 +5,7 @@ import { enviarDiagnostico, baixarArquivo } from '../api.js';
 import { Marca } from '../layout.jsx';
 import { WhatsAppFlutuante } from '../whatsapp.jsx';
 import { anonimizarPlanilha } from '../planilha.js';
+import { conferirPedidoDiagnostico, esperaAntiRobo } from '../../../src/core/diagnostico.js';
 
 const SEGMENTOS = [['ESCOLA_CURSO', 'Escola ou curso'], ['SAUDE', 'Clínica, consultório ou laboratório'], ['ACADEMIA', 'Academia'], ['CONDOMINIO', 'Condomínio ou administradora'], ['VAREJO', 'Loja / varejo com crediário'], ['DISTRIBUIDORA', 'Distribuidora / atacado'], ['SERVICOS', 'Prestação de serviços'], ['IMOBILIARIA', 'Imobiliária'], ['OUTRO', 'Outro']];
 const MODELO = 'valor;vencimento\n1.250,00;10/08/2026\n480,00;05/09/2026\n'
@@ -48,9 +49,14 @@ export function Diagnostico() {
   const enviar = async (e) => {
     e.preventDefault();
     setErro(null);
+    const problema = conferirPedidoDiagnostico(v);
+    if (problema) { setErro(problema); return; }
     if (arquivo && arquivo.size > 5 * 1024 * 1024) { setErro('Arquivo muito grande: envie até 5 MB.'); return; }
     setEnviando(true);
     try {
+      // quem preenche com o autopreenchimento do navegador pode ser rápido demais e cair no filtro de robôs: espera o mínimo
+      const espera = esperaAntiRobo(inicio.current);
+      if (espera) await new Promise((r) => setTimeout(r, espera));
       const payload = { ...v, tempo_ms: Date.now() - inicio.current, origem: (document.referrer || '').slice(0, 200), ref: refIndicacao() };
       // só a versão anônima (valor + vencimento) sai do computador; o arquivo original nunca é enviado
       if (anonimo) payload.arquivo = { nome: 'diagnostico-anonimo.csv', conteudo: await paraBase64(new Blob([anonimo.csv], { type: 'text/csv' })) };
