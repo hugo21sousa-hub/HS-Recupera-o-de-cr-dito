@@ -10,3 +10,4 @@ web/dist-demo/
 founder/
 __pycache__/
 .gstack/
+outputs/
