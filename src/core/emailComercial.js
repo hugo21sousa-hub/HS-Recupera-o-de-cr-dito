@@ -54,6 +54,7 @@ export function renderizarEmailComercial({ corpo, urlBase = '', rodape = '', sai
 <tr><td style="background:linear-gradient(135deg,#001452,#0043ff);background-color:#001452;color:#fff;padding:20px 28px">${logo}</td></tr>
 <tr><td style="height:4px;line-height:4px;font-size:0;background:#0043ff;background-image:linear-gradient(90deg,#0043ff,#31d6ff,#31ff5e,#ff31ff,#ff8c00)">&nbsp;</td></tr>
 <tr><td style="padding:26px 28px">${html.join('\n')}</td></tr>
+${urlBase ? `<tr><td style="padding:0 28px 22px"><a href="https://acorly.com.br" style="text-decoration:none"><img src="${esc(urlBase)}/assinatura-email.png" width="564" alt="Acorly · uma plataforma da HS Recuperação de Crédito · WhatsApp +55 (71) 92005-4062 · acorly.com.br · Rua Júlia Fetal, 5, Nazaré, Salvador-BA 40040-350" style="display:block;width:100%;max-width:564px;height:auto;border:0;border-radius:8px"></a></td></tr>` : ''}
 <tr><td style="padding:14px 28px;font-size:11px;color:#6b7280;border-top:1px solid #e2e8f0">${esc(rodape)}${sair ? `<br><a href="${esc(sair)}" style="color:#6b7280">Não quero mais receber e-mails comerciais da Acorly</a>` : ''}</td></tr>
 </table></td></tr></table></body></html>`;
   const textoPuro = `${texto.join('\n').replace(/\n{3,}/g, '\n\n')}\n\n--\n${rodape}${sair ? `\nPara não receber mais: ${sair}` : ''}`;
