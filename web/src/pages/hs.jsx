@@ -9,6 +9,14 @@ import { EditorFaixas, TabelaComissao } from './comissao.jsx';
 import { JanelaContrato } from '../contrato.jsx';
 
 const STATUS_EMPRESA = ['CADASTRO_INCOMPLETO', 'AGUARDANDO_VALIDACAO', 'ATIVA', 'SUSPENSA', 'CANCELADA'];
+const TIPO_PIX = { CNPJ: 'CNPJ', CPF: 'CPF', EMAIL: 'e-mail', TELEFONE: 'celular', ALEATORIA: 'chave aleatória' };
+/** Situação do Pix automático da empresa, com a chave parcialmente oculta. */
+const pixDaEmpresa = (e) => {
+  if (!e.pix_chave) return 'Não cadastrado: o cliente ainda informa boleto ou Pix à mão em cada acordo';
+  const k = String(e.pix_chave);
+  const oculta = k.length > 6 ? `${k.slice(0, 3)}•••${k.slice(-3)}` : '•••';
+  return `Ativo · ${TIPO_PIX[e.pix_tipo] || 'chave'} ${oculta} · recebedor ${e.pix_nome || '—'}${e.pix_cidade ? `, ${e.pix_cidade}` : ''}`;
+};
 
 function DetalheEmpresa({ empresa: e, onClose, onFeito }) {
   const { executar } = useExecutar();
@@ -33,7 +41,7 @@ function DetalheEmpresa({ empresa: e, onClose, onFeito }) {
     </>}>
       <div className="stack">
         <div className="aviso info small">Acesso administrativo: consultas a dados desta empresa ficam registradas na auditoria.</div>
-        <Dl itens={[['Nome fantasia', e.nome_fantasia], ['CNPJ', mascaraDoc(e.cnpj)], ['E-mail', e.email], ['Telefone', e.telefone], ['Endereço', e.endereco], ['Responsável legal', e.responsavel_legal], ['Contato', [e.contato_nome, e.contato_telefone, e.contato_email].filter(Boolean).join(' · ') || '—'], ['Serviço', rotulo(e.modalidade_servico)], ['Cadastro', dataHora(e.data_cadastro)], ['Status', <Badge key="s" status={e.status} />], ['Último motivo', e.motivo_status || '—'], ['Nos indicadores', e.conta_teste ? 'Não (conta de teste)' : 'Sim']]} />
+        <Dl itens={[['Nome fantasia', e.nome_fantasia], ['CNPJ', mascaraDoc(e.cnpj)], ['E-mail', e.email], ['Telefone', e.telefone], ['Endereço', e.endereco], ['Responsável legal', e.responsavel_legal], ['Contato', [e.contato_nome, e.contato_telefone, e.contato_email].filter(Boolean).join(' · ') || '—'], ['Serviço', rotulo(e.modalidade_servico)], ['Cadastro', dataHora(e.data_cadastro)], ['Status', <Badge key="s" status={e.status} />], ['Último motivo', e.motivo_status || '—'], ['Pix automático', pixDaEmpresa(e)], ['Nos indicadores', e.conta_teste ? 'Não (conta de teste)' : 'Sim']]} />
         <h3>Usuários</h3>
         <table><tbody>{(usuarios.data?.itens || []).map((u) => <tr key={u.id}><td>{u.nome}</td><td>{u.email}</td><td>{rotulo(u.perfil)}</td><td><Badge status={u.status} /></td></tr>)}</tbody></table>
         <h3>Assinatura</h3>
@@ -55,6 +63,7 @@ export function Empresas() {
         { titulo: 'Razão social', render: (e) => <><button className="btn link" onClick={() => setSel(e)}>{e.razao_social}</button>{e.conta_teste && <> <Badge status="info">teste</Badge></>}</> },
         { titulo: 'CNPJ', render: (e) => mascaraDoc(e.cnpj) }, { titulo: 'Serviço', render: (e) => rotulo(e.modalidade_servico) },
         { titulo: 'Cadastro', render: (e) => data(e.data_cadastro) }, { titulo: 'Status', render: (e) => <Badge status={e.status} /> },
+        { titulo: 'Pix automático', render: (e) => (e.pix_chave ? <Badge status="ATIVA">ativo</Badge> : <span className="small muted">não cadastrado</span>) },
       ]} vazio={<Vazio titulo="Nenhuma empresa cadastrada" />} />
       {sel && <DetalheEmpresa empresa={sel} onClose={() => setSel(null)} onFeito={() => setR(r + 1)} />}
     </div>
