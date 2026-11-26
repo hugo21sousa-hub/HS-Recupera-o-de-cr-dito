@@ -8,6 +8,7 @@ import { CAMPOS_EMPRESA } from './acesso.jsx';
 import { Seguranca2FA } from './seguranca.jsx';
 import { TabelaComissao, EditorFaixas } from './comissao.jsx';
 import { rotuloFaixa } from '../../../src/core/comissao.js';
+import QRCode from 'qrcode';
 
 export function LinkAcesso({ link, email, onClose, enviado }) {
   const toast = useToast();
@@ -165,6 +166,54 @@ function DadosEmpresa() {
   );
 }
 
+/** Chave Pix da empresa: o sistema gera o Pix de cada parcela de acordo, com o dinheiro direto na conta dela. */
+function RecebimentoPix() {
+  const s = useSessao();
+  const toast = useToast();
+  const e = s.empresa || {};
+  const pode = s.pode('empresa.editar');
+  const [v, setV] = useState({ chave: e.pix_chave || '', nome: e.pix_nome || e.nome_fantasia || e.razao_social || '', cidade: e.pix_cidade || '' });
+  const [teste, setTeste] = useState(null);
+  const [enviando, setEnviando] = useState(false);
+  const salvar = async (ev) => {
+    ev.preventDefault();
+    setEnviando(true);
+    try {
+      const r = await hs('salvarRecebimentoPix', v);
+      await s.recarregar();
+      if (r.ativo) {
+        setTeste({ codigo: r.teste, qr: await QRCode.toDataURL(r.teste, { margin: 1, width: 180, color: { dark: '#001452', light: '#ffffff' } }) });
+        toast.ok(r.parcelas_atualizadas ? `Chave salva. Pix gerado em ${r.parcelas_atualizadas} parcela(s) em aberto.` : 'Chave Pix salva');
+      } else { setTeste(null); toast.ok('Chave Pix removida'); }
+    } catch (err) { toast.erro(err); } finally { setEnviando(false); }
+  };
+  const set = (k) => (ev) => setV({ ...v, [k]: ev.target.value });
+  return (
+    <form className="stack" onSubmit={salvar}>
+      <p style={{ margin: 0 }}>Com a chave Pix cadastrada, o sistema gera sozinho o <strong>Pix de cada parcela de acordo</strong>: o código copia e cola, o QR Code e uma página de pagamento que o devedor pode imprimir como um boleto. <strong>O dinheiro cai direto na conta da sua empresa</strong>; a Acorly não recebe valores.</p>
+      <div className="aviso info small">Depois do pagamento, confira no extrato e confirme em Pagamentos, como de costume. O identificador da parcela (começa com AC) aparece no Pix e ajuda a localizar o pagamento.</div>
+      <fieldset disabled={!pode} style={{ border: 0, padding: 0, margin: 0 }}>
+        <div className="form-grid">
+          <div className="campo"><label>Chave Pix da empresa</label><input value={v.chave} onChange={set('chave')} placeholder="CNPJ, e-mail, celular ou chave aleatória" /><span className="small muted">Use uma chave da conta da empresa (de preferência o CNPJ). Deixe em branco para desligar.</span></div>
+          <div className="campo"><label>Nome do recebedor</label><input value={v.nome} onChange={set('nome')} maxLength={60} /><span className="small muted">Aparece no aplicativo do devedor (até 25 letras).</span></div>
+          <div className="campo"><label>Cidade da empresa</label><input value={v.cidade} onChange={set('cidade')} maxLength={60} placeholder="Ex.: Salvador" /></div>
+        </div>
+      </fieldset>
+      {pode && <div className="row" style={{ justifyContent: 'flex-end' }}><button className="btn prim" disabled={enviando}>{enviando && <Spinner />}Salvar</button></div>}
+      {teste && (
+        <div className="card row" style={{ gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+          <img src={teste.qr} alt="QR Code de teste" width="140" height="140" />
+          <div className="stack" style={{ gap: 6, flex: 1, minWidth: 240 }}>
+            <strong>Faça um teste de R$ 0,01</strong>
+            <span className="small muted">Pague este QR Code pelo celular e confira se o valor cai na conta da empresa e se o nome do recebedor aparece certo.</span>
+            <code className="small" style={{ wordBreak: 'break-all' }}>{teste.codigo}</code>
+          </div>
+        </div>
+      )}
+    </form>
+  );
+}
+
 function Servico() {
   const s = useSessao();
   const { executar } = useExecutar();
@@ -292,8 +341,9 @@ export function Configuracoes() {
         <Abas ativa={aba} onChange={setAba} abas={[
           { id: 'empresa', rotulo: 'Dados da empresa' }, { id: 'servico', rotulo: 'Serviço' }, { id: 'privacidade', rotulo: 'Privacidade e retenção' },
           ...(s.pode('lgpd.atender') ? [{ id: 'titulares', rotulo: 'Solicitações de titulares' }] : []),
-          { id: 'modelos', rotulo: 'Modelos de mensagem' }, { id: 'integracoes', rotulo: 'Integrações' },
+          { id: 'pix', rotulo: 'Recebimento (Pix)' }, { id: 'modelos', rotulo: 'Modelos de mensagem' }, { id: 'integracoes', rotulo: 'Integrações' },
         ]} />
+        {aba === 'pix' && <RecebimentoPix />}
         {aba === 'empresa' && <DadosEmpresa />}
         {aba === 'servico' && <Servico />}
         {aba === 'privacidade' && <Privacidade />}

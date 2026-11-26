@@ -168,14 +168,14 @@ export function PagamentosAcordo({ acordo, podeInformar, podeEnviar, emailDispon
   return (
     <div className="stack" style={{ marginTop: 12 }}>
       <h3 style={{ margin: 0 }}>Pagamento das parcelas</h3>
-      {faltam > 0 && <div className="aviso alerta small">{podeInformar ? `Informe o boleto ou o Pix de ${faltam} parcela(s) para a equipe enviar ao devedor. O pagamento cai direto na sua conta.` : `O credor ainda não informou a forma de pagamento de ${faltam} parcela(s).`}</div>}
+      {faltam > 0 && <div className="aviso alerta small">{podeInformar ? <>Informe o boleto ou o Pix de {faltam} parcela(s) para a equipe enviar ao devedor. O pagamento cai direto na sua conta. <strong>Dica:</strong> cadastre a chave Pix da empresa em Configurações → Recebimento (Pix) e o sistema gera o Pix de todas as parcelas sozinho.</> : `O credor ainda não informou a forma de pagamento de ${faltam} parcela(s).`}</div>}
       <div className="tabela-wrap"><table>
         <thead><tr><th>Parcela</th><th>Vencimento</th><th className="num">Valor</th><th>Situação</th><th>Forma de pagamento</th><th>Enviado ao devedor</th><th></th></tr></thead>
         <tbody>{(parcelas || []).map((p) => (
           <tr key={p.id}>
             <td>{p.numero === 0 ? 'Entrada' : p.numero}</td><td>{data(p.vencimento)}</td><td className="num">{brl(p.aberta ? p.saldo_centavos : p.valor_original_centavos)}</td>
             <td><Badge status={p.status} /></td>
-            <td className="small">{p.forma ? <>{[p.forma.tem_boleto || p.forma.linha_digitavel ? 'Boleto' : null, p.forma.pix_copia_cola ? 'Pix' : null, p.forma.link_pagamento ? 'Link' : null].filter(Boolean).join(' + ')}{p.substituicoes > 0 && <span className="muted"> (atualizado)</span>}</> : p.aberta ? <span style={{ color: 'var(--alerta)' }}>Pendente</span> : '—'}</td>
+            <td className="small">{p.forma ? <>{[p.forma.tem_boleto || p.forma.linha_digitavel ? 'Boleto' : null, p.forma.pix_copia_cola ? (p.forma.automatico ? 'Pix automático' : 'Pix') : null, p.forma.link_pagamento ? 'Link' : null].filter(Boolean).join(' + ')}{p.substituicoes > 0 && !p.forma.automatico && <span className="muted"> (atualizado)</span>}{p.forma.pagina && <div><a href={p.forma.pagina} target="_blank" rel="noreferrer">Página de pagamento ↗</a>{p.forma.txid && <span className="muted"> · {p.forma.txid}</span>}</div>}</> : p.aberta ? <span style={{ color: 'var(--alerta)' }}>Pendente</span> : '—'}</td>
             <td className="small">{p.forma?.enviado_ao_devedor_em ? dataHora(p.forma.enviado_ao_devedor_em) : '—'}</td>
             <td className="right"><div className="row" style={{ justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
               {p.forma?.tem_boleto && <button className="btn sm" onClick={() => verBoleto(p.forma)}>Ver boleto</button>}

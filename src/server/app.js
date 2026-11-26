@@ -32,6 +32,7 @@ import { executarRetencao } from '../app/retencao.js';
 import { PERFIS_HS } from '../core/permissions.js';
 import { TABELA_PADRAO, TABELA_DUAS_FAIXAS, rotuloFaixa } from '../core/comissao.js';
 import { TEMPO_MINIMO_MS } from '../core/diagnostico.js';
+import { pagamentoPublico } from '../app/actions/boletos.js';
 import { exemplosPublicos, MODELOS_PADRAO } from '../app/actions/mensagens.js';
 
 // WhatsApp oficial da Acorly (botão flutuante do site e assinatura dos e-mails); CONTATO_WHATSAPP no Render substitui.
@@ -314,6 +315,13 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
         }
       });
       return json(res, r.status, r.body);
+    }
+    if (req.method === 'GET' && url.pathname.startsWith('/api/publico/pagar/')) {
+      // Página pública de pagamento de uma parcela (Pix gerado com a chave do credor); sem dados do devedor
+      const token = url.pathname.split('/').pop();
+      const r = await transacao(async (pos) => ({ status: 200, body: { ok: true, data: await pagamentoPublico(ctxSistema(pos), token) } }));
+      if (!r.body.data) return json(res, 404, { ok: false, error: 'Link de pagamento inválido.' });
+      return json(res, 200, r.body, { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' });
     }
     if (rota === 'GET /api/publico') {
       // Dados do site de apresentação (sem login): planos ativos e contato configurado

@@ -19,6 +19,7 @@ import { Negociacoes, Acordos, Pagamentos, Relatorios } from './pages/financeiro
 import { CentralMensagens } from './pages/central.jsx';
 import { Diagnostico } from './pages/diagnostico.jsx';
 import { MensagensPublicas } from './pages/mensagensPublicas.jsx';
+import { PagarPix } from './pages/pagar.jsx';
 import { Leads } from './pages/leads.jsx';
 import { Conteudo } from './pages/conteudo.jsx';
 import { IndicadoresNegocio } from './pages/negocio.jsx';
@@ -39,7 +40,7 @@ function Protegida({ p, children }) {
 /** Conta a página vista (só no site público, para quem não está logado). */
 function ContadorVisitas() {
   const { pathname } = useLocation();
-  useEffect(() => { if (!pathname.startsWith('/convite/')) registrarVisita('VISITA', pathname); }, [pathname]);
+  useEffect(() => { if (!pathname.startsWith('/convite/') && !pathname.startsWith('/pagar/')) registrarVisita('VISITA', pathname); }, [pathname]);
   return null;
 }
 
@@ -63,6 +64,7 @@ function Raiz() {
         <Route path="/privacidade" element={<Documento tipo="privacidade" />} />
         <Route path="/diagnostico" element={<Diagnostico />} />
         <Route path="/mensagens" element={<MensagensPublicas />} />
+        <Route path="/pagar/:token" element={<PagarPix />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       </>
@@ -71,6 +73,7 @@ function Raiz() {
   if (ehConvite) return <Routes><Route path="/convite/:token" element={<Convite />} /></Routes>;
   if (loc.pathname === '/termos' || loc.pathname === '/privacidade') return <Documento tipo={loc.pathname.slice(1)} />;
   if (loc.pathname === '/diagnostico') return <Diagnostico />;
+  if (loc.pathname.startsWith('/pagar/')) return <Routes><Route path="/pagar/:token" element={<PagarPix />} /></Routes>;
   // /mensagens é a página pública de exemplos; para quem cobra pelo sistema, é a Central de mensagens
   if (loc.pathname === '/mensagens' && !s.pode('interacao.registrar')) return <MensagensPublicas />;
   if (s.perfil?.seguranca?.exige_2fa && !s.perfil?.seguranca?.dois_fatores_ativo) return <Exigir2FA />;

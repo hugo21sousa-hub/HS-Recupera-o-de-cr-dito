@@ -77,3 +77,84 @@ test('operador envia ao devedor: WhatsApp com linha digitável e link do boleto;
   assert.match(lembretes[0].texto, /Linha digitável do boleto/);
   assert.match(lembretes[0].texto, /Boleto em PDF: https:\/\/acorly\.com\.br/);
 });
+
+// ---------- Pix automático com a chave do credor ----------
+import { crc16, brCodePix, normalizarChavePix } from '../src/core/pix.js';
+import { pagamentoPublico } from '../src/app/actions/boletos.js';
+
+test('BR Code do Pix: CRC do exemplo oficial do Banco Central, chaves e campos', () => {
+  assert.equal(crc16('00020126580014br.gov.bcb.pix0136123e4567-e12b-12d1-a456-4266554400005204000053039865802BR5913Fulano de Tal6008BRASILIA62070503***6304'), '1D3D');
+  assert.deepEqual(normalizarChavePix('37.573.934/0001-22'), { tipo: 'CNPJ', chave: '37573934000122' });
+  assert.deepEqual(normalizarChavePix('(71) 92005-4062'), { tipo: 'TELEFONE', chave: '+5571920054062' });
+  assert.deepEqual(normalizarChavePix('Financeiro@Escola.com.br'), { tipo: 'EMAIL', chave: 'financeiro@escola.com.br' });
+  assert.throws(() => normalizarChavePix('123'), /não reconhecida/);
+  const c = brCodePix({ chave: '37573934000122', nome: 'Colégio São João Ação Ltda', cidade: 'São Paulo', valorCentavos: 25000, txid: 'ACPAR1' });
+  assert.ok(c.startsWith('000201'));
+  assert.match(c, /0014br\.gov\.bcb\.pix011437573934000122/);
+  assert.match(c, /5406250\.00/);
+  assert.match(c, /5925COLEGIO SAO JOAO ACAO LTD6009/, 'nome sem acentos, em maiúsculas, até 25 letras');
+  assert.match(c, /6009SAO PAULO/);
+  assert.equal(c.slice(-4), crc16(c.slice(0, -4)));
+});
+
+test('Pix automático: com a chave cadastrada, cada parcela ganha o Pix na conta do credor e a página pública de pagamento', async () => {
+  const t = await cenario();
+  const A = t.empresas.A;
+  t.estado.extras.urlBase = 'https://acorly.com.br';
+  await t.falha(A.fin, 'salvarRecebimentoPix', { chave: '37573934000122', nome: 'Loja A', cidade: 'Salvador' }, 403);
+  await t.falha(A.adm, 'salvarRecebimentoPix', { chave: '999', nome: 'Loja A', cidade: 'Salvador' }, 422);
+  const cfg = await t.ok(A.adm, 'salvarRecebimentoPix', { chave: '37.573.934/0001-22', nome: 'Loja A', cidade: 'Salvador' });
+  assert.equal(cfg.tipo, 'CNPJ');
+  assert.match(cfg.teste, /54040\.01/, 'código de teste de R$ 0,01');
+
+  await t.ok(A.adm, 'encaminharParaHS', { tipo_selecao: 'DIVIDAS', divida_ids: [A.dividas[0].id], contrato_servico_id: A.contrato.id, autorizacao: { ...AUTORIZACAO, canais_autorizados: ['WHATSAPP', 'EMAIL'] }, confirmacao: true });
+  const fila = await t.ok('gestor@hs.com', 'listarCasos', { escopo: 'validacao', filtros: { empresa_id: A.empresa.id } });
+  await t.ok('gestor@hs.com', 'validarCaso', { caso_ids: fila.itens.map((c) => c.id), aprovado: true });
+  const caso = await t.ok('gestor@hs.com', 'atribuirCaso', { caso_id: fila.itens[0].id, operador_id: t.op1.id });
+  const neg = await t.ok('op1@hs.com', 'proporNegociacao', { caso_id: caso.id, desconto_bps: 1000, entrada_centavos: 15000, quantidade_parcelas: 2, primeira_data_vencimento: '2026-12-10', data_entrada: '2026-11-14' });
+  const { acordo } = await t.ok('op1@hs.com', 'formalizarAcordo', { negociacao_id: neg.id, aceite_devedor: true, meio_aceite: 'WHATSAPP', data_aceite: '2026-11-11' });
+  assert.ok(!(await t.db.Notificacao.filter({ empresa_id: A.empresa.id })).some((n) => n.tipo === 'BOLETOS_PENDENTES'), 'com Pix automático, o credor não precisa informar nada');
+  assert.equal((await t.ok(A.fin, 'boletosPendentes')).length, 0);
+
+  let lista = await t.ok('op1@hs.com', 'pagamentosDoAcordo', { acordo_id: acordo.id });
+  assert.equal(lista.length, 3);
+  assert.ok(lista.every((p) => p.forma?.automatico && p.forma.tipo === 'PIX' && p.forma.pagina?.startsWith('/pagar/')));
+  assert.match(lista[0].forma.pix_copia_cola, /5406150\.00/, 'entrada de R$ 150,00');
+
+  const w = await t.ok('op1@hs.com', 'enviarPagamentoParcela', { parcela_id: lista[0].id, canal: 'WHATSAPP' });
+  assert.match(w.mensagem, /Pix copia e cola:\n000201/);
+  assert.match(w.mensagem, /QR Code e versão para imprimir: https:\/\/acorly\.com\.br\/pagar\/[a-z0-9]+/);
+
+  // página pública: sem dados pessoais do devedor
+  const token = lista[0].forma.pagina.split('/').pop();
+  const sys = { db: t.db, now: () => t.estado.agora, user: SISTEMA, authEmail: 'sistema', aposConfirmar: [] };
+  const pub = await pagamentoPublico(sys, token);
+  assert.equal(pub.situacao, 'ABERTA');
+  assert.equal(pub.descricao, 'Entrada do acordo');
+  assert.equal(pub.valor_centavos, 15000);
+  assert.ok(pub.pix_copia_cola.startsWith('000201'));
+  assert.ok(!JSON.stringify(pub).includes('Devedor A0'), 'não expõe o devedor');
+  assert.equal(await pagamentoPublico(sys, 'naoexiste12345'), null);
+
+  // valor muda (pagamento parcial): o Pix é refeito com o novo valor e o link continua o mesmo
+  await t.db.Parcela.update(lista[1].id, { saldo_centavos: 10000 });
+  lista = await t.ok('op1@hs.com', 'pagamentosDoAcordo', { acordo_id: acordo.id });
+  assert.match(lista[1].forma.pix_copia_cola, /5406100\.00/);
+  assert.equal(lista[1].substituicoes, 1);
+  const token2 = lista[1].forma.pagina;
+  await t.db.Parcela.update(lista[1].id, { saldo_centavos: 9000 });
+  lista = await t.ok('op1@hs.com', 'pagamentosDoAcordo', { acordo_id: acordo.id });
+  assert.equal(lista[1].forma.pagina, token2, 'mesmo link para o devedor');
+
+  // forma informada à mão pelo credor prevalece e não é sobrescrita
+  await t.ok(A.fin, 'salvarPagamentoParcela', { parcela_id: lista[2].id, linha_digitavel: LINHA });
+  lista = await t.ok('op1@hs.com', 'pagamentosDoAcordo', { acordo_id: acordo.id });
+  assert.equal(lista[2].forma.tipo, 'BOLETO');
+  assert.ok(!lista[2].forma.automatico);
+
+  // parcela paga: a página mostra que já foi paga e não exibe mais o código
+  await t.db.Parcela.update(lista[0].id, { saldo_centavos: 0, status: 'PAGA' });
+  const paga = await pagamentoPublico(sys, token);
+  assert.equal(paga.situacao, 'PAGA');
+  assert.equal(paga.pix_copia_cola, null);
+});

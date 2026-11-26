@@ -383,3 +383,27 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
   .ilustra, .ilustra-barra, .ilustra-bolha, .ilustra-anel { animation: none !important; }
   .faixa-trilho { animation-duration: 90s !important; }
 }
+
+/* Página pública de pagamento (Pix gerado com a chave do credor) */
+.pagar { min-height: 100vh; background: var(--bg); padding: 28px 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.pagar-cartao { width: 100%; max-width: 560px; background: #fff; border: 1px solid var(--borda); border-radius: 14px; padding: 22px; box-shadow: var(--sombra); display: flex; flex-direction: column; gap: 14px; border-top: 5px solid transparent; border-image: var(--faixa-marca) 1; }
+.pagar-topo { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.pagar-topo > div { display: flex; flex-direction: column; gap: 2px; }
+.pagar-credor { font-size: 20px; color: var(--navy); }
+.pagar-selo { background: #32bcad; color: #fff; font-weight: 800; border-radius: 8px; padding: 4px 10px; font-size: 13px; }
+.pagar-rotulo { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--texto-3); }
+.pagar-valores { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 10px; border: 1px dashed var(--borda-forte); border-radius: 10px; padding: 12px; }
+.pagar-valor { font-size: 20px; color: var(--navy); }
+.pagar-pix { display: flex; gap: 16px; align-items: center; }
+.pagar-pix img { border: 1px solid var(--borda); border-radius: 10px; flex-shrink: 0; }
+.pagar-pix ol { margin: 0; padding-left: 18px; line-height: 1.6; }
+.pagar-codigo { background: #f5f7fa; border: 1px solid var(--borda); border-radius: 8px; padding: 10px; }
+.pagar-codigo code { display: block; word-break: break-all; font-size: 12px; }
+.pagar-rodape { margin: 0; }
+.pagar-marca { margin: 0; }
+@media (max-width: 560px) { .pagar-valores { grid-template-columns: 1fr 1fr; } .pagar-valores > div:first-child { grid-column: 1 / -1; } .pagar-pix { flex-direction: column; } }
+@media print {
+  .pagar { background: #fff; padding: 0; }
+  .pagar-cartao { box-shadow: none; border: 1px solid #999; }
+  .pagar-acoes, .whats-flutuante { display: none !important; }
+}

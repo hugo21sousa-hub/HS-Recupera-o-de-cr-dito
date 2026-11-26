@@ -5,6 +5,7 @@ import { parseDataISO } from '../../core/dates.js';
 import {
   AccessError, ValidationError, requirePerm, getById, find, criar, alterar, carregarCaso, paginar, filtrosPermitidos, exigir, notificar, empresaAlvo, comNomes,
 } from '../context.js';
+import { garantirPixAcordo } from './boletos.js';
 
 async function levarCasoPara(ctx, caso, status, motivo, { obrigatorio = false } = {}) {
   if (caso.status_operacional === status) return caso;
@@ -130,7 +131,9 @@ export const actions = {
       await alterar(ctx, 'Divida', div, { status_financeiro: 'EM_ACORDO' }, 'DIVIDA_EM_ACORDO');
       await levarCasoPara(ctx, await getById(ctx, 'CasoCobranca', caso.id), 'ACORDO_AGUARDANDO_PAGAMENTO', null, { obrigatorio: true });
       const qtd = neg.quantidade_parcelas + (neg.entrada_centavos > 0 ? 1 : 0);
-      if (caso.modalidade_cobranca === 'HS_GERENCIADA') {
+      // Com a chave Pix cadastrada, o Pix de cada parcela é gerado na hora (direto na conta do credor)
+      const pixGerados = await garantirPixAcordo(ctx, acordo);
+      if (caso.modalidade_cobranca === 'HS_GERENCIADA' && !pixGerados) {
         const devedor = await getById(ctx, 'Devedor', caso.devedor_id);
         await notificar(ctx, caso.empresa_id, { perfis: ['ADMIN_EMPRESA', 'FINANCEIRO_EMPRESA'], tipo: 'BOLETOS_PENDENTES', titulo: `Acordo com ${devedor?.nome || 'o devedor'}: envie os boletos ou o Pix`, mensagem: `Acordo de ${qtd} pagamento(s) formalizado pela equipe Acorly. O devedor paga diretamente à empresa: informe o boleto (PDF ou linha digitável) ou o Pix de cada parcela para enviarmos ao devedor.`, link: `/casos/${caso.id}` });
       } else {
