@@ -20,6 +20,7 @@ import { CentralMensagens } from './pages/central.jsx';
 import { Diagnostico } from './pages/diagnostico.jsx';
 import { MensagensPublicas } from './pages/mensagensPublicas.jsx';
 import { PagarPix } from './pages/pagar.jsx';
+import { CalculadoraPagina } from './pages/calculadoraPagina.jsx';
 import { Leads } from './pages/leads.jsx';
 import { Conteudo } from './pages/conteudo.jsx';
 import { IndicadoresNegocio } from './pages/negocio.jsx';
@@ -65,6 +66,7 @@ function Raiz() {
         <Route path="/diagnostico" element={<Diagnostico />} />
         <Route path="/mensagens" element={<MensagensPublicas />} />
         <Route path="/pagar/:token" element={<PagarPix />} />
+        <Route path="/calculadora" element={<CalculadoraPagina />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       </>
@@ -73,6 +75,7 @@ function Raiz() {
   if (ehConvite) return <Routes><Route path="/convite/:token" element={<Convite />} /></Routes>;
   if (loc.pathname === '/termos' || loc.pathname === '/privacidade') return <Documento tipo={loc.pathname.slice(1)} />;
   if (loc.pathname === '/diagnostico') return <Diagnostico />;
+  if (loc.pathname === '/calculadora') return <CalculadoraPagina />;
   if (loc.pathname.startsWith('/pagar/')) return <Routes><Route path="/pagar/:token" element={<PagarPix />} /></Routes>;
   // /mensagens é a página pública de exemplos; para quem cobra pelo sistema, é a Central de mensagens
   if (loc.pathname === '/mensagens' && !s.pode('interacao.registrar')) return <MensagensPublicas />;

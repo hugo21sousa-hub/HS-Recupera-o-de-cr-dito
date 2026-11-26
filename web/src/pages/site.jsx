@@ -5,6 +5,7 @@ import { Marca } from '../layout.jsx';
 import { WhatsAppFlutuante, linkWhatsApp } from '../whatsapp.jsx';
 import { registrarVisita } from '../visitas.js';
 import { brl, rotulo, mascaraFone, pct } from '../format.js';
+import { Calculadora } from '../calculadora.jsx';
 import { Carrossel, Faixa, useRevelar, IlustraResultado, IlustraDiagnostico, IlustraMensagens, IlustraEquipe } from '../siteVisual.jsx';
 
 const SERVICOS = [
@@ -96,7 +97,7 @@ export function Site() {
   const ano = new Date().getFullYear();
   const contato = dados?.contato || {};
   const ir = (id) => (e) => { e.preventDefault(); setMenu(false); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
-  const links = [['piloto', 'Piloto sem risco'], ['como-funciona', 'Como funciona'], ['planos', 'Planos'], ['seguranca', 'Segurança'], ['duvidas', 'Dúvidas']];
+  const links = [['piloto', 'Piloto sem risco'], ['calculadora', 'Calculadora'], ['como-funciona', 'Como funciona'], ['planos', 'Planos'], ['seguranca', 'Segurança'], ['duvidas', 'Dúvidas']];
 
   return (
     <div className="site">
@@ -152,6 +153,16 @@ export function Site() {
             <Carrossel itens={EQUIPE} intervalo={4500} className="site-equipe-carrossel" rotulo="Como a equipe trabalha" render={([t, d]) => <div className="site-equipe-item"><strong>{t}</strong><p>{d}</p></div>} />
           </div>
           <p className="small muted" style={{ marginTop: 12, textAlign: 'center' }}>Para atender cada piloto com cuidado, abrimos poucas vagas por mês.</p>
+        </div>
+      </section>
+
+      <section id="calculadora" className="site-secao site-secao-alt">
+        <div className="site-largura">
+          <div className="revela" style={{ textAlign: 'center' }}>
+            <h2 className="site-titulo">Quanto a inadimplência está custando para a sua escola?</h2>
+            <p className="site-sub" style={{ marginInline: 'auto' }}>Informe três números e veja quanto dinheiro está parado em mensalidades atrasadas e quanto pode voltar ao caixa.</p>
+          </div>
+          <div className="revela"><Calculadora /></div>
         </div>
       </section>
 

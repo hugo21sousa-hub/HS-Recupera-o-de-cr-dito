@@ -6,7 +6,7 @@ import { find } from './context.js';
 
 export const EVENTOS_VISITA = ['VISITA', 'DIAGNOSTICO', 'CADASTRO', 'WHATSAPP', 'DEMONSTRACAO'];
 export const CONVERSOES = ['DIAGNOSTICO', 'CADASTRO', 'WHATSAPP', 'DEMONSTRACAO'];
-const PAGINAS = { '/': 'Página inicial', '/diagnostico': 'Diagnóstico gratuito', '/cadastro': 'Criar conta', '/entrar': 'Entrar', '/termos': 'Termos de uso', '/privacidade': 'Privacidade', '/demonstracao': 'Demonstração' };
+const PAGINAS = { '/': 'Página inicial', '/diagnostico': 'Diagnóstico gratuito', '/cadastro': 'Criar conta', '/entrar': 'Entrar', '/termos': 'Termos de uso', '/privacidade': 'Privacidade', '/demonstracao': 'Demonstração', '/calculadora': 'Calculadora', '/mensagens': 'Exemplos de mensagens' };
 
 export const diaBrasilia = (d) => new Date(d.getTime() - 3 * 3600e3).toISOString().slice(0, 10);
 

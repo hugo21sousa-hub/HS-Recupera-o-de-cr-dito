@@ -17,7 +17,7 @@ const fone = (v) => { const d = somenteDigitos(v); return d.length >= 10 && d.le
 export function emailSugeridoCompleto(texto) {
   const t = String(texto ?? '').replace(/\r/g, '').replace(/\[\[[^\]]*\]\]/g, '').trim().slice(0, 2500);
   if (t.length < 40) return '';
-  return `${t}\n\n[[botao:Quero meu diagnóstico gratuito|https://acorly.com.br/diagnostico]]\n[[link:Ver as mensagens que o devedor recebe|https://acorly.com.br/mensagens]]\n${ASSINATURA}`;
+  return `${t}\n\n[[botao:Quero meu diagnóstico gratuito|https://acorly.com.br/diagnostico]]\n[[link:Calcule em 30 segundos quanto a sua escola tem parado|https://acorly.com.br/calculadora]]\n[[link:Ver as mensagens que o devedor recebe|https://acorly.com.br/mensagens]]\n${ASSINATURA}`;
 }
 
 function normalizar(p) {

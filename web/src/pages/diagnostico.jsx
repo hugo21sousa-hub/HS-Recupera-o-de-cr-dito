@@ -29,7 +29,11 @@ function refIndicacao() {
 
 export function Diagnostico() {
   const inicio = useRef(Date.now());
-  const [v, setV] = useState({ nome: '', empresa: '', email: '', whatsapp: '', cidade: '', segmento: '', qtd_devedores: '', valor_aberto: '', mensagem: '', aceite_privacidade: false, site: '' });
+  // Vindo da calculadora do site: já preenche a quantidade de inadimplentes e o valor estimado
+  const daCalc = new URLSearchParams(window.location.search);
+  const calcDev = (daCalc.get('devedores') || '').replace(/\D/g, '').slice(0, 6);
+  const calcValor = (daCalc.get('valor') || '').replace(/\D/g, '').slice(0, 10);
+  const [v, setV] = useState({ nome: '', empresa: '', email: '', whatsapp: '', cidade: '', segmento: calcDev ? 'ESCOLA_CURSO' : '', qtd_devedores: calcDev, valor_aberto: calcValor ? Number(calcValor).toLocaleString('pt-BR') + ',00' : '', mensagem: '', aceite_privacidade: false, site: '' });
   const [arquivo, setArquivo] = useState(null);
   const [anonimo, setAnonimo] = useState(null);
   const [lendo, setLendo] = useState(false);
