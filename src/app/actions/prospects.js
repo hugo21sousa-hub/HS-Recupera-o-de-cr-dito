@@ -4,6 +4,7 @@ import { emailValido, somenteDigitos } from '../../core/documento.js';
 import { AccessError, getById, find, criar, alterar, exigir, notificar } from '../context.js';
 import { iniciarCadencia } from './acompanhamento.js';
 import { epocaDoMes, rankSegmento, mesBrasilia } from '../comercial/epoca.js';
+import { ASSINATURA } from './prospeccao.js';
 
 export const SEGMENTOS_PROSPECT = ['ESCOLA_CURSO', 'SAUDE', 'ACADEMIA', 'CONDOMINIO', 'VAREJO', 'DISTRIBUIDORA', 'SERVICOS', 'IMOBILIARIA', 'CONTABILIDADE', 'OUTRO'];
 const SEGMENTO_TEXTO = { ESCOLA_CURSO: 'escolas e cursos', SAUDE: 'clínicas e consultórios', ACADEMIA: 'academias', CONDOMINIO: 'condomínios', VAREJO: 'lojas', DISTRIBUIDORA: 'distribuidoras', SERVICOS: 'empresas de serviços', IMOBILIARIA: 'imobiliárias', CONTABILIDADE: 'escritórios de contabilidade', OUTRO: 'empresas' };
@@ -12,10 +13,19 @@ const MAX_POR_ENVIO = 200;
 const dominio = (u) => { try { return new URL(u).hostname.replace(/^www\./, '').toLowerCase(); } catch { return ''; } };
 const fone = (v) => { const d = somenteDigitos(v); return d.length >= 10 && d.length <= 13 ? d : ''; };
 
+/** E-mail escrito pela busca diária: o texto dela + chamada para o diagnóstico + assinatura padrão (o sistema completa, ela não escreve links). */
+export function emailSugeridoCompleto(texto) {
+  const t = String(texto ?? '').replace(/\r/g, '').replace(/\[\[[^\]]*\]\]/g, '').trim().slice(0, 2500);
+  if (t.length < 40) return '';
+  return `${t}\n\n[[botao:Quero meu diagnóstico gratuito|https://acorly.com.br/diagnostico]]\n[[link:Ver as mensagens que o devedor recebe|https://acorly.com.br/mensagens]]\n${ASSINATURA}`;
+}
+
 function normalizar(p) {
   const t = (v, max) => String(v ?? '').trim().slice(0, max);
   const site = t(p.site, 300);
+  const email_sugerido = emailSugeridoCompleto(p.email_sugerido);
   return {
+    email_sugerido, email_assunto_sugerido: email_sugerido ? (t(p.email_assunto_sugerido, 180).replace(/\s+/g, ' ') || `${t(p.empresa, 120)}: mensalidades em atraso, pagando só pelo que entrar`) : '',
     empresa: t(p.empresa, 160), segmento: SEGMENTOS_PROSPECT.includes(p.segmento) ? p.segmento : 'OUTRO', cidade: t(p.cidade, 80), bairro: t(p.bairro, 80),
     site: /^https:\/\//.test(site) ? site : '', email: t(p.email, 160).toLowerCase(), telefone: fone(p.telefone), whatsapp: fone(p.whatsapp),
     fonte_url: t(p.fonte_url, 500), observacao: t(p.observacao, 500), contato_nome: t(p.contato_nome, 120), contato_cargo: t(p.contato_cargo, 80),

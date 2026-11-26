@@ -69,7 +69,8 @@ function Abordar({ lead, prospect, onClose, onFeito }) {
     setV({ ...v, segmento: seg, ...(m ? { modelo_id: m.id, assunto: m.assunto, corpo: m.corpo } : {}) });
   };
   useEffect(() => {
-    if (!v.modelo_id && ativos.length && (epoca.data || epoca.erro)) {
+    if (!v.modelo_id && !v.corpo && prospect?.email_sugerido) { setV((x) => ({ ...x, modelo_id: '', assunto: prospect.email_assunto_sugerido, corpo: prospect.email_sugerido })); return; }
+    if (!v.modelo_id && !v.corpo && ativos.length && (epoca.data || epoca.erro)) {
       const m = ativos.find((x) => (lead?.status === 'EM_CONTATO' && lead?.ultimo_email_em ? x.nome.startsWith('Retorno') : false)) || (prospect?.segmento === 'CONTABILIDADE' ? ativos.find((x) => /parceria|contab/i.test(x.nome)) : null) || ativos.find((x) => x.nome === 'Piloto Sem Risco') || (epoca.data?.decimo_terceiro && prospect?.segmento !== 'CONTABILIDADE' ? ativos.find((x) => x.nome.startsWith('13º')) : null) || ativos.find((x) => x.nome === (v.segmento === 'ESCOLA_CURSO' ? 'Escolas e cursos' : v.segmento === 'SAUDE' ? 'Clínicas e consultórios' : 'Apresentação dos serviços')) || ativos[0];
       setV((x) => ({ ...x, modelo_id: m.id, assunto: m.assunto, corpo: m.corpo }));
     }
@@ -79,7 +80,10 @@ function Abordar({ lead, prospect, onClose, onFeito }) {
     const t = setTimeout(() => { hs('previaEmailComercial', { assunto: v.assunto, corpo: v.corpo, nome: v.nome, empresa: v.empresa, segmento: v.segmento }).then(setPrevia).catch(() => setPrevia(null)); }, 350);
     return () => clearTimeout(t);
   }, [v.assunto, v.corpo, v.nome, v.empresa, v.segmento]);
-  const escolher = (id) => { const m = ativos.find((x) => x.id === id); if (m) { setEditado(false); setV({ ...v, modelo_id: id, assunto: m.assunto, corpo: m.corpo }); } };
+  const escolher = (id) => {
+    if (id === '' && prospect?.email_sugerido) { setEditado(false); setV({ ...v, modelo_id: '', assunto: prospect.email_assunto_sugerido, corpo: prospect.email_sugerido }); return; }
+    const m = ativos.find((x) => x.id === id); if (m) { setEditado(false); setV({ ...v, modelo_id: id, assunto: m.assunto, corpo: m.corpo }); }
+  };
   const enviar = async () => {
     try {
       const r = await executar('enviarEmailComercial', { lead_id: lead?.id, prospect_id: prospect?.id, para: v.para, nome: v.nome, empresa: v.empresa, segmento: v.segmento || undefined, whatsapp: v.whatsapp, modelo_id: v.modelo_id || undefined, assunto: v.assunto, corpo: v.corpo }, 'E-mail enviado');
@@ -95,7 +99,7 @@ function Abordar({ lead, prospect, onClose, onFeito }) {
           <div className="campo"><label>Empresa *</label><input value={v.empresa} onChange={set('empresa')} placeholder={!travado && v.para && GRATUITOS.test(v.para) ? 'Digite o nome da empresa' : 'Preenchido pelo e-mail'} /></div>
           <div className="campo"><label>Segmento</label><select value={v.segmento} onChange={mudarSegmento}><option value="">—</option>{Object.entries(SEGMENTOS).map(([k, r]) => <option key={k} value={k}>{r}</option>)}</select></div>
           {!travado && <div className="campo"><label>WhatsApp (opcional)</label><input value={v.whatsapp} onChange={set('whatsapp')} /></div>}
-          <div className="campo"><label>Modelo</label><select value={v.modelo_id} onChange={(e) => escolher(e.target.value)}>{ativos.map((m) => <option key={m.id} value={m.id}>{m.nome}</option>)}</select></div>
+          <div className="campo"><label>Modelo</label><select value={v.modelo_id} onChange={(e) => escolher(e.target.value)}>{prospect?.email_sugerido && <option value="">✨ Escrito para esta empresa (busca diária)</option>}{ativos.map((m) => <option key={m.id} value={m.id}>{m.nome}</option>)}</select></div>
         </div>
         <div className="row between"><span className="small muted">O e-mail sai de contato@acorly.com.br, com a marca Acorly e o link "não quero mais receber". Respostas chegam no webmail.</span><button type="button" className="btn sm" onClick={() => setEditar(!editar)}>{editar ? 'Ver prévia' : 'Ajustar texto deste envio'}</button></div>
         {editar ? (
@@ -394,7 +398,7 @@ function ListaDoDia({ recarregar, onMudou, onEmail }) {
         { titulo: 'Contato', render: (p) => <>{p.contato_nome && <div>{p.contato_nome}{p.contato_cargo ? <span className="small muted"> · {p.contato_cargo}</span> : ''}</div>}{p.email && <div className="small">{p.email}</div>}{(p.whatsapp || p.telefone) && <div className="small">{mascaraFone(p.whatsapp || p.telefone)}{p.whatsapp ? ' (WhatsApp)' : ''}</div>}<div className="small">{p.site && <a href={p.site} target="_blank" rel="noreferrer">site</a>}{p.site && ' · '}<a href={p.fonte_url} target="_blank" rel="noreferrer">fonte</a></div></> },
         { titulo: 'Abordar', render: (p) => (
           <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
-            {p.email && <button className="btn sm prim" onClick={() => onEmail(p)}>E-mail</button>}
+            {p.email && <button className="btn sm prim" title={p.email_sugerido ? 'Abre com o e-mail escrito para esta empresa' : undefined} onClick={() => onEmail(p)}>{p.email_sugerido ? '✨ E-mail pronto' : 'E-mail'}</button>}
             {(p.whatsapp || p.telefone) && <button className="btn sm" onClick={() => whatsapp(p)}>WhatsApp</button>}
             {p.telefone && <button className="btn sm" onClick={() => setRegistrar({ p, canal: 'TELEFONE' })}>Liguei</button>}
             <button className="btn sm" title="Já abordei por outro meio" onClick={() => setRegistrar({ p })}>Registrar</button>

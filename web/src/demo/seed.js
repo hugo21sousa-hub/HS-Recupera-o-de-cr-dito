@@ -1,4 +1,5 @@
 import { garantirModelosPadrao } from '../../../src/app/actions/mensagens.js';
+import { emailSugeridoCompleto } from '../../../src/app/actions/prospects.js';
 // Dados de demonstração: mesma base do "npm run demo", criada pelas regras reais do sistema.
 export const SENHA_DEMO = 'Demo2026hs';
 export const USUARIOS_DEMO = [
@@ -106,7 +107,9 @@ export async function semear(db, como) {
   await db.Lead.create({ nome: 'contato@exemplo-saber.com.br', empresa: 'Colégio Exemplo Saber', email: 'contato@exemplo-saber.com.br', whatsapp: '7130000020', cidade: 'Salvador/BA', segmento: 'ESCOLA_CURSO', status: 'EM_CONTATO', origem: 'PROSPECCAO', recebido_em: new Date(agora.getTime() - 3 * 864e5).toISOString(), ultimo_email_em: new Date(agora.getTime() - 3 * 864e5).toISOString(), observacoes: `${dia(-3)}: abordado por e-mail.`, decisor_nome: 'Marcos Lima', decisor_cargo: 'Mantenedor', decisor_contato: '71990000021', cadencia_inicio: dia(-3), cadencia_etapa: 0, proximo_followup: dia(0) });
   // Lista do dia (exemplos fictícios para a demonstração)
   for (const x of [
-    { empresa: 'Escola Exemplo Aprender', segmento: 'ESCOLA_CURSO', bairro: 'Pituba', email: 'secretaria@exemplo-aprender.com.br', telefone: '7130000001' },
+    { empresa: 'Escola Exemplo Aprender', segmento: 'ESCOLA_CURSO', bairro: 'Pituba', email: 'secretaria@exemplo-aprender.com.br', telefone: '7130000001', contato_nome: 'Marta Souza', contato_cargo: 'Diretora',
+      email_assunto_sugerido: 'Escola Exemplo Aprender: mensalidades em atraso sem desgastar as famílias',
+      email_sugerido: emailSugeridoCompleto('Olá, Marta, tudo bem?\n\nVi no site que a Escola Exemplo Aprender atende da educação infantil ao fundamental na Pituba e que a rematrícula de 2027 já está aberta. É justamente nessa época que as mensalidades em atraso mais pesam no caixa.\n\nA Acorly recupera mensalidades atrasadas de forma cordial, com mensagens no nome da escola, e o pagamento cai direto na conta de vocês. No **Piloto Sem Risco**, vocês testam por 30 dias com até 20 famílias, começando pelas que já saíram da escola, e pagam 10% só do que entrar.\n\nPosso te mostrar, em um diagnóstico grátis e anônimo, quanto da inadimplência de vocês dá para recuperar?') },
     { empresa: 'Clínica Exemplo Bem-Estar', segmento: 'SAUDE', bairro: 'Itaigara', whatsapp: '71990000002' },
     { empresa: 'Academia Exemplo Forma', segmento: 'ACADEMIA', bairro: 'Rio Vermelho', email: 'contato@exemplo-forma.com.br', whatsapp: '71990000003' },
     { empresa: 'Administradora Exemplo Condomínios', segmento: 'CONDOMINIO', bairro: 'Caminho das Árvores', email: 'financeiro@exemplo-condominios.com.br', telefone: '7130000004' },

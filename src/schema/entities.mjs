@@ -213,6 +213,7 @@ export const ENTITIES = {
       fonte_url: s('Onde o contato foi encontrado'), observacao: s('Observação'), lote: dt('Dia em que entrou na lista'), encontrado_em: ts('Encontrado em'), origem: s('BUSCA_DIARIA ou MANUAL'),
       status: e(['A_ABORDAR', 'ABORDADO', 'DESCARTADO'], 'Situação', 'A_ABORDAR'), abordado_em: ts('Abordado em'), abordado_por: ref('Quem abordou'), canal: s('Canal da abordagem'),
       lead_id: ref('Lead criado'), motivo_descarte: s('Motivo do descarte'), descartado_em: ts('Descartado em'),
+      email_assunto_sugerido: s('Assunto do e-mail escrito pela busca diária para esta empresa'), email_sugerido: s('E-mail personalizado escrito pela busca diária (já com chamada e assinatura)'),
     },
     required: ['empresa', 'status'],
   },

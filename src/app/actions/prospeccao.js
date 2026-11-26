@@ -9,7 +9,7 @@ import { iniciarCadencia, avancarCadencia, followupVencido } from './acompanhame
 export const LIMITE_DIARIO_COMERCIAL = 50;
 const SEGMENTO_TEXTO = { ESCOLA_CURSO: 'escolas e cursos', SAUDE: 'clínicas e consultórios', ACADEMIA: 'academias', CONDOMINIO: 'condomínios', VAREJO: 'lojas e varejo', DISTRIBUIDORA: 'distribuidoras', SERVICOS: 'prestadores de serviço', IMOBILIARIA: 'imobiliárias', OUTRO: 'empresas' };
 
-const ASSINATURA = '\nAbraço,\n**{{remetente}}**\nHS Recuperação de Crédito · Acorly\ncontato@acorly.com.br{{whatsapp_linha}}';
+export const ASSINATURA = '\nAbraço,\n**{{remetente}}**\nHS Recuperação de Crédito · Acorly\ncontato@acorly.com.br{{whatsapp_linha}}';
 const CHAMADAS = '[[botao:Quero meu diagnóstico gratuito|https://acorly.com.br/diagnostico]]\n[[link:Ver o Acorly em 1 minuto e meio|https://acorly.com.br/#video]]';
 
 export const MODELOS_COMERCIAIS = [

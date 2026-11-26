@@ -90,3 +90,29 @@ test('diagnósticos e prospecção: só o superadmin acessa', async () => {
   }
   await t.ok('super@hs.com', 'listarLeads', {});
 });
+
+test('lista do dia: e-mail escrito pela busca diária chega pronto (com chamada e assinatura) e pode ser enviado como está', async () => {
+  const t = await base();
+  const enviados = [];
+  t.estado.extras.email = { comercial: async (m) => { enviados.push(m); return { ok: true, id: 'm1' }; } };
+  t.estado.extras.descadastro = { linkComercial: (id) => `https://acorly.com.br/sair/${id}` };
+  const texto = 'Olá, Maria! Vi no site que o Colégio Aurora atende do infantil ao médio em Campinas e que a rematrícula de 2027 já começou. [[botao:x|https://malicioso.example]]';
+  await t.ok('super@hs.com', 'adicionarProspects', { contatos: [
+    C({ empresa: 'Colégio Aurora', email: 'financeiro@colegioaurora.com.br', contato_nome: 'Maria Lima', contato_cargo: 'Diretora', email_assunto_sugerido: 'Colégio Aurora: rematrícula e mensalidades em atraso', email_sugerido: texto }),
+    C({ empresa: 'Escola Curta', email: 'contato@escolacurta.com.br', email_sugerido: 'Oi.' }),
+  ] });
+  const lista = await t.ok('super@hs.com', 'listarProspects', {});
+  const p = lista.itens.find((x) => x.empresa === 'Colégio Aurora');
+  assert.match(p.email_sugerido, /rematrícula de 2027/);
+  assert.ok(!p.email_sugerido.includes('malicioso'), 'marcações de link escritas pela busca são removidas');
+  assert.match(p.email_sugerido, /\[\[botao:Quero meu diagnóstico gratuito\|https:\/\/acorly\.com\.br\/diagnostico\]\]/);
+  assert.match(p.email_sugerido, /HS Recuperação de Crédito · Acorly/);
+  assert.equal(lista.itens.find((x) => x.empresa === 'Escola Curta').email_sugerido, '', 'texto curto demais é ignorado');
+  const r = await t.ok('super@hs.com', 'enviarEmailComercial', { prospect_id: p.id, para: p.email, nome: p.contato_nome, empresa: p.empresa, segmento: p.segmento, assunto: p.email_assunto_sugerido, corpo: p.email_sugerido });
+  assert.equal(r.assunto, 'Colégio Aurora: rematrícula e mensalidades em atraso');
+  assert.equal(enviados.length, 1);
+  assert.match(enviados[0].html, /rematrícula de 2027/);
+  assert.match(enviados[0].html, /Hugo/);
+  const depois = await t.ok('super@hs.com', 'listarProspects', {});
+  assert.ok(!depois.itens.some((x) => x.id === p.id), 'sai da lista do dia depois do envio');
+});
