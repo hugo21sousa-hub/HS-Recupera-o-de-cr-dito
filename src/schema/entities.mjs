@@ -290,7 +290,7 @@ export const ENTITIES = {
     properties: {
       rede: e(['LINKEDIN', 'INSTAGRAM'], 'Rede'), data_prevista: dt('Data prevista'), tema: s('Tema'), titulo: s('Título/gancho'), formato: s('Formato (imagem, carrossel, reels)'),
       texto: s('Texto/legenda'), roteiro: s('Roteiro e orientações'), hashtags: arr('Hashtags'), arte: { type: 'object', description: 'Conteúdo da arte {titulo, subtitulo} ou {slides:[{titulo, texto}]}' },
-      status: e(['SUGERIDO', 'APROVADO', 'PUBLICADO', 'DESCARTADO'], 'Situação', 'SUGERIDO'), origem: e(['BANCO', 'MANUAL'], 'Origem', 'MANUAL'),
+      status: e(['SUGERIDO', 'APROVADO', 'PUBLICADO', 'DESCARTADO'], 'Situação', 'SUGERIDO'), origem: e(['BANCO', 'MANUAL', 'CAMPANHA'], 'Origem', 'MANUAL'),
       aprovado_por: ref('Quem aprovou'), aprovado_em: ts('Aprovado em'), observacao_aprovacao: s('Observação ao marketing'),
       publicado_por: ref('Quem publicou'), publicado_em: ts('Publicado em'), link_publicacao: s('Link do post publicado'), motivo_descarte: s('Motivo do descarte'),
     },

@@ -1,6 +1,7 @@
 // Central de conteúdo: posts sugeridos para LinkedIn e Instagram a cada 2 dias (não publica nada).
 // Superadmin revisa e aprova; o Marketing baixa, posta manualmente e marca como publicado.
 import { BANCO_POSTS } from '../conteudo/banco.js';
+import { CAMPANHAS } from '../conteudo/campanhas.js';
 import { AccessError, getById, find, criar, alterar, exigir, notificar, requirePerm } from '../context.js';
 
 export const REDES = ['LINKEDIN', 'INSTAGRAM'];
@@ -28,6 +29,23 @@ function postDoBanco(item, rede, data) {
   };
 }
 
+/** Cria os posts das campanhas de datas fixas que ainda não existem (de hoje em diante). Devolve as datas das campanhas. */
+async function garantirCampanhas(ctx, hoje) {
+  const existentes = new Set((await find(ctx, 'PostSocial', { origem: 'CAMPANHA' })).map((p) => `${p.data_prevista}|${p.rede}|${p.tema}`));
+  const datas = [];
+  for (const c of CAMPANHAS) {
+    for (const item of c.itens) {
+      datas.push(item.data);
+      if (item.data < hoje) continue;
+      for (const rede of REDES) {
+        if (existentes.has(`${item.data}|${rede}|${item.tema}`)) continue;
+        await ctx.db.PostSocial.create({ ...postDoBanco(item, rede, item.data), origem: 'CAMPANHA' });
+      }
+    }
+  }
+  return datas;
+}
+
 /**
  * Garante posts sugeridos para os próximos 14 dias, um tema a cada 2 dias (LinkedIn + Instagram),
  * seguindo o banco de posts. Avisa o superadmin quando o banco está acabando.
@@ -37,13 +55,16 @@ export async function garantirAgenda(ctx) {
   const hoje = ctx.now().toISOString().slice(0, 10);
   const inicio = cfg.conteudo_inicio || hoje;
   let proximo = Number(cfg.conteudo_proximo || 0);
+  // Campanhas com datas fixas têm prioridade: o banco não cria posts a menos de 1 dia de um post de campanha
+  const datasCampanha = await garantirCampanhas(ctx, hoje);
+  const pertoDeCampanha = (d) => datasCampanha.some((c) => Math.abs(Date.parse(c) - Date.parse(d)) <= 864e5);
   const existentes = new Set((await find(ctx, 'PostSocial', { origem: 'BANCO' })).map((p) => p.data_prevista));
   let criados = 0;
   const passos = Math.max(0, Math.ceil((Date.parse(hoje) - Date.parse(inicio)) / 864e5 / INTERVALO_DIAS));
   for (let k = passos; ; k++) {
     const data = somaDias(inicio, k * INTERVALO_DIAS);
     if (data > somaDias(hoje, HORIZONTE_DIAS)) break;
-    if (existentes.has(data)) continue;
+    if (existentes.has(data) || pertoDeCampanha(data)) continue;
     if (proximo >= BANCO_POSTS.length) break;
     for (const rede of REDES) await ctx.db.PostSocial.create(postDoBanco(BANCO_POSTS[proximo], rede, data));
     proximo++; criados++;

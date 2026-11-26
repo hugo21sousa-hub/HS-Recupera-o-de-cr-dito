@@ -26,17 +26,19 @@ test('banco de posts: textos completos, sem termos ofensivos nem promessa de res
 
 test('agenda: um par de posts (LinkedIn + Instagram) a cada 2 dias, sem duplicar', async () => {
   const t = await base();
-  const r = await t.ok('super@hs.com', 'listarPosts', {});
+  const banco = (x) => ({ ...x, itens: x.itens.filter((p) => p.origem === 'BANCO') });
+  const r = banco(await t.ok('super@hs.com', 'listarPosts', {}));
   const datas = [...new Set(r.itens.map((p) => p.data_prevista))];
   assert.deepEqual(datas, ['2026-11-11', '2026-11-13', '2026-11-15', '2026-11-17', '2026-11-19', '2026-11-21', '2026-11-23', '2026-11-25']);
   assert.equal(r.itens.length, 16);
   assert.deepEqual(r.itens.slice(0, 2).map((p) => p.rede).sort(), ['INSTAGRAM', 'LINKEDIN']);
   assert.equal(r.itens[0].tema, BANCO_POSTS[0].tema);
-  assert.equal((await t.ok('super@hs.com', 'listarPosts', {})).itens.length, 16, 'não duplica');
+  assert.equal(banco(await t.ok('super@hs.com', 'listarPosts', {})).itens.length, 16, 'não duplica');
   t.estado.agora = new Date('2026-11-20T14:00:00Z');
   const depois = await t.ok('super@hs.com', 'listarPosts', {});
-  assert.equal(depois.itens.at(-1).data_prevista, '2026-12-03');
-  assert.equal(depois.restantes_no_banco, BANCO_POSTS.length - 12);
+  // a campanha da calculadora começa em 30/11: o banco pausa perto das datas dela (29/11, 01/12, 03/12)
+  assert.equal(banco(depois).itens.at(-1).data_prevista, '2026-11-27');
+  assert.equal(depois.restantes_no_banco, BANCO_POSTS.length - 9);
 });
 
 test('fluxo: superadmin aprova e avisa o marketing; marketing publica; perfis respeitados', async () => {
@@ -69,4 +71,23 @@ test('redes sociais: perfis oficiais por padrão; superadmin troca os links, que
   await t.ok('super@hs.com', 'salvarRedesSociais', { instagram: 'https://www.instagram.com/acorly', linkedin: 'https://www.linkedin.com/company/acorly', facebook: '' });
   assert.deepEqual(await redesSociaisPublicas({ db: t.db }), { instagram: 'https://www.instagram.com/acorly', linkedin: 'https://www.linkedin.com/company/acorly' });
   await t.falha('mkt@hs.com', 'salvarRedesSociais', { instagram: 'https://x.com' }, 403);
+});
+
+test('campanha da calculadora: 12 temas (LinkedIn + Instagram) com datas fixas, links rastreáveis e sem duplicar', async () => {
+  const { CAMPANHA_CALCULADORA } = await import('../src/app/conteudo/campanhas.js');
+  assert.equal(CAMPANHA_CALCULADORA.length, 12);
+  for (const c of CAMPANHA_CALCULADORA) {
+    for (const p of [c.linkedin, c.instagram]) {
+      assert.ok((p.texto || p.legenda).length > 40 && p.roteiro && p.hashtags.length && p.arte, c.tema);
+      assert.doesNotMatch(`${p.texto || p.legenda} ${p.roteiro}`, /caloteir|garantimos|recupera[cç][aã]o garantida|advogad|OAB/i, c.tema);
+    }
+    assert.match(c.linkedin.roteiro, /utm_source=linkedin/, c.tema);
+    assert.match(c.instagram.roteiro, /utm_source=instagram/, c.tema);
+  }
+  const t = await base();
+  await t.ok('super@hs.com', 'listarPosts', {});
+  await t.ok('super@hs.com', 'listarPosts', {});
+  const camp = (await t.db.PostSocial.filter({ origem: 'CAMPANHA' }));
+  assert.equal(camp.length, 24, 'um post por rede, sem duplicar');
+  assert.ok(camp.every((p) => p.status === 'SUGERIDO'));
 });
