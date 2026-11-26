@@ -38,11 +38,11 @@ export function Calculadora() {
   const linkDiagnostico = `/diagnostico?devedores=${r.inadimplentes}&valor=${Math.round(r.parado_centavos / 100)}`;
   return (
     <div className="calc">
-      <form className="calc-entradas" onSubmit={(e) => e.preventDefault()} aria-label="Dados da sua escola">
-        <div className="campo"><label htmlFor="calc-alunos">Alunos (ou clientes) ativos</label><input id="calc-alunos" inputMode="numeric" value={alunos} onChange={(e) => setAlunos(e.target.value.replace(/\D/g, '').slice(0, 6))} /></div>
-        <div className="campo"><label htmlFor="calc-mens">Mensalidade média</label><div className="calc-prefixo"><span>R$</span><input id="calc-mens" inputMode="decimal" value={mensalidade} onChange={(e) => setMensalidade(e.target.value.replace(/[^\d,]/g, '').slice(0, 9))} /></div></div>
+      <form className="calc-entradas" onSubmit={(e) => e.preventDefault()} aria-label="Dados da sua empresa">
+        <div className="campo"><label htmlFor="calc-alunos">Clientes ativos</label><input id="calc-alunos" inputMode="numeric" value={alunos} onChange={(e) => setAlunos(e.target.value.replace(/\D/g, '').slice(0, 6))} /></div>
+        <div className="campo"><label htmlFor="calc-mens">Mensalidade ou parcela média</label><div className="calc-prefixo"><span>R$</span><input id="calc-mens" inputMode="decimal" value={mensalidade} onChange={(e) => setMensalidade(e.target.value.replace(/[^\d,]/g, '').slice(0, 9))} /></div></div>
         <div className="campo">
-          <label htmlFor="calc-atraso">Em atraso hoje: <strong>{atraso}%</strong> <span className="muted">({r.inadimplentes} {r.inadimplentes === 1 ? 'família' : 'famílias'})</span></label>
+          <label htmlFor="calc-atraso">Em atraso hoje: <strong>{atraso}%</strong> <span className="muted">({r.inadimplentes} {r.inadimplentes === 1 ? 'cliente' : 'clientes'})</span></label>
           <input id="calc-atraso" type="range" min="1" max="40" step="1" value={atraso} onChange={(e) => setAtraso(Number(e.target.value))} className="calc-range" style={{ '--p': `${((atraso - 1) / 39) * 100}%` }} />
         </div>
         <div className="campo">
@@ -53,14 +53,14 @@ export function Calculadora() {
         </div>
       </form>
       <div className="calc-resultado" aria-live="polite">
-        <span className="calc-rotulo-claro">Dinheiro parado em mensalidades atrasadas</span>
+        <span className="calc-rotulo-claro">Dinheiro parado em mensalidades e parcelas atrasadas</span>
         <strong className="calc-grande"><ValorAnimado centavos={r.parado_centavos} /></strong>
         <span className="calc-sub">São <strong>{brl(r.por_mes_centavos).replace(/,00$/, "")}</strong> que deixam de entrar a cada mês.</span>
         <div className="calc-sim">
           <label htmlFor="calc-rec">Simule: se <strong>{recupera}%</strong> voltar ao caixa</label>
           <input id="calc-rec" type="range" min="10" max="80" step="5" value={recupera} onChange={(e) => setRecupera(Number(e.target.value))} className="calc-range calc-range-claro" style={{ '--p': `${((recupera - 10) / 70) * 100}%` }} />
           <div className="calc-linhas">
-            <div><span>Volta para a sua escola</span><strong><ValorAnimado centavos={r.recuperado_centavos} /></strong></div>
+            <div><span>Volta para a sua empresa</span><strong><ValorAnimado centavos={r.recuperado_centavos} /></strong></div>
             <div><span>Comissão no Piloto Sem Risco (10%)</span><span>− {brl(r.comissao_piloto_centavos)}</span></div>
             <div className="calc-total"><span>Fica com você</span><strong><ValorAnimado centavos={r.liquido_piloto_centavos} /></strong></div>
           </div>

@@ -159,8 +159,8 @@ export function Site() {
       <section id="calculadora" className="site-secao site-secao-alt">
         <div className="site-largura">
           <div className="revela" style={{ textAlign: 'center' }}>
-            <h2 className="site-titulo">Quanto a inadimplência está custando para a sua escola?</h2>
-            <p className="site-sub" style={{ marginInline: 'auto' }}>Informe três números e veja quanto dinheiro está parado em mensalidades atrasadas e quanto pode voltar ao caixa.</p>
+            <h2 className="site-titulo">Quanto a inadimplência está custando para a sua empresa?</h2>
+            <p className="site-sub" style={{ marginInline: 'auto' }}>Informe três números e veja quanto dinheiro está parado em mensalidades e parcelas atrasadas e quanto pode voltar ao caixa.</p>
           </div>
           <div className="revela"><Calculadora /></div>
         </div>

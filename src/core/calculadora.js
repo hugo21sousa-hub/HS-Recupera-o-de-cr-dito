@@ -1,4 +1,4 @@
-// Calculadora de inadimplência do site: só aritmética sobre os números que a própria escola informa.
+// Calculadora de inadimplência do site: só aritmética sobre os números que a própria empresa informa.
 // Não promete taxa de recuperação: o percentual recuperado é uma simulação ajustada pelo visitante.
 
 /** Tempo típico de atraso → meses de mensalidade em aberto por aluno inadimplente (meio da faixa). */
