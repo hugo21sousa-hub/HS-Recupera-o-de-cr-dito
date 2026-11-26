@@ -91,6 +91,7 @@ export async function lembretesParcelas(ctx) {
         pg.link ? `Boleto em PDF: ${pg.link}` : null,
         pg.forma.pix_copia_cola ? `Pix copia e cola:\n${pg.forma.pix_copia_cola}` : null,
         pg.forma.link_pagamento ? `Link de pagamento: ${pg.forma.link_pagamento}` : null,
+        pg.forma.token_publico ? `QR Code e versão para imprimir: ${ctx.urlBase || ''}/pagar/${pg.forma.token_publico}` : null,
       ].filter(Boolean).join('\n\n') : '';
       const texto = `Olá, ${devedor.nome.split(' ')[0]}.\n\nEste é um lembrete do seu acordo com a ${credor}: ${qual}, no valor de ${formatBRL(p.saldo_centavos)}, ${quando}.\n\n${instrucoes ? `${instrucoes}\n\nO pagamento é feito diretamente à ${credor}.` : `O pagamento é feito diretamente à ${credor}, pelos meios combinados no acordo.`} Se você já pagou, por favor desconsidere esta mensagem.\n\nQualquer dúvida, é só responder este e-mail.`;
       const assunto = `Lembrete: ${qual} do seu acordo com ${credor} ${quando}`;
