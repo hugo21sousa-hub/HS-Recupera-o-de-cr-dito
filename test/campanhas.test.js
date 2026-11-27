@@ -153,3 +153,15 @@ test('modelo "Piloto Sem Risco" não editado recebe o texto novo; o editado fica
   ms = await t.ok(S, 'listarModelosComerciais');
   assert.equal(ms.find((m) => m.id === antigo.id).corpo, 'meu texto');
 });
+
+test('e-mail comercial: no HTML a assinatura em texto dá lugar à imagem; no texto puro ela continua', async () => {
+  const { renderizarEmailComercial } = await import('../src/core/emailComercial.js');
+  const corpo = 'Olá, Maria!\n\nTexto da mensagem.\n\nAbraço,\n**Hugo**\nHS Recuperação de Crédito · Acorly\ncontato@acorly.com.br\nWhatsApp: +5571920054062';
+  const r = renderizarEmailComercial({ corpo, urlBase: 'https://acorly.com.br', rodape: 'HS', sair: null });
+  assert.ok(!r.html.includes('Abraço'));
+  assert.match(r.html, /assinatura-email\.png/);
+  assert.match(r.html, /Texto da mensagem/);
+  assert.match(r.texto, /Abraço,\nHugo\nHS Recuperação de Crédito · Acorly\ncontato@acorly\.com\.br\nWhatsApp: \+5571920054062/);
+  const semImagem = renderizarEmailComercial({ corpo, urlBase: '', rodape: 'HS' });
+  assert.match(semImagem.html, /Abraço/, 'sem endereço do site (sem imagem), a assinatura em texto fica');
+});

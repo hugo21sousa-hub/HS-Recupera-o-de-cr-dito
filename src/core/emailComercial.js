@@ -15,10 +15,16 @@ function inline(t) {
   return esc(t).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 }
 
+// Assinatura em texto dos modelos ("Abraço, / **Nome** / HS Recuperação de Crédito · Acorly / e-mail / WhatsApp").
+// No HTML ela é trocada pela imagem da assinatura; no texto puro continua (quem não vê imagem ainda tem o contato).
+const ASSINATURA_TEXTO = /\n*Abraço,\s*\n[^\n]*\n\s*HS Recuperação de Crédito · Acorly\s*\n\s*contato@acorly\.com\.br\s*(\n\s*WhatsApp:[^\n]*)?\s*$/;
+
 /** Converte o corpo (já preenchido) em HTML e texto puro. */
 export function renderizarEmailComercial({ corpo, urlBase = '', rodape = '', sair = null }) {
   const html = [], texto = [];
   let lista = null, paragrafo = null;
+  const assinaturaTexto = urlBase ? (ASSINATURA_TEXTO.exec(String(corpo)) || [''])[0] : '';
+  if (assinaturaTexto) corpo = String(corpo).slice(0, String(corpo).length - assinaturaTexto.length);
   const fechaParagrafo = () => { if (paragrafo) { html.push(`<p style="font-size:15px;line-height:1.6;margin:0 0 14px">${paragrafo.join('<br>')}</p>`); paragrafo = null; } };
   const fechaLista = () => { fechaParagrafo(); if (lista) { html.push(`<ul style="margin:0 0 16px;padding-left:20px">${lista.join('')}</ul>`); lista = null; } };
   for (const bruta of String(corpo).split('\n')) {
@@ -57,6 +63,7 @@ export function renderizarEmailComercial({ corpo, urlBase = '', rodape = '', sai
 ${urlBase ? `<tr><td style="padding:0 28px 22px"><a href="https://acorly.com.br" style="text-decoration:none"><img src="${esc(urlBase)}/assinatura-email.png" width="380" alt="Acorly · uma plataforma da HS Recuperação de Crédito · WhatsApp +55 (71) 92005-4062 · acorly.com.br · Rua Júlia Fetal, 5, Nazaré, Salvador-BA 40040-350" style="display:block;width:100%;max-width:380px;height:auto;border:0;border-radius:8px"></a></td></tr>` : ''}
 <tr><td style="padding:14px 28px;font-size:11px;color:#6b7280;border-top:1px solid #e2e8f0">${esc(rodape)}${sair ? `<br><a href="${esc(sair)}" style="color:#6b7280">Não quero mais receber e-mails comerciais da Acorly</a>` : ''}</td></tr>
 </table></td></tr></table></body></html>`;
+  if (assinaturaTexto) texto.push('', ...assinaturaTexto.trim().split('\n').map((x) => x.trim().replace(/\*\*/g, '')));
   const textoPuro = `${texto.join('\n').replace(/\n{3,}/g, '\n\n')}\n\n--\n${rodape}${sair ? `\nPara não receber mais: ${sair}` : ''}`;
   return { html: corpoHtml, texto: textoPuro };
 }
