@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, MemoryRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { DEMO } from './api.js';
 import { registrarVisita } from './visitas.js';
+import { anuncioPaginaVista } from './anuncios.js';
 import './styles.css';
 import { SessaoProvider, useSessao } from './sessao.jsx';
 import { ToastProvider, ConfirmProvider, Carregando, Vazio } from './ui.jsx';
@@ -41,7 +42,7 @@ function Protegida({ p, children }) {
 /** Conta a página vista (só no site público, para quem não está logado). */
 function ContadorVisitas() {
   const { pathname } = useLocation();
-  useEffect(() => { if (!pathname.startsWith('/convite/') && !pathname.startsWith('/pagar/')) registrarVisita('VISITA', pathname); }, [pathname]);
+  useEffect(() => { if (!pathname.startsWith('/convite/') && !pathname.startsWith('/pagar/')) { registrarVisita('VISITA', pathname); anuncioPaginaVista(pathname); } }, [pathname]);
   return null;
 }
 

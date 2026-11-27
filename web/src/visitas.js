@@ -1,5 +1,6 @@
 // Contador anônimo de visitas do site (sem cookies): avisa o servidor da página vista e das conversões.
 import { DEMO } from './api.js';
+import { anuncioConversao } from './anuncios.js';
 
 function origemDaSessao() {
   try {
@@ -26,6 +27,7 @@ export function ignorarEsteAparelho(sim = true) {
 
 /** evento: VISITA (página vista), WHATSAPP, CADASTRO. Falhas são ignoradas: estatística nunca atrapalha o site. */
 export function registrarVisita(evento = 'VISITA', pagina = window.location.pathname) {
+  if (evento !== 'VISITA') anuncioConversao(evento);
   if (DEMO || navigator.doNotTrack === '1' || navigator.webdriver || aparelhoIgnorado()) return;
   try {
     fetch('/api/publico/visita', {

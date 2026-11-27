@@ -141,12 +141,15 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
     return t.length > max;
   }
 
+  // Google Ads: só as origens da tag (carregada apenas no site público, ver web/src/anuncios.js).
+  const GOOGLE_ADS = 'https://www.googletagmanager.com https://www.google.com https://www.google.com.br https://googleads.g.doubleclick.net https://www.googleadservices.com https://pagead2.googlesyndication.com';
+  const CSP = `default-src 'self'; img-src 'self' data: blob: ${GOOGLE_ADS}; style-src 'self' 'unsafe-inline'; script-src 'self' ${GOOGLE_ADS}; connect-src 'self' ${GOOGLE_ADS}; frame-src https://td.doubleclick.net https://www.googletagmanager.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`;
   const headersSeguranca = (res) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('Referrer-Policy', 'same-origin');
     res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-    res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+    res.setHeader('Content-Security-Policy', CSP);
     if (producao) res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   };
 

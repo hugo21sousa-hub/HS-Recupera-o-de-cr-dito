@@ -126,6 +126,7 @@ function privacidade({ email, dpo }) {
     ]],
     ['11. Cookies', [
       'O site e a Plataforma usam somente um cookie essencial de sessão, para manter o usuário conectado com segurança. Não há cookies de publicidade nem de rastreamento.',
+      'Nas páginas públicas do site (não na Plataforma nem nas páginas de pagamento), usamos a tag do Google Ads para saber se uma visita veio de um anúncio e se resultou em pedido de diagnóstico, cadastro ou contato. Ela funciona no modo de consentimento negado: não grava cookies, não personaliza anúncios e não recebe nome, e-mail, telefone ou dados de planilhas. Quem ativa "Não rastrear" no navegador fica de fora.',
       'Para medir o alcance do site, contamos as visitas de forma anônima e sem cookies: registramos a página vista, a origem da visita (por exemplo, Instagram ou Google) e o tipo de aparelho, associados a um código que muda todo dia e não permite identificar o visitante. O endereço IP não é armazenado para essa finalidade.',
     ]],
     ['12. Crianças e adolescentes', ['A Plataforma não é destinada a menores de 18 anos.']],

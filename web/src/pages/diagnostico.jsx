@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { enviarDiagnostico, baixarArquivo } from '../api.js';
 import { Marca } from '../layout.jsx';
 import { WhatsAppFlutuante } from '../whatsapp.jsx';
+import { anuncioConversao } from '../anuncios.js';
 import { anonimizarPlanilha } from '../planilha.js';
 import { conferirPedidoDiagnostico, esperaAntiRobo } from '../../../src/core/diagnostico.js';
 
@@ -65,6 +66,7 @@ export function Diagnostico() {
       // só a versão anônima (valor + vencimento) sai do computador; o arquivo original nunca é enviado
       if (anonimo) payload.arquivo = { nome: 'diagnostico-anonimo.csv', conteudo: await paraBase64(new Blob([anonimo.csv], { type: 'text/csv' })) };
       await enviarDiagnostico(payload);
+      anuncioConversao('DIAGNOSTICO');
       setFeito(true);
       window.scrollTo(0, 0);
     } catch (err) { setErro(err.message); } finally { setEnviando(false); }
