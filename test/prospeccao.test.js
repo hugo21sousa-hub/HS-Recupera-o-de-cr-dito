@@ -39,7 +39,8 @@ test('prospecção: modelos padrão, prévia personalizada, envio cria o lead e 
   assert.equal(previa.assunto, 'Colégio Saber: recuperar a inadimplência sem desgastar seus clientes');
   assert.match(previa.html, /Olá, Joana, tudo bem\?/);
   assert.match(previa.html, /Sou Hugo Sousa, da HS Recuperação de Crédito\. Ajudamos escolas e cursos como a Colégio Saber/);
-  assert.match(previa.html, /WhatsApp: \+5571999990000/);
+  assert.match(previa.html, /assinatura-email\.png/, "no HTML a assinatura é a imagem (com o WhatsApp da Acorly)");
+  assert.ok(!previa.html.includes("Abraço,"));
 
   const r = await t.ok('super@hs.com', 'enviarEmailComercial', { modelo_id: geral.id, para: 'Joana@ColegioSaber.com.br', nome: 'Joana Lima', empresa: 'Colégio Saber', segmento: 'ESCOLA_CURSO' });
   assert.equal(enviados[0].para, 'joana@colegiosaber.com.br');
