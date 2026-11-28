@@ -6,6 +6,7 @@ import { brl, dataHora, mascaraFone, mascaraDoc, pct } from '../format.js';
 import { useSessao } from '../sessao.jsx';
 import { roteiro } from '../roteiros.js';
 import { lerPlanilha, contatosDaPlanilha, MODELO_PLANILHA_CAMPANHA } from '../planilha.js';
+import { linkWhatsApp } from '../whatsapp.jsx';
 
 const SEGMENTOS = { ESCOLA_CURSO: 'Escola ou curso', SAUDE: 'Saúde', ACADEMIA: 'Academia', CONDOMINIO: 'Condomínio', VAREJO: 'Varejo', DISTRIBUIDORA: 'Distribuidora', SERVICOS: 'Serviços', IMOBILIARIA: 'Imobiliária', OUTRO: 'Outro' };
 const SEGMENTOS_PROSPECT = { ...SEGMENTOS, CONTABILIDADE: 'Contabilidade' };
@@ -499,6 +500,81 @@ const STATUS_CAMPANHA = { AGUARDANDO: ['Aguardando a vez', 'PENDENTE'], ATIVA: [
 const STATUS_DEST = { PENDENTE: ['Na fila', 'PENDENTE'], ENVIADO: ['Enviado', 'ATIVA'], FALHA: ['Falhou', 'CANCELADA'], IGNORADO: ['Não enviado', 'CANCELADA'] };
 
 /** Disparo de e-mail marketing a partir de planilha (fila diária, até 50 por dia). */
+const CLASSE_SDR = { PENDENTE: ['Nova (aguardando leitura)', 'PENDENTE'], INTERESSADO: ['🔥 Interessado', 'ATIVA'], PERGUNTA: ['❓ Pergunta', 'info'], AGORA_NAO: ['⏳ Agora não', 'PENDENTE'], NAO_QUER: ['🚫 Não quer', 'CANCELADA'], OUTRO: ['Outro', 'info'], AUTOMATICA: ['Automática', 'info'] };
+
+function SdrAutomatico() {
+  const { data, carregando, recarregar } = useApi('painelSdr', {});
+  const { executar, enviando } = useExecutar();
+  const toast = useToast();
+  const sessao = useSessao();
+  const [aberta, setAberta] = useState(null);
+  if (carregando && !data) return <Carregando />;
+  if (!data) return null;
+  const pendentes = data.respostas.filter((x) => !x.tratada_em);
+  const tratar = (x, tratada = true) => executar('tratarRespostaSdr', { id: x.id, tratada }, tratada ? 'Marcada como tratada' : null).then(recarregar).catch(() => {});
+  const copiar = async (t) => { try { await navigator.clipboard.writeText(t); toast.ok('Resposta copiada'); } catch { window.prompt('Copie a resposta:', t); } };
+  return (
+    <div className="stack">
+      <div className="card stack" style={{ gap: 8 }}>
+        <div className="row between">
+          <div>
+            <strong>SDR automático {data.ativo ? <Badge status="ATIVA">Ligado</Badge> : <Badge status="PENDENTE">Pausado</Badge>}</strong>
+            <p className="small muted" style={{ margin: '4px 0 0', maxWidth: '80ch' }}>
+              Em dia útil, das 9h às 18h, o sistema envia sozinho o e-mail escrito para cada contato da busca diária e faz os follow-ups dos dias 3, 7 e 14. Quando o contato responde, ele para de insistir e avisa você. O volume começa baixo e sobe aos poucos (15, 25 e depois 40 por dia), para o domínio não cair no spam.
+            </p>
+          </div>
+          {sessao.usuario?.perfil === 'SUPERADMIN_HS' && <button className="btn" disabled={enviando} onClick={() => executar('configurarSdr', { ativo: !data.ativo }, data.ativo ? 'SDR pausado' : 'SDR ligado').then(recarregar).catch(() => {})}>{data.ativo ? 'Pausar' : 'Ligar'}</button>}
+        </div>
+        <div className="row" style={{ gap: 24, flexWrap: 'wrap' }}>
+          <div><div className="small muted">Enviados hoje</div><strong>{data.enviados_hoje} de {data.meta_hoje}</strong></div>
+          <div><div className="small muted">Na fila (com e-mail)</div><strong>{data.na_fila}</strong>{data.sem_email ? <div className="small muted">+{data.sem_email} só com telefone (Lista do dia)</div> : null}</div>
+          <div><div className="small muted">Aguardando follow-up</div><strong>{data.em_cadencia}</strong></div>
+          <div><div className="small muted">Respostas a tratar</div><strong>{pendentes.length}</strong></div>
+        </div>
+        {!data.envio_configurado && <div className="aviso alerta">O envio de e-mails não está configurado no servidor.</div>}
+        {!data.caixa_configurada
+          ? <div className="aviso alerta">Falta conectar a caixa de entrada para o SDR saber quem respondeu: no Render, cadastre <code>IMAP_USUARIO</code> (contato@acorly.com.br) e <code>IMAP_SENHA</code> (a senha desse e-mail). Até lá, só saem os primeiros e-mails: os follow-ups esperam, para ninguém que já respondeu receber insistência.</div>
+          : data.caixa_erro ? <div className="aviso alerta">{data.caixa_erro}</div>
+            : <div className="small muted">Caixa de entrada {data.caixa_usuario} conectada{data.caixa_lida_em ? `: lida pela última vez em ${dataHora(data.caixa_lida_em)}` : ' (primeira leitura em instantes)'}. As respostas são classificadas todas as manhãs.</div>}
+      </div>
+      {data.respostas.length ? (
+        <table><thead><tr><th>Empresa</th><th>Recebida</th><th>Classificação</th><th>O que disse</th><th /></tr></thead><tbody>
+          {data.respostas.map((x) => (
+            <tr key={x.id} style={x.tratada_em ? { opacity: 0.6 } : undefined}>
+              <td><strong>{x.empresa}</strong><div className="small muted">{x.de}</div></td>
+              <td>{dataHora(x.recebida_em)}</td>
+              <td><Badge status={(CLASSE_SDR[x.classificacao] || CLASSE_SDR.OUTRO)[1]}>{(CLASSE_SDR[x.classificacao] || CLASSE_SDR.OUTRO)[0]}</Badge></td>
+              <td style={{ maxWidth: 420 }}>{x.resumo ? <strong className="small">{x.resumo}</strong> : null}<div className="small muted">{(x.texto || '').slice(0, 160)}{(x.texto || '').length > 160 ? '…' : ''}</div></td>
+              <td><div className="row" style={{ gap: 4 }}>
+                <button className="btn sm" onClick={() => setAberta(x)}>Ver</button>
+                {!x.tratada_em ? <button className="btn sm" disabled={enviando} onClick={() => tratar(x)}>Tratada</button> : <button className="btn sm" disabled={enviando} onClick={() => tratar(x, false)}>Reabrir</button>}
+              </div></td>
+            </tr>
+          ))}
+        </tbody></table>
+      ) : <Vazio titulo="Nenhuma resposta ainda">Quando alguém responder aos e-mails, aparece aqui, já separado entre interessado, pergunta, agora não e não quer.</Vazio>}
+      {aberta && (
+        <Modal titulo={`Resposta de ${aberta.empresa}`} onClose={() => setAberta(null)}>
+          <div className="stack">
+            <div className="small muted">{aberta.de} · {dataHora(aberta.recebida_em)}{aberta.assunto ? ` · ${aberta.assunto}` : ''}</div>
+            <div style={{ whiteSpace: 'pre-wrap', background: 'var(--bg)', padding: 12, borderRadius: 8 }}>{aberta.texto || '(sem texto)'}</div>
+            {aberta.resposta_sugerida && (<>
+              <strong>Resposta sugerida (revise antes de enviar)</strong>
+              <div style={{ whiteSpace: 'pre-wrap', border: '1px solid var(--borda)', padding: 12, borderRadius: 8 }}>{aberta.resposta_sugerida}</div>
+            </>)}
+            <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+              {aberta.resposta_sugerida && <button className="btn" onClick={() => copiar(aberta.resposta_sugerida)}>Copiar resposta</button>}
+              <a className="btn prim" href={`mailto:${aberta.de}?subject=${encodeURIComponent(`Re: ${(aberta.assunto || '').replace(/^(re:\s*)+/i, '')}`)}&body=${encodeURIComponent(aberta.resposta_sugerida || '')}`}>Responder por e-mail</a>
+              {aberta.whatsapp && <a className="btn" target="_blank" rel="noreferrer" href={linkWhatsApp(aberta.whatsapp, '')}>Chamar no WhatsApp</a>}
+              {!aberta.tratada_em && <button className="btn" onClick={() => { tratar(aberta); setAberta(null); }}>Marcar como tratada</button>}
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
 function Campanhas({ onMudou }) {
   const { data, carregando, recarregar } = useApi('listarCampanhas', {});
   const [nova, setNova] = useState(false);
@@ -651,7 +727,7 @@ export function Leads() {
   const [r, setR] = useState(0);
   const [aberto, setAberto] = useState(null);
   const [email, setEmail] = useState(null);
-  const [aba, setAba] = useState('dia');
+  const [aba, setAba] = useState('sdr');
   const [infoLeads, setInfoLeads] = useState(null);
   const [prospect, setProspect] = useState(null);
   return (
@@ -660,8 +736,8 @@ export function Leads() {
         <button className="btn prim" onClick={() => setEmail({})}>Enviar e-mail marketing</button>
       </Cabecalho>
       <div className="card">
-      <Abas ativa={aba} onChange={setAba} abas={[{ id: 'dia', rotulo: 'Lista do dia' }, { id: 'leads', rotulo: `Pedidos e contatos${infoLeads?.followups_hoje ? ` (${infoLeads.followups_hoje} follow-up hoje)` : ''}` }, { id: 'campanhas', rotulo: 'Campanhas por planilha' }, { id: 'parceiros', rotulo: 'Parceiros (indicação)' }, { id: 'modelos', rotulo: 'Modelos de e-mail' }]} />
-      {aba === 'dia' ? <ListaDoDia recarregar={r} onMudou={() => setR(r + 1)} onEmail={setProspect} /> : aba === 'modelos' ? <Modelos /> : aba === 'parceiros' ? <Parceiros /> : aba === 'campanhas' ? <Campanhas onMudou={() => setR(r + 1)} /> : <Tabela acao="listarLeads" recarregar={r} aoCarregar={setInfoLeads} filtros={[{ nome: 'status', rotulo: 'Situação', opcoes: Object.keys(STATUS) }, { nome: 'followup', rotulo: 'Follow-up', opcoes: [{ valor: 'HOJE', rotulo: 'Para hoje (e atrasados)' }, { valor: 'ATIVA', rotulo: 'Com cadência ativa' }] }]} colunas={[
+      <Abas ativa={aba} onChange={setAba} abas={[{ id: 'sdr', rotulo: 'SDR automático' }, { id: 'dia', rotulo: 'Lista do dia' }, { id: 'leads', rotulo: `Pedidos e contatos${infoLeads?.followups_hoje ? ` (${infoLeads.followups_hoje} follow-up hoje)` : ''}` }, { id: 'campanhas', rotulo: 'Campanhas por planilha' }, { id: 'parceiros', rotulo: 'Parceiros (indicação)' }, { id: 'modelos', rotulo: 'Modelos de e-mail' }]} />
+      {aba === 'sdr' ? <SdrAutomatico /> : aba === 'dia' ? <ListaDoDia recarregar={r} onMudou={() => setR(r + 1)} onEmail={setProspect} /> : aba === 'modelos' ? <Modelos /> : aba === 'parceiros' ? <Parceiros /> : aba === 'campanhas' ? <Campanhas onMudou={() => setR(r + 1)} /> : <Tabela acao="listarLeads" recarregar={r} aoCarregar={setInfoLeads} filtros={[{ nome: 'status', rotulo: 'Situação', opcoes: Object.keys(STATUS) }, { nome: 'followup', rotulo: 'Follow-up', opcoes: [{ valor: 'HOJE', rotulo: 'Para hoje (e atrasados)' }, { valor: 'ATIVA', rotulo: 'Com cadência ativa' }] }]} colunas={[
         { titulo: 'Recebido', render: (l) => dataHora(l.recebido_em) },
         { titulo: 'Empresa', render: (l) => <button className="btn link" onClick={() => setAberto(l)}><strong>{l.empresa}</strong></button> },
         { titulo: 'Contato', render: (l) => <><div>{l.nome}</div><div className="small muted">{l.email}{l.whatsapp ? ` · ${mascaraFone(l.whatsapp)}` : ''}</div>{l.origem === 'PROSPECCAO' && <div className="small" style={{ color: 'var(--azul)' }}>Abordado por e-mail{l.ultimo_email_em ? ` · ${dataHora(l.ultimo_email_em)}` : ''}</div>}</> },

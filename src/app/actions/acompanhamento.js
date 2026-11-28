@@ -49,7 +49,7 @@ export async function avancarCadencia(ctx, lead, { canal, observacao = '' } = {}
   return alterar(ctx, 'Lead', lead, patch, 'FOLLOWUP_LEAD');
 }
 
-export const cadenciaAtiva = (l) => !!l.proximo_followup && !ENCERRADOS.includes(l.status);
+export const cadenciaAtiva = (l) => !!l.proximo_followup && !ENCERRADOS.includes(l.status) && !l.respondeu_em && !l.email_invalido;
 export const followupVencido = (ctx, l) => cadenciaAtiva(l) && l.proximo_followup <= hojeBrasilia(ctx);
 
 /** Aviso diário (uma vez por dia) dos follow-ups do dia para o superadmin. */

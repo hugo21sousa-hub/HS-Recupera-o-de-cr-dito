@@ -22,6 +22,8 @@ import { criarAuth } from './auth.js';
 import { criarArquivos } from './files.js';
 import { handle } from '../app/router.js';
 import { criarEmail, configSMTP } from './email.js';
+import { criarCaixaEntrada, configImap } from './caixaEntrada.js';
+import { sincronizarCaixa, respostasPendentes, classificarRespostas } from '../app/sdr.js';
 import { criarWhatsApp, configWhatsApp } from './whatsapp.js';
 import { criarAsaas, configAsaas } from './asaas.js';
 import { criarDescadastro, paginaDescadastro } from './descadastro.js';
@@ -45,7 +47,7 @@ const SISTEMA = { id: 'sistema', nome: 'Sistema', email: 'sistema', perfil: 'SIS
 // Ações liberadas para quem ainda precisa ativar o 2FA obrigatório
 const LIBERADAS_SEM_2FA = new Set(['meuPerfil', 'listarNotificacoes', 'marcarNotificacaoLida']);
 
-export function criarApp({ dataDir = './data', urlBase = '', producao = false, webDir = './web/dist', arquivoBanco, env = process.env, transporteEmail, fetchImpl, exigir2faHS = env.EXIGIR_2FA_HS !== 'false', confiarProxy = false } = {}) {
+export function criarApp({ dataDir = './data', urlBase = '', producao = false, webDir = './web/dist', arquivoBanco, env = process.env, transporteEmail, fetchImpl, caixaEntrada: caixaInjetada, exigir2faHS = env.EXIGIR_2FA_HS !== 'false', confiarProxy = false } = {}) {
   mkdirSync(dataDir, { recursive: true });
   const segredoPath = join(dataDir, 'segredo');
   const segredo = env.SEGREDO || (existsSync(segredoPath) ? readFileSync(segredoPath, 'utf8') : (() => { const s = randomBytes(32).toString('hex'); writeFileSync(segredoPath, s, { mode: 0o600 }); return s; })());
@@ -58,6 +60,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
   if (databaseUrl && !env.SEGREDO) console.warn('[hs] Defina SEGREDO no ambiente: sem ele, links de arquivos e 2FA deixam de valer a cada reinício.');
   const { db, exclusivo } = banco;
   const email = criarEmail({ config: configSMTP(env), transporte: transporteEmail, urlBase, env, fetchImpl });
+  const caixaEntrada = caixaInjetada !== undefined ? caixaInjetada : criarCaixaEntrada(configImap(env));
   // Verificação do login: código por e-mail (padrão quando há envio de e-mail) ou aplicativo autenticador
   let metodoVerificacao = env.VERIFICACAO_LOGIN || (email.disponivel ? 'email' : 'app');
   if (metodoVerificacao === 'email' && !email.disponivel) { console.warn('[hs] VERIFICACAO_LOGIN=email sem envio de e-mail configurado (BREVO_API_KEY ou SMTP): usando o aplicativo autenticador.'); metodoVerificacao = 'app'; }
@@ -82,7 +85,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
   };
   // Manual do cliente (PDF em web/public): anexado ao e-mail de boas-vindas da assinatura
   const manualCliente = async () => { try { return await readFile(join(webDir, 'manual-acorly.pdf')); } catch { return null; } };
-  const integracoes = { email, descadastro, urlBase, manualCliente, contato: { email: env.CONTATO_EMAIL || 'contato@acorly.com.br', whatsapp: env.CONTATO_WHATSAPP || WHATSAPP_ACORLY }, whatsapp: whatsapp.disponivel ? whatsapp : null, asaas: asaas.disponivel ? asaas : null };
+  const integracoes = { email, descadastro, urlBase, manualCliente, contato: { email: env.CONTATO_EMAIL || 'contato@acorly.com.br', whatsapp: env.CONTATO_WHATSAPP || WHATSAPP_ACORLY }, whatsapp: whatsapp.disponivel ? whatsapp : null, asaas: asaas.disponivel ? asaas : null, caixaEntrada };
 
   /** Executa em transação; efeitos externos (e-mails) só depois do COMMIT. */
   async function transacao(fn) {
@@ -255,12 +258,30 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
       const ok = await exclusivo(() => db.Plano.filter({ id: '_' })).then(() => true).catch(() => false);
       return json(res, ok ? 200 : 503, { ok });
     }
-    if (rota === 'POST /api/integracao/prospects') {
-      // Busca diária de contatos (robô): autenticada por token próprio (LEADS_API_TOKEN), sem sessão
+    // Robô da busca diária (tarefa do Claude): autenticado por token próprio (LEADS_API_TOKEN), sem sessão
+    const tokenIntegracaoOk = () => {
       const token = String(env.LEADS_API_TOKEN || '');
       const recebido = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-      const ok = token.length >= 24 && recebido.length === token.length && timingSafeEqual(Buffer.from(recebido), Buffer.from(token));
-      if (!ok) return json(res, 401, { ok: false, error: 'Token inválido' });
+      return token.length >= 24 && recebido.length === token.length && timingSafeEqual(Buffer.from(recebido), Buffer.from(token));
+    };
+    if (rota === 'GET /api/integracao/respostas' || rota === 'POST /api/integracao/respostas') {
+      // SDR automático: o robô lê as respostas ainda não classificadas e devolve a classificação
+      if (!tokenIntegracaoOk()) return json(res, 401, { ok: false, error: 'Token inválido' });
+      let d = {};
+      if (req.method === 'POST') {
+        const corpo = await lerCorpo(req, 512 * 1024).catch(() => null);
+        try { d = JSON.parse(corpo?.toString('utf8') || '{}'); } catch { return json(res, 400, { ok: false, error: 'JSON inválido' }); }
+      }
+      const r = await transacao(async (pos) => {
+        try { return { status: 200, body: { ok: true, data: req.method === 'GET' ? { respostas: await respostasPendentes(ctxSistema(pos)) } : await classificarRespostas(ctxSistema(pos), d.respostas) } }; } catch (e) {
+          if (e.status && e.status < 500) return { status: e.status, body: { ok: false, error: e.message }, __rollback: true };
+          throw e;
+        }
+      });
+      return json(res, r.status, r.body);
+    }
+    if (rota === 'POST /api/integracao/prospects') {
+      if (!tokenIntegracaoOk()) return json(res, 401, { ok: false, error: 'Token inválido' });
       const corpo = await lerCorpo(req, 1024 * 1024).catch(() => null);
       let d;
       try { d = JSON.parse(corpo?.toString('utf8') || '{}'); } catch { return json(res, 400, { ok: false, error: 'JSON inválido' }); }
@@ -547,7 +568,10 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
     timer = setInterval(rodar, 24 * 3600e3);
     timer.unref();
     // Lembretes (mensalidade, fim do teste, parcelas de acordo): de hora em hora, só em horário comercial
-    const lembrar = () => transacao((pos) => rodarLembretes(ctxSistema(pos))).then((r) => { if (r && (r.mensalidade || r.teste || r.parcelas || r.prestacoes || r.campanhas?.enviados)) console.log('[lembretes]', r); }).catch((e) => console.error('[lembretes]', e.message));
+    const lembrar = () => transacao((pos) => rodarLembretes(ctxSistema(pos))).then((r) => { if (r && (r.mensalidade || r.teste || r.parcelas || r.prestacoes || r.campanhas?.enviados || r.sdr?.enviados)) console.log('[lembretes]', r); }).catch((e) => console.error('[lembretes]', e.message));
+    // SDR automático: lê a caixa de entrada (respostas aos e-mails comerciais) de hora em hora, a qualquer hora
+    const lerCaixa = () => sincronizarCaixa({ caixa: caixaEntrada, transacao, ctxDe: ctxSistema }).then((r) => { if (r && (r.respostas || r.devolvidas || r.nao_quer)) console.log('[sdr] caixa', r); }).catch((e) => console.error('[sdr] caixa', e.message));
+    if (caixaEntrada) { setTimeout(lerCaixa, 90e3).unref(); setInterval(lerCaixa, 3600e3).unref(); }
     setTimeout(lembrar, 60e3).unref();
     timerLembretes = setInterval(lembrar, 3600e3);
     timerLembretes.unref();

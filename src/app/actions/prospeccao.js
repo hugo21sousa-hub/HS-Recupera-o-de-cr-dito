@@ -219,7 +219,7 @@ export async function enviarComercial(ctx, input) {
   const m = await montar(ctx, dados, sair);
   const r = await ctx.email.comercial({ para, assunto: m.assunto, html: m.html, texto: m.texto, sair });
   if (!r.ok) throw new ValidationError(`Não foi possível enviar agora${r.erro ? ` (${r.erro})` : ''}. Tente novamente.`);
-  await ctx.db.EnvioComercial.create({ lead_id: lead.id, campanha_id: input.campanha_id || null, email: para, assunto: m.assunto, modelo_id: input.modelo_id || null, enviado_em: agora, enviado_por: ctx.user.id, mensagem_id: r.id || null });
+  await ctx.db.EnvioComercial.create({ lead_id: lead.id, campanha_id: input.campanha_id || null, email: para, assunto: m.assunto, modelo_id: input.modelo_id || null, enviado_em: agora, enviado_por: ctx.user.id, mensagem_id: r.id || null, origem: input.origem || (input.campanha_id ? 'CAMPANHA' : 'MANUAL') });
   const jaTinhaEmail = !!lead.ultimo_email_em;
   lead = await alterar(ctx, 'Lead', lead, { ultimo_email_em: agora, status: lead.status === 'NOVO' ? 'EM_CONTATO' : lead.status }, 'ENVIAR_EMAIL_COMERCIAL');
   if (followupVencido(ctx, lead)) await avancarCadencia(ctx, lead, { canal: 'EMAIL', observacao: m.assunto });

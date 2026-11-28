@@ -225,7 +225,7 @@ export const ENTITIES = {
   },
   EnvioComercial: {
     description: 'Registro de cada e-mail comercial enviado',
-    properties: { lead_id: ref('Lead'), campanha_id: ref('CampanhaEmail'), email: s('Destino'), assunto: s('Assunto'), modelo_id: ref('ModeloComercial'), enviado_em: ts('Enviado em'), enviado_por: ref('Quem enviou'), mensagem_id: s('ID no provedor') },
+    properties: { lead_id: ref('Lead'), campanha_id: ref('CampanhaEmail'), email: s('Destino'), assunto: s('Assunto'), modelo_id: ref('ModeloComercial'), enviado_em: ts('Enviado em'), enviado_por: ref('Quem enviou'), mensagem_id: s('ID no provedor'), origem: s('MANUAL, CAMPANHA ou SDR (automático)') },
     required: ['email', 'enviado_em'],
   },
   CampanhaEmail: {
@@ -309,6 +309,8 @@ export const ENTITIES = {
       decisor_nome: s('Pessoa que decide'), decisor_cargo: s('Cargo de quem decide'), decisor_contato: s('Contato direto de quem decide'),
       cadencia_inicio: dt('Início da cadência de follow-up'), cadencia_etapa: n('Follow-ups feitos (0 a 3)'), proximo_followup: dt('Próximo follow-up'), cadencia_fim: s('Como a cadência terminou'),
       parceiro_id: ref('Parceiro que indicou'),
+      respondeu_em: ts('Respondeu ao e-mail comercial em (o SDR automático para de insistir)'), retomar_em: dt('Voltar a procurar a partir de (respondeu "agora não")'),
+      email_invalido: b('O e-mail comercial voltou (endereço não existe)'),
       diagnostico_enviado_em: ts('Diagnóstico enviado ao cliente em'), diagnostico_resumo: { type: 'object', description: 'Resumo do diagnóstico enviado (valores e estimativa)' },
     },
     required: ['nome', 'empresa', 'status'],
@@ -375,8 +377,17 @@ export const ENTITIES = {
   },
   ConfiguracaoHS: {
     description: 'Configurações gerais do Acorly (registro único), como a tabela padrão de comissão',
-    properties: { comissao_faixas: arr('Faixas de comissão [{ate_dias, bps}]', { type: 'object' }), atualizado_por: s('Usuário'), atualizado_em: ts('Atualização'), redes_sociais: { type: 'object', description: 'Links das redes sociais (instagram, linkedin, facebook, youtube, tiktok)' }, conteudo_inicio: dt('Início da agenda de posts'), conteudo_proximo: n('Próximo tema do banco de posts'), conteudo_aviso_fim: b('Aviso de fim do banco enviado'), aviso_followup_em: dt('Último aviso diário de follow-ups'), financeiro_aliquota_bps: n('Alíquota efetiva de impostos sobre o faturamento (bps), para estimar o DRE'), aviso_contas_em: dt('Último aviso diário de contas a pagar'), },
+    properties: { comissao_faixas: arr('Faixas de comissão [{ate_dias, bps}]', { type: 'object' }), atualizado_por: s('Usuário'), atualizado_em: ts('Atualização'), redes_sociais: { type: 'object', description: 'Links das redes sociais (instagram, linkedin, facebook, youtube, tiktok)' }, conteudo_inicio: dt('Início da agenda de posts'), conteudo_proximo: n('Próximo tema do banco de posts'), conteudo_aviso_fim: b('Aviso de fim do banco enviado'), aviso_followup_em: dt('Último aviso diário de follow-ups'), financeiro_aliquota_bps: n('Alíquota efetiva de impostos sobre o faturamento (bps), para estimar o DRE'), aviso_contas_em: dt('Último aviso diário de contas a pagar'), sdr_pausado: b('SDR automático pausado'), sdr_inicio: dt('Primeiro dia de envio do SDR automático (aumenta o volume aos poucos)'), sdr_remetente_id: ref('Usuário que assina os e-mails do SDR'), sdr_imap_uid: n('Último e-mail lido da caixa de entrada'), sdr_imap_validade: s('UIDVALIDITY da caixa de entrada'), sdr_imap_erro: s('Último erro ao ler a caixa de entrada'), sdr_imap_lido_em: ts('Última leitura da caixa de entrada'), },
     required: [],
+  },
+  RespostaComercial: {
+    description: 'Resposta recebida a um e-mail comercial (lida da caixa de entrada pelo SDR automático)',
+    properties: {
+      lead_id: ref('Lead'), de: s('E-mail de quem respondeu'), assunto: s('Assunto'), texto: s('Texto da resposta (sem o histórico citado)'), recebida_em: ts('Recebida em'), message_id: s('Message-ID'),
+      classificacao: e(['PENDENTE', 'INTERESSADO', 'PERGUNTA', 'AGORA_NAO', 'NAO_QUER', 'AUTOMATICA', 'OUTRO'], 'Classificação', 'PENDENTE'), resumo: s('Resumo em uma frase'),
+      resposta_sugerida: s('Rascunho de resposta para aprovar'), classificada_em: ts('Classificada em'), tratada_em: ts('Marcada como tratada em'),
+    },
+    required: ['de', 'recebida_em'],
   },
   EventoWebhook: {
     description: 'Eventos recebidos de provedores externos (idempotência)',

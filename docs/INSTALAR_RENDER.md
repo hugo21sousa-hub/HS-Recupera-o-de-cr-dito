@@ -295,6 +295,26 @@ Para ligar a busca automática:
    - `fonte_url` (https) é obrigatória.
    - Repetidos (mesmo e-mail, telefone ou domínio de lead ou contato já existente) são ignorados.
 
+## SDR automático (pré-vendedor por e-mail)
+
+Em **Diagnósticos e prospecção → SDR automático**:
+
+- **Envio sozinho:** em dia útil, das 9h às 18h (Brasília), de hora em hora, o sistema envia até 5 e-mails por rodada aos contatos da busca diária que têm e-mail. Usa o e-mail escrito para cada empresa; sem ele, usa o primeiro modelo ativo.
+  - **Volume:** 15 por dia na 1ª semana, 25 na 2ª e 40 a partir da 3ª, para aquecer o domínio. Os envios contam no limite geral de 50 e-mails comerciais por dia, e as campanhas por planilha têm prioridade.
+  - Não envia para quem pediu para sair, para quem já recebeu e-mail da Acorly nem para e-mail que voltou.
+- **Follow-ups:** nos dias 3, 7 e 14, por e-mail, como resposta ("Re:") ao primeiro. Só saem com a caixa de entrada conectada.
+- **Caixa de entrada:** cadastre no Render `IMAP_USUARIO` (ex.: contato@acorly.com.br) e `IMAP_SENHA`. Opcionais: `IMAP_HOST` (padrão `imap.hostinger.com`) e `IMAP_PORTA` (padrão 993).
+  - O sistema lê a caixa de hora em hora, **só para leitura**: não apaga, não move e não marca como lido.
+  - Quando o contato responde, a cadência para e a equipe recebe um aviso.
+  - Respostas automáticas (férias, ausência) não param a cadência.
+  - E-mail que voltou marca o endereço como inválido.
+  - "Não tenho interesse" ou "remova" tira o contato da lista na hora.
+- **Classificação:** a busca diária (o robô) lê `GET /api/integracao/respostas` e devolve `POST /api/integracao/respostas` com `{ "respostas": [ { "id", "classificacao", "resumo", "resposta_sugerida" } ] }`. A autenticação é a mesma `LEADS_API_TOKEN`.
+  - `classificacao` aceita: INTERESSADO, PERGUNTA, AGORA_NAO, NAO_QUER ou OUTRO.
+  - Interessado e pergunta geram aviso. A resposta sugerida aparece na tela para revisar e enviar.
+  - Agora não volta para a cadência em 60 dias. Não quer sai da lista.
+- **Pausar:** o botão "Pausar" (só o superadmin) para o envio na hora. A leitura da caixa continua.
+
 ## Rotina comercial (época, follow-up, roteiro e parceiros)
 
 - **Época do ano:** a Lista do dia mostra o tema do mês (ex.: 13º salário em novembro e dezembro) e põe primeiro os segmentos prioritários. Em novembro e dezembro, o modelo de e-mail "13º salário" é o padrão.
