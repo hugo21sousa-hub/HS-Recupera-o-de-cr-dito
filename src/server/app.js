@@ -23,6 +23,8 @@ import { criarArquivos } from './files.js';
 import { handle } from '../app/router.js';
 import { criarEmail, configSMTP } from './email.js';
 import { criarCaixaEntrada, configImap } from './caixaEntrada.js';
+import { criarIA } from './ia.js';
+import { processarAtendimentos } from '../app/atendimento.js';
 import { sincronizarCaixa, respostasPendentes, classificarRespostas } from '../app/sdr.js';
 import { criarWhatsApp, configWhatsApp } from './whatsapp.js';
 import { criarAsaas, configAsaas } from './asaas.js';
@@ -47,7 +49,7 @@ const SISTEMA = { id: 'sistema', nome: 'Sistema', email: 'sistema', perfil: 'SIS
 // Ações liberadas para quem ainda precisa ativar o 2FA obrigatório
 const LIBERADAS_SEM_2FA = new Set(['meuPerfil', 'listarNotificacoes', 'marcarNotificacaoLida']);
 
-export function criarApp({ dataDir = './data', urlBase = '', producao = false, webDir = './web/dist', arquivoBanco, env = process.env, transporteEmail, fetchImpl, caixaEntrada: caixaInjetada, exigir2faHS = env.EXIGIR_2FA_HS !== 'false', confiarProxy = false } = {}) {
+export function criarApp({ dataDir = './data', urlBase = '', producao = false, webDir = './web/dist', arquivoBanco, env = process.env, transporteEmail, fetchImpl, caixaEntrada: caixaInjetada, ia: iaInjetada, exigir2faHS = env.EXIGIR_2FA_HS !== 'false', confiarProxy = false } = {}) {
   mkdirSync(dataDir, { recursive: true });
   const segredoPath = join(dataDir, 'segredo');
   const segredo = env.SEGREDO || (existsSync(segredoPath) ? readFileSync(segredoPath, 'utf8') : (() => { const s = randomBytes(32).toString('hex'); writeFileSync(segredoPath, s, { mode: 0o600 }); return s; })());
@@ -61,6 +63,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
   const { db, exclusivo } = banco;
   const email = criarEmail({ config: configSMTP(env), transporte: transporteEmail, urlBase, env, fetchImpl });
   const caixaEntrada = caixaInjetada !== undefined ? caixaInjetada : criarCaixaEntrada(configImap(env));
+  const ia = iaInjetada !== undefined ? iaInjetada : criarIA(env);
   // Verificação do login: código por e-mail (padrão quando há envio de e-mail) ou aplicativo autenticador
   let metodoVerificacao = env.VERIFICACAO_LOGIN || (email.disponivel ? 'email' : 'app');
   if (metodoVerificacao === 'email' && !email.disponivel) { console.warn('[hs] VERIFICACAO_LOGIN=email sem envio de e-mail configurado (BREVO_API_KEY ou SMTP): usando o aplicativo autenticador.'); metodoVerificacao = 'app'; }
@@ -85,7 +88,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
   };
   // Manual do cliente (PDF em web/public): anexado ao e-mail de boas-vindas da assinatura
   const manualCliente = async () => { try { return await readFile(join(webDir, 'manual-acorly.pdf')); } catch { return null; } };
-  const integracoes = { email, descadastro, urlBase, manualCliente, contato: { email: env.CONTATO_EMAIL || 'contato@acorly.com.br', whatsapp: env.CONTATO_WHATSAPP || WHATSAPP_ACORLY }, whatsapp: whatsapp.disponivel ? whatsapp : null, asaas: asaas.disponivel ? asaas : null, caixaEntrada };
+  const integracoes = { email, descadastro, urlBase, manualCliente, contato: { email: env.CONTATO_EMAIL || 'contato@acorly.com.br', whatsapp: env.CONTATO_WHATSAPP || WHATSAPP_ACORLY }, whatsapp: whatsapp.disponivel ? whatsapp : null, asaas: asaas.disponivel ? asaas : null, caixaEntrada, ia };
 
   /** Executa em transação; efeitos externos (e-mails) só depois do COMMIT. */
   async function transacao(fn) {
@@ -95,6 +98,15 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
     return r;
   }
 
+  // Atendimento WhatsApp com IA: responde alguns segundos depois da última mensagem (junta mensagens seguidas)
+  let timerAtendimento = null;
+  const rodarAtendimento = () => processarAtendimentos({ transacao, ctxDe: ctxSistema, ia, whatsapp: whatsapp.disponivel ? whatsapp : null, limiteDiario: Number(env.IA_LIMITE_DIARIO) || undefined })
+    .then((r) => { if (r.respondidas || r.passadas || r.erros) console.log('[atendimento]', r); }).catch((e) => console.error('[atendimento]', e.message));
+  const agendarAtendimento = (ms = Number(env.IA_ESPERA_MS ?? 6000)) => {
+    if (timerAtendimento) clearTimeout(timerAtendimento);
+    timerAtendimento = setTimeout(() => { timerAtendimento = null; rodarAtendimento(); }, ms);
+    timerAtendimento.unref?.();
+  };
   const ctxSistema = (posteriores = []) => ({ db, user: SISTEMA, authEmail: 'sistema', now: () => new Date(), files: arquivos, ...integracoes, aposConfirmar: posteriores });
 
   /** Banco PostgreSQL + Supabase Storage: backup diário (JSON compactado) no bucket, guardando 14 dias. */
@@ -377,6 +389,7 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
       if (!whatsapp.assinaturaValida(bruto, req.headers['x-hub-signature-256'])) return json(res, 401, { ok: false });
       let payload; try { payload = JSON.parse(bruto.toString('utf8')); } catch { return json(res, 400, { ok: false }); }
       const r = await transacao((pos) => processarWebhookWhatsApp(ctxSistema(pos), payload));
+      if (r.atendimento) agendarAtendimento();
       return json(res, 200, { ok: true, ...r });
     }
     if (rota === 'POST /webhooks/asaas') {
@@ -572,11 +585,12 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
     // SDR automático: lê a caixa de entrada (respostas aos e-mails comerciais) de hora em hora, a qualquer hora
     const lerCaixa = () => sincronizarCaixa({ caixa: caixaEntrada, transacao, ctxDe: ctxSistema }).then((r) => { if (r && (r.respostas || r.devolvidas || r.nao_quer)) console.log('[sdr] caixa', r); }).catch((e) => console.error('[sdr] caixa', e.message));
     if (caixaEntrada) { setTimeout(lerCaixa, 90e3).unref(); setInterval(lerCaixa, 3600e3).unref(); }
+    if (ia && whatsapp.disponivel) setInterval(rodarAtendimento, 5 * 60e3).unref(); // repescagem (falhas de rede)
     setTimeout(lembrar, 60e3).unref();
     timerLembretes = setInterval(lembrar, 3600e3);
     timerLembretes.unref();
   };
-  server.on('close', () => { if (timer) clearInterval(timer); if (timerLembretes) clearInterval(timerLembretes); });
+  server.on('close', () => { if (timer) clearInterval(timer); if (timerLembretes) clearInterval(timerLembretes); if (timerAtendimento) clearTimeout(timerAtendimento); });
 
   /**
    * Primeiro acesso sem terminal (ex.: Render grátis): com SUPERADMIN_EMAIL definido, cria o superadmin,
@@ -623,5 +637,5 @@ export function criarApp({ dataDir = './data', urlBase = '', producao = false, w
     });
   }
 
-  return { server, db, banco, auth, exclusivo, email, rodarRetencao, agendarRetencao, backupNaNuvem, primeiroAcesso };
+  return { server, db, banco, auth, exclusivo, email, rodarRetencao, agendarRetencao, backupNaNuvem, primeiroAcesso, rodarAtendimento };
 }

@@ -23,6 +23,7 @@ import { MensagensPublicas } from './pages/mensagensPublicas.jsx';
 import { PagarPix } from './pages/pagar.jsx';
 import { CalculadoraPagina } from './pages/calculadoraPagina.jsx';
 import { Leads } from './pages/leads.jsx';
+import { AtendimentoWhatsApp } from './pages/atendimento.jsx';
 import { Conteudo } from './pages/conteudo.jsx';
 import { IndicadoresNegocio } from './pages/negocio.jsx';
 import { FinanceiroHS } from './pages/financeiroHS.jsx';
@@ -127,6 +128,7 @@ function Raiz() {
           <Route path="/hs/casos" element={P('caso.ler_todos_hs', <TodosCasos />)} />
           <Route path="/hs/conteudo" element={P('conteudo.ler', <Conteudo />)} />
           <Route path="/hs/leads" element={P('lead.gerenciar', <Leads />)} />
+          <Route path="/hs/atendimento" element={P('lead.gerenciar', <AtendimentoWhatsApp />)} />
           <Route path="/hs/negocio" element={P('plano.gerenciar', <IndicadoresNegocio />)} />
           <Route path="/hs/financeiro" element={P('financeiro.hs', <FinanceiroHS />)} />
           <Route path="/hs/mensagens" element={P('interacao.registrar', <CentralMensagens />)} />

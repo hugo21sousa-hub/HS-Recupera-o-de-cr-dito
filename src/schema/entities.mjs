@@ -389,6 +389,25 @@ export const ENTITIES = {
     },
     required: ['de', 'recebida_em'],
   },
+  ConversaWhatsApp: {
+    description: 'Conversa de atendimento comercial no WhatsApp da Acorly (API oficial): a IA qualifica e passa para a equipe quando precisa',
+    properties: {
+      telefone: s('WhatsApp do contato (só dígitos, com DDI)'), nome_perfil: s('Nome do perfil no WhatsApp'), lead_id: ref('Lead criado a partir da conversa'),
+      status: e(['IA', 'HUMANO', 'ENCERRADA'], 'Quem conduz', 'IA'), motivo_humano: s('Por que a IA passou para a equipe'), passada_em: ts('Quando passou para a equipe'),
+      assumida_por: ref('Quem da equipe assumiu'), ultima_cliente_em: ts('Última mensagem do cliente (abre a janela de 24 h)'), ultima_mensagem_em: ts('Última mensagem da conversa'),
+      respostas_ia: n('Quantas respostas a IA já deu'), qualificacao: { type: 'object', description: 'Dados colhidos pela IA (empresa, segmento, cidade, clientes em atraso, valor...)' },
+      resumo: s('Resumo da conversa feito pela IA'), pendente_ia: b('Há mensagem do cliente esperando resposta da IA'), lida_em: ts('Equipe viu a conversa em'), criada_em: ts('Criada em'),
+    },
+    required: ['telefone', 'status'],
+  },
+  MensagemWhatsApp: {
+    description: 'Mensagem de uma conversa de atendimento comercial no WhatsApp',
+    properties: {
+      conversa_id: ref('ConversaWhatsApp'), de: e(['CLIENTE', 'IA', 'EQUIPE', 'SISTEMA'], 'Autor'), texto: s('Texto'), em: ts('Quando'),
+      externo_id: s('ID da mensagem no WhatsApp'), autor_id: ref('Usuário da equipe que respondeu'), erro: s('Falha no envio'),
+    },
+    required: ['conversa_id', 'de', 'texto', 'em'],
+  },
   EventoWebhook: {
     description: 'Eventos recebidos de provedores externos (idempotência)',
     properties: { origem: e(['WHATSAPP', 'ASAAS'], 'Origem'), externo_id: s('ID do evento no provedor'), recebido_em: ts('Recebido em') },

@@ -295,6 +295,35 @@ Para ligar a busca automática:
    - `fonte_url` (https) é obrigatória.
    - Repetidos (mesmo e-mail, telefone ou domínio de lead ou contato já existente) são ignorados.
 
+## Atendimento WhatsApp com IA (comercial)
+
+O número do WhatsApp da Acorly ligado à API oficial da Meta é atendido por uma IA, o **Claude Haiku 5.5**. A conversa aparece em **Atendimento WhatsApp**, no menu da equipe.
+
+- **Quem a IA atende:** só quem **não é devedor**. Mensagens de números de devedores continuam indo para o caso de cobrança ou para "WhatsApp sem caso".
+- **O que ela faz:** se apresenta como assistente virtual e qualifica a empresa (nome e cargo, empresa, tipo, cidade, clientes em atraso, valor, tempo de atraso e e-mail). Responde só com os fatos da Acorly e leva ao diagnóstico grátis. Cada conversa vira um contato em Pedidos e contatos, com origem `WHATSAPP_IA`.
+- **Quando passa para a equipe:** quando a pessoa pede uma pessoa, quer fechar ou marcar conversa, faz uma pergunta fora da base, se irrita ou parece devedor; ou ao chegar a 15 respostas na conversa.
+  - Nesse momento a IA avisa o cliente e **para de responder**. A equipe recebe um aviso (🙋) e responde pela tela.
+  - O botão "Devolver para a IA" faz a IA voltar a responder quando o cliente escrever de novo.
+- **Janela de 24 h (regra da Meta):** responder dentro de 24 horas depois da última mensagem do cliente é gratuito. Depois disso, a tela bloqueia a resposta, porque só seria possível com mensagem-modelo paga.
+- **Proteções:**
+  - a IA responde alguns segundos depois da última mensagem, juntando mensagens seguidas;
+  - limite de 300 respostas da IA por dia (`IA_LIMITE_DIARIO`);
+  - "parar" ou "sair" encerra a conversa;
+  - se a IA falhar 3 vezes, a conversa passa para a equipe.
+
+Variáveis no Render:
+
+| Variável | Valor |
+|---|---|
+| `ANTHROPIC_API_KEY` | chave da API da Anthropic (console.anthropic.com), com crédito pré-pago e limite de gasto definido lá |
+| `WHATSAPP_TOKEN` | token permanente (usuário do sistema) do app da Meta |
+| `WHATSAPP_PHONE_NUMBER_ID` | ID do número no Gerenciador do WhatsApp |
+| `WHATSAPP_VERIFY_TOKEN` | um texto aleatório, que se repete na configuração do webhook na Meta |
+| `WHATSAPP_APP_SECRET` | chave secreta do app da Meta (para conferir a assinatura do webhook) |
+| `IA_LIMITE_DIARIO` | opcional (padrão 300) |
+
+Na Meta, o webhook do app aponta para `https://acorly.com.br/webhooks/whatsapp`, com o mesmo `WHATSAPP_VERIFY_TOKEN`, assinando o campo **messages**.
+
 ## SDR automático (pré-vendedor por e-mail)
 
 Em **Diagnósticos e prospecção → SDR automático**:

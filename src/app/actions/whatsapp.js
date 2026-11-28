@@ -4,6 +4,7 @@ import { transicao, podeTransitar, casoAtivo } from '../../core/caseStatus.js';
 import { formatBRL } from '../../core/money.js';
 import { AccessError, ValidationError, getById, find, exigir, carregarCaso, auditar, notificar, paginar, requirePerm } from '../context.js';
 import { actions as operacoes } from './operacoes.js';
+import { receberMensagemCliente } from '../atendimento.js';
 
 const OPT_OUT = /^\s*(parar|pare|sair|stop|cancelar|descadastrar|nao quero mais|não quero mais)\s*[.!]*\s*$/i;
 
@@ -108,14 +109,20 @@ export async function processarWebhookWhatsApp(ctx, payload) {
         let caso = null;
         for (const i of enviadas) { const c = await getById(ctx, 'CasoCobranca', i.caso_id); if (c && casoAtivo(c)) { caso = c; break; } }
         // 2) único caso ativo de devedor com esse número
+        let devs = [];
         if (!caso) {
-          const devs = (await find(ctx, 'Devedor')).filter((d) => telefoneBR(d.whatsapp) === tel || telefoneBR(d.telefone) === tel);
+          devs = (await find(ctx, 'Devedor')).filter((d) => telefoneBR(d.whatsapp) === tel || telefoneBR(d.telefone) === tel);
           const casos = [];
           for (const d of devs) casos.push(...(await find(ctx, 'CasoCobranca', { devedor_id: d.id })).filter((c) => casoAtivo(c) && c.modalidade_cobranca === 'HS_GERENCIADA'));
           if (casos.length === 1) caso = casos[0];
         }
         if (caso) { await registrarResposta(ctx, caso, texto, quando); r.mensagens++; }
-        else {
+        else if (!devs.length && !enviadas.length) {
+          // 3) não é devedor: atendimento comercial (IA qualifica e passa para a equipe)
+          const nome = (v.contacts || []).find((x) => somenteDigitos(x.wa_id) === tel)?.profile?.name || '';
+          await receberMensagemCliente(ctx, { telefone: tel, texto, quando, nome, externo_id: m.id });
+          r.atendimento = (r.atendimento || 0) + 1;
+        } else {
           await ctx.db.LogIntegracao.create({ empresa_id: null, integracao: 'WHATSAPP', direcao: 'ENTRADA', status: 'TRIAGEM', data_hora: quando, payload_resumo: JSON.stringify({ de: tel, texto: String(texto).slice(0, 2000), recebido_em: quando }) });
           r.triagem++;
         }

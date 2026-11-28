@@ -149,7 +149,11 @@ test('WhatsApp: janela de 24h, modelo aprovado, resposta recebida, PARAR e triag
   // janela aberta: texto livre permitido
   await t.ok('op1@hs.com', 'enviarWhatsApp', { caso_id: caso.id, mensagem: 'Ótimo! Posso propor 10% de desconto à vista.' });
   await t.falha('op1@hs.com', 'enviarWhatsApp', { caso_id: caso.id, mensagem: 'Pague senão vai ser preso' }, 422);
-  // número desconhecido vai para triagem
+  // número desconhecido (não é devedor) vai para o atendimento comercial
+  await processarWebhookWhatsApp(sys, msg('in.4', '5521911112222', 'Vim pelo site'));
+  assert.equal((await t.db.ConversaWhatsApp.filter({ telefone: '5521911112222' })).length, 1);
+  // número de devedor sem caso ativo identificado vai para triagem
+  await t.db.Devedor.create({ nome: 'Sem caso', whatsapp: '21900000000', empresa_id: 'x', documento: '0' });
   await processarWebhookWhatsApp(sys, msg('in.2', '5521900000000', 'Quem é?'));
   const tri = await t.ok('gestor@hs.com', 'listarMensagensSemCaso', {});
   assert.equal(tri.total, 1);

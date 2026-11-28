@@ -440,3 +440,5 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 .calc-entradas input:not([type=range]) { width: 100%; min-width: 0; box-sizing: border-box; }
 .calc-linhas > div > :last-child { white-space: nowrap; }
 @media (max-width: 860px) { .calc { grid-template-columns: minmax(0, 1fr); } .calc-entradas, .calc-resultado { padding: 20px 16px; } .calc-cta { align-self: stretch; text-align: center; } }
+
+@media (max-width: 760px) { .atendimento-grade { grid-template-columns: minmax(0, 1fr) !important; } }
